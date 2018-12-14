@@ -1,0 +1,67 @@
+NAME
+    check_pgbackrest - pgBackRest backup check plugin for Nagios
+
+SYNOPSIS
+      check_pgbackrest [-s|--service SERVICE] [-S|--stanza NAME]
+      check_pgbackrest [-l|--list]
+      check_pgbackrest [--help]
+
+DESCRIPTION
+    check_pgbackrest is designed to monitor pgBackRest backups from Nagios.
+
+    -s, --service SERVICE
+        The Nagios service to run. See section SERVICES for a description of
+        available services or use "--list" for a short service and
+        description list.
+
+    -S, --stanza NAME
+        Name of the stanza to check.
+
+    -F, --format OUTPUT_FORMAT
+        The output format. Supported outputs are: "human" and "nagios".
+
+    -l, --list
+        List available services.
+
+    -V, --version
+        Print version and exit.
+
+    -?, --help
+        Show this help page.
+
+  SERVICES
+    Descriptions and parameters of available services.
+
+    retention
+        Fail when the number of full backups is less than the
+        "--retention-full" argument.
+
+        Fail when the newest backup is older than the "--retention-age"
+        argument.
+
+        The following units are accepted (not case sensitive): s (second), m
+        (minute), h (hour), d (day). You can use more than one unit per
+        given value.
+
+    archives
+        Check if all archived WALs exist between the oldest and the latest
+        WAL needed for the recovery.
+
+        This service requires the "--repo-path" argument to specify where
+        the archived WALs are stored (locally).
+
+        This service only works for PG >= 9.3.
+
+        Archives must be compressed (.gz). If needed, use "compress-level=0"
+        instead of "compress=n".
+
+VERSION
+    check_pgbackrest version 1.0, released on Fri Dec 14 2018.
+
+LICENSING
+    This program is open source, licensed under the PostgreSQL license. For
+    license terms, see the LICENSE file.
+
+AUTHORS
+    Author: Stefan Fercot Copyright: (c) 2018, Dalibo.
+
