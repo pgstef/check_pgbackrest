@@ -416,13 +416,11 @@ WAL needed for the recovery.
 This service requires the C<--repo-path> argument to specify where 
 the archived WALs are stored (locally).
 
-This service only works for PG >= 9.3.
+This service only works for PG >= 9.3 and the default v11 setup.
 
 Archives must be compressed (.gz). If needed, use "compress-level=0"
 instead of "compress=n".
 =cut
-
-# FIXME PG >= 9.3 
 
 sub check_wal_archives {
 	my $me             = 'WAL_ARCHIVES';
