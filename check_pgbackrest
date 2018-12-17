@@ -292,7 +292,7 @@ sub pgbackrest_info {
 	$infocmd .= " --stanza=".$args{'stanza'};
 	$infocmd .= " --output=json";
 
-	my $json_output = `$infocmd 2>&1`;
+	my $json_output = `$infocmd 2>&1|grep -v WARN`;
 	die("Can't get pgBackRest info.\nCommand was '$infocmd'.\n") unless ($? eq 0);
 	
 	use JSON;
