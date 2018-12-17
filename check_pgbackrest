@@ -94,6 +94,10 @@ Name of the stanza to check.
 
 The output format. Supported outputs are: C<human> and C<nagios> (default).
 
+=item B<-c>, B<--config> CONFIGURATION_FILE
+
+pgBackRest configuration file.
+
 =item B<-l>, B<--list>
 
 List available services.
@@ -308,7 +312,11 @@ sub pgbackrest_info {
 	$infocmd .= " --stanza=".$args{'stanza'};
 	$infocmd .= " --output=json";
 
-	my $json_output = `$infocmd 2>&1|grep -v WARN`;
+    if(defined $args{'config'}) {
+        $infocmd .= " --config=".$args{'config'};
+    }
+
+	my $json_output = `$infocmd 2>&1 |grep -v WARN |grep -v ERROR`;
 	die("Can't get pgBackRest info.\nCommand was '$infocmd'.\n") unless ($? eq 0);
 	
 	my $decoded_json = decode_json($json_output);
@@ -541,6 +549,7 @@ sub check_wal_archives {
 Getopt::Long::Configure('bundling');
 GetOptions(
     \%args,
+        'config|c=s',
         'format|F=s',
         'help|?!',
         'list|l!',
