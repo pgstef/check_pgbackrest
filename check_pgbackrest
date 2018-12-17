@@ -76,7 +76,7 @@ Name of the stanza to check.
 
 =item B<-F>, B<--format> OUTPUT_FORMAT
 
-The output format. Supported outputs are: C<human> and C<nagios>.
+The output format. Supported outputs are: C<human> and C<nagios> (default).
 
 =item B<-l>, B<--list>
 
@@ -408,7 +408,7 @@ sub check_wal_archives {
     my @warn_msg;
     my @crit_msg;
     my @longmsg;
-	my $seg_per_wal = 256; #Only for PG >= 9.3
+	my $seg_per_wal = 256; #Only for PG >= 9.3 and the default v11 setup
     my $suffix = ".gz";
 
 	pod2usage(
@@ -494,7 +494,7 @@ sub check_wal_archives {
 	        );
 
 	        unless ( grep( /^$curr/, $filelist_sorted[$i][0] ) ) {
-	            push @crit_msg => "wrong sequence or file missing @ '$curr'";
+	            push @crit_msg => "wrong sequence or missing file @ '$curr'";
 	            last;
 	        }
 
