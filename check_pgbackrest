@@ -487,7 +487,7 @@ sub check_wal_archives {
 
 	    my $start_tl = substr($filelist_sorted[0][0], 0, 8);
 	    my $end_tl   = substr($filelist_sorted[-1][0], 0, 8);
-	    my $timeline = $start_tl + 0;
+	    my $timeline = hex($start_tl);
 	    my $wal = hex(substr($filelist_sorted[0][0], 8, 8));
 	    my $seg = hex(substr($filelist_sorted[0][0], 16, 8));
 
@@ -508,7 +508,7 @@ sub check_wal_archives {
 	    # Check ALL archives are here.
 	    for ( my $i=0, my $j=0; $i <= $#filelist_sorted ; $i++, $j++ ) {
 	        # print ("Checking WAL $filelist_sorted[$i][0]\n");
-	        my $curr = sprintf('%08d%08X%08X',
+	        my $curr = sprintf('%08X%08X%08X',
 	            $timeline,
 	            $wal + int(($seg + $j)/$seg_per_wal),
 	            ($seg + $j)%$seg_per_wal
