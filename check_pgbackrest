@@ -36,17 +36,33 @@ use Pod::Usage;
 use Config;
 use FindBin;
 
-# messing with PATH so pod2usage always finds this script
+# Display error message if some specific modules are not loaded
+# JSON module (libjson-perl) needed to handle pgBackRest output
+BEGIN {
+    my(@DBs, @missingDBs, $mod);
+
+    @DBs = qw(JSON);
+    for $mod (@DBs) {
+        if (eval "require $mod") {
+            $mod->import();
+        } else {
+            push @missingDBs, $mod;
+        }
+    }
+    die "@missingDBs module(s) not loaded.\n" if @missingDBs;
+}
+
+# Messing with PATH so pod2usage always finds this script
 my @path = split /$Config{'path_sep'}/ => $ENV{'PATH'};
 push @path => $FindBin::Bin;
 $ENV{'PATH'} = join $Config{'path_sep'} => @path;
 undef @path;
 
+# Reference to the output sub
+my $output_fmt;
+
 $VERSION = '1.0';
 $PROGRAM = 'check_pgbackrest';
-
-# reference to the output sub
-my $output_fmt;
 
 # Available services and descriptions.
 #-----------------------------------------------------------------------------
@@ -295,7 +311,6 @@ sub pgbackrest_info {
 	my $json_output = `$infocmd 2>&1|grep -v WARN`;
 	die("Can't get pgBackRest info.\nCommand was '$infocmd'.\n") unless ($? eq 0);
 	
-	use JSON;
 	my $decoded_json = decode_json($json_output);
 
 	foreach my $line (@{$decoded_json}) {
