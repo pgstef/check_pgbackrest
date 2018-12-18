@@ -115,7 +115,8 @@ Show this help page.
 =cut
 
 my %args = (
-	'format' => 'nagios'
+    'format' => 'nagios',
+    'wal-segsize' => '16MB'
 );
 
 # Set name of the program without path*
@@ -304,26 +305,67 @@ LOOP_TS: while ( my $val = shift @date ) {
     return $ts;
 }
 
+# Handle size units
+#-----------------------------------------------------------------------------
+
+# Return a size in bytes from a size with unit.
+# If unit is '%', use the second parameter to compute the size in bytes.
+sub get_size($;$) {
+    my $str_size = shift;
+    my $size     = 0;
+    my $unit     = '';
+
+    die "Only integers are accepted as size. Adjust the unit to your need.\n"
+        if $str_size =~ /[.,]/;
+
+    $str_size =~ /^([0-9]+)(.*)$/;
+
+    $size = int($1);
+    $unit = lc($2);
+
+    return $size unless $unit ne '';
+
+    if ( $unit eq '%' ) {
+        my $ratio = shift;
+
+        die("Can't compute a ratio without the factor!\n")
+            unless defined $unit;
+
+        return int( $size * $ratio / 100 );
+    }
+
+    return $size           if $unit eq 'b';
+    return $size * 1024    if $unit =~ '^k[bo]?$';
+    return $size * 1024**2 if $unit =~ '^m[bo]?$';
+    return $size * 1024**3 if $unit =~ '^g[bo]?$';
+    return $size * 1024**4 if $unit =~ '^t[bo]?$';
+    return $size * 1024**5 if $unit =~ '^p[bo]?$';
+    return $size * 1024**6 if $unit =~ '^e[bo]?$';
+    return $size * 1024**7 if $unit =~ '^z[bo]?$';
+
+    die("Unknown size unit: $unit\n");
+}
+
 # Interact with pgBackRest
 #-----------------------------------------------------------------------------
 
 sub pgbackrest_info {
-	my $infocmd = "pgbackrest info";
-	$infocmd .= " --stanza=".$args{'stanza'};
-	$infocmd .= " --output=json";
+    my $infocmd = "pgbackrest info";
+    $infocmd .= " --stanza=".$args{'stanza'};
+    $infocmd .= " --output=json";
 
     if(defined $args{'config'}) {
         $infocmd .= " --config=".$args{'config'};
     }
 
-	my $json_output = `$infocmd 2>&1 |grep -v WARN |grep -v ERROR`;
-	die("Can't get pgBackRest info.\nCommand was '$infocmd'.\n") unless ($? eq 0);
-	
-	my $decoded_json = decode_json($json_output);
+    my $json_output = `$infocmd 2>&1 |grep -v WARN |grep -v ERROR`;
+    die("Can't get pgBackRest info.\nCommand was '$infocmd'.\n") unless ($? eq 0);
+    
+    my $decoded_json = decode_json($json_output);
 
-	foreach my $line (@{$decoded_json}) {
-		return $line if($line->{'name'} eq $args{'stanza'});
-	}
+    foreach my $line (@{$decoded_json}) {
+        return $line if($line->{'name'} eq $args{'stanza'});
+    }
 
     return;
 }
@@ -352,7 +394,7 @@ given value.
 =cut
 
 sub check_retention {
-	my $me             = 'BACKUPS_RETENTION';
+    my $me             = 'BACKUPS_RETENTION';
     my %args           = %{ $_[0] };
     my @msg;
     my @warn_msg;
@@ -360,52 +402,52 @@ sub check_retention {
     my @longmsg;
 
     pod2usage(
-	    -message => 'FATAL: you must provide --retention-age and/or --retention-full.',
-	    -exitval => 127
-	) if ( not defined $args{'retention-full'} and not defined $args{'retention-age'} );
+        -message => 'FATAL: you must provide --retention-age and/or --retention-full.',
+        -exitval => 127
+    ) if ( not defined $args{'retention-full'} and not defined $args{'retention-age'} );
 
-	my $backups_info = pgbackrest_info();
-	die("Can't get pgBackRest info.\n") unless (defined $backups_info);
+    my $backups_info = pgbackrest_info();
+    die("Can't get pgBackRest info.\n") unless (defined $backups_info);
 
-	if($backups_info->{'status'}->{'code'} == 0) {
-		my @full_bck;
-		my @diff_bck;
-		my @incr_bck;
+    if($backups_info->{'status'}->{'code'} == 0) {
+        my @full_bck;
+        my @diff_bck;
+        my @incr_bck;
 
-		foreach my $line (@{$backups_info->{'backup'}}){
-			push @full_bck, $line->{'label'} if($line->{'type'} eq "full");
-			push @diff_bck, $line->{'label'} if($line->{'type'} eq "diff");
-			push @incr_bck, $line->{'label'} if($line->{'type'} eq "incr");
-		}
+        foreach my $line (@{$backups_info->{'backup'}}){
+            push @full_bck, $line->{'label'} if($line->{'type'} eq "full");
+            push @diff_bck, $line->{'label'} if($line->{'type'} eq "diff");
+            push @incr_bck, $line->{'label'} if($line->{'type'} eq "incr");
+        }
 
-		push @longmsg, "full=".scalar(@full_bck);
-		push @longmsg, "diff=".scalar(@diff_bck);
-		push @longmsg, "incr=".scalar(@incr_bck);
+        push @longmsg, "full=".scalar(@full_bck);
+        push @longmsg, "diff=".scalar(@diff_bck);
+        push @longmsg, "incr=".scalar(@incr_bck);
 
-		# check retention
-		if(defined $args{'retention-full'} and scalar(@full_bck) < $args{'retention-full'}){
-			push @crit_msg, "not enough full backups, ".$args{'retention-full'}." required";
-		}
+        # check retention
+        if(defined $args{'retention-full'} and scalar(@full_bck) < $args{'retention-full'}){
+            push @crit_msg, "not enough full backups, ".$args{'retention-full'}." required";
+        }
 
-		# check latest age
-		# backup age considered at pg_stop_backup
-		my $latest_bck = @{$backups_info->{'backup'}}[-1];
-		my $latest_bck_age = time() - $latest_bck->{'timestamp'}->{'stop'};
-		push @longmsg, "latest=".$latest_bck->{'type'}.",".$latest_bck->{'label'};
-		push @longmsg, "latest_age=".to_interval($latest_bck_age);
+        # check latest age
+        # backup age considered at pg_stop_backup
+        my $latest_bck = @{$backups_info->{'backup'}}[-1];
+        my $latest_bck_age = time() - $latest_bck->{'timestamp'}->{'stop'};
+        push @longmsg, "latest=".$latest_bck->{'type'}.",".$latest_bck->{'label'};
+        push @longmsg, "latest_age=".to_interval($latest_bck_age);
 
-		if(defined $args{'retention-age'}){
-			my $bck_age_limit = get_time($args{'retention-age'} );
-			push @crit_msg, "backups are too old" if $latest_bck_age >= $bck_age_limit;
-		}
-	}else{
-		push @crit_msg, $backups_info->{'status'}->{'message'};
-	}
+        if(defined $args{'retention-age'}){
+            my $bck_age_limit = get_time($args{'retention-age'} );
+            push @crit_msg, "backups are too old" if $latest_bck_age >= $bck_age_limit;
+        }
+    }else{
+        push @crit_msg, $backups_info->{'status'}->{'message'};
+    }
 
-	return critical($me, \@crit_msg, \@longmsg) if @crit_msg;
-	return warning($me, \@warn_msg, \@longmsg) if @warn_msg;
-   	push @msg, "backups policy checks ok";
-	return ok( $me, \@msg, \@longmsg );
+    return critical($me, \@crit_msg, \@longmsg) if @crit_msg;
+    return warning($me, \@warn_msg, \@longmsg) if @warn_msg;
+    push @msg, "backups policy checks ok";
+    return ok( $me, \@msg, \@longmsg );
 }
 
 =item B<archives>
@@ -416,125 +458,136 @@ WAL needed for the recovery.
 This service requires the C<--repo-path> argument to specify where 
 the archived WALs are stored (locally).
 
-This service only works for PG >= 9.3 and the default v11 setup.
+This service only works for PG >= 9.3.
 
 Archives must be compressed (.gz). If needed, use "compress-level=0"
 instead of "compress=n".
+
+Use the C<--wal-segsize> argument to set the WAL segment size.
+
+The following units are accepted (not case sensitive):
+b (Byte), k (KB), m (MB), g (GB), t (TB), p (PB), e (EB) or Z (ZB). Only
+integers are accepted. Eg. C<1.5MB> will be refused, use C<1500kB>.
+
+The factor between units is 1024 bytes. Eg. C<1g = 1G = 1024*1024*1024.> 
 =cut
 
 sub check_wal_archives {
-	my $me             = 'WAL_ARCHIVES';
+    my $me             = 'WAL_ARCHIVES';
     my %args           = %{ $_[0] };
     my @msg;
     my @warn_msg;
     my @crit_msg;
     my @longmsg;
-	my $seg_per_wal = 256; #Only for PG >= 9.3 and the default v11 setup
     my $suffix = ".gz";
 
-	pod2usage(
-	    -message => 'FATAL: you must provide --repo-path.',
-	    -exitval => 127
-	) if ( not defined $args{'repo-path'} );
+    my $wal_segsize = $args{'wal-segsize'};
+    my $walsize = '4GB'; # 4 TB -> bytes
+    my $seg_per_wal = get_size($walsize) / get_size($wal_segsize); #Only for PG >= 9.3
+
+    pod2usage(
+        -message => 'FATAL: you must provide --repo-path.',
+        -exitval => 127
+    ) if ( not defined $args{'repo-path'} );
 
     pod2usage(
         -message => "FATAL: \"$args{'repo-path'}\" is not a valid folder.",
         -exitval => 127
     ) unless -d $args{'repo-path'};
 
-	my $backups_info = pgbackrest_info();
-	die("Can't get pgBackRest info.\n") unless (defined $backups_info);
+    my $backups_info = pgbackrest_info();
+    die("Can't get pgBackRest info.\n") unless (defined $backups_info);
 
-	if($backups_info->{'status'}->{'code'} == 0) {
-		my $archives_dir = $args{'repo-path'}."/".$args{'stanza'}."/".$backups_info->{'archive'}[0]->{'id'};
-		my $min_wal = $backups_info->{'archive'}[0]->{'min'};
-		my $max_wal = $backups_info->{'archive'}[0]->{'max'};
-		push @longmsg, "archives_dir=$archives_dir";
-		push @longmsg, "min_wal=$min_wal";
-		push @longmsg, "max_wal=$max_wal";
+    if($backups_info->{'status'}->{'code'} == 0) {
+        my $archives_dir = $args{'repo-path'}."/".$args{'stanza'}."/".$backups_info->{'archive'}[0]->{'id'};
+        my $min_wal = $backups_info->{'archive'}[0]->{'min'};
+        my $max_wal = $backups_info->{'archive'}[0]->{'max'};
+        push @longmsg, "archives_dir=$archives_dir";
+        push @longmsg, "min_wal=$min_wal";
+        push @longmsg, "max_wal=$max_wal";
 
-		# Get all the WAL archives and history files
-		my @filelist;
-		my @filelist_simplified;
-		find ( sub {
-		    return unless -f;
-			my $filename_re = qr/^[0-9A-F]{24}.*$suffix$/;
-		    return unless /$filename_re/;
-		    push @filelist, [$_, (stat($File::Find::name))[9,7], $File::Find::name];
-		    push @filelist_simplified, substr($_, 0, 24);
-		}, $archives_dir );
+        # Get all the WAL archives and history files
+        my @filelist;
+        my @filelist_simplified;
+        find ( sub {
+            return unless -f;
+            my $filename_re = qr/^[0-9A-F]{24}.*$suffix$/;
+            return unless /$filename_re/;
+            push @filelist, [$_, (stat($File::Find::name))[9,7], $File::Find::name];
+            push @filelist_simplified, substr($_, 0, 24);
+        }, $archives_dir );
 
-		return unknown $me, ['no archived WAL found'] unless @filelist;
-		return critical $me, ['min WAL not found: '.$min_wal] unless grep( /^$min_wal$/, @filelist_simplified );
-		return critical $me, ['max WAL not found: '.$max_wal] unless grep( /^$max_wal$/, @filelist_simplified );
+        return unknown $me, ['no archived WAL found'] unless @filelist;
+        return critical $me, ['min WAL not found: '.$min_wal] unless grep( /^$min_wal$/, @filelist_simplified );
+        return critical $me, ['max WAL not found: '.$max_wal] unless grep( /^$max_wal$/, @filelist_simplified );
 
-		# Sort by mtime
-		my @filelist_sorted = sort { ($a->[1] <=> $b->[1]) || ($a->[0] cmp $b->[0]) }
-			grep{ (defined($_->[0]) and defined($_->[1]))
-				or die "Can't read WAL files."
-			} @filelist;
+        # Sort by mtime
+        my @filelist_sorted = sort { ($a->[1] <=> $b->[1]) || ($a->[0] cmp $b->[0]) }
+            grep{ (defined($_->[0]) and defined($_->[1]))
+                or die "Can't read WAL files."
+            } @filelist;
 
-		# start = min, last = max ?
-		push @warn_msg, "min WAL is not the oldest archive" unless grep( /^$min_wal/, $filelist_sorted[0][0] );
-		push @warn_msg, "max WAL is not the latest archive" unless grep( /^$max_wal/, $filelist_sorted[-1][0] );
-		push @longmsg, "oldest_archive=".$filelist_sorted[0][0];
-		push @longmsg, "latest_archive=".$filelist_sorted[-1][0];
+        # start = min, last = max ?
+        push @warn_msg, "min WAL is not the oldest archive" unless grep( /^$min_wal/, $filelist_sorted[0][0] );
+        push @warn_msg, "max WAL is not the latest archive" unless grep( /^$max_wal/, $filelist_sorted[-1][0] );
+        push @longmsg, "oldest_archive=".$filelist_sorted[0][0];
+        push @longmsg, "latest_archive=".$filelist_sorted[-1][0];
 
-		my $latest_wal_age = time() - $filelist_sorted[-1][1];
-		my $num_archives = scalar(@filelist_sorted);
-		push @longmsg, "latest_wal_age=".to_interval($latest_wal_age);
-		push @longmsg, "num_archives=$num_archives";
+        my $latest_wal_age = time() - $filelist_sorted[-1][1];
+        my $num_archives = scalar(@filelist_sorted);
+        push @longmsg, "latest_wal_age=".to_interval($latest_wal_age);
+        push @longmsg, "num_archives=$num_archives";
 
-	    my $start_tl = substr($filelist_sorted[0][0], 0, 8);
-	    my $end_tl   = substr($filelist_sorted[-1][0], 0, 8);
-	    my $timeline = hex($start_tl);
-	    my $wal = hex(substr($filelist_sorted[0][0], 8, 8));
-	    my $seg = hex(substr($filelist_sorted[0][0], 16, 8));
+        my $start_tl = substr($filelist_sorted[0][0], 0, 8);
+        my $end_tl   = substr($filelist_sorted[-1][0], 0, 8);
+        my $timeline = hex($start_tl);
+        my $wal = hex(substr($filelist_sorted[0][0], 8, 8));
+        my $seg = hex(substr($filelist_sorted[0][0], 16, 8));
 
-	    # look for history files if timeline differs
-	    my @branch_wals;
-	    if ( $start_tl ne $end_tl ) {
-	        if ( -s "$archives_dir/$end_tl.history" ) {
-	            open my $fd, "<", "$archives_dir/$end_tl.history";
-	            while ( <$fd> ) {
-	                next unless m{^\s*(\d)\t([0-9A-F]+)/([0-9A-F]+)\t.*$};
-	                push @branch_wals =>
-	                    sprintf("%08d%08s%08X", $1, $2, hex($3)>>24);
-	            }
-	            close $fd;
-	        }
-	    }
+        # look for history files if timeline differs
+        my @branch_wals;
+        if ( $start_tl ne $end_tl ) {
+            if ( -s "$archives_dir/$end_tl.history" ) {
+                open my $fd, "<", "$archives_dir/$end_tl.history";
+                while ( <$fd> ) {
+                    next unless m{^\s*(\d)\t([0-9A-F]+)/([0-9A-F]+)\t.*$};
+                    push @branch_wals =>
+                        sprintf("%08d%08s%08X", $1, $2, hex($3)>>24);
+                }
+                close $fd;
+            }
+        }
 
-	    # Check ALL archives are here.
-	    for ( my $i=0, my $j=0; $i <= $#filelist_sorted ; $i++, $j++ ) {
-	        # print ("Checking WAL $filelist_sorted[$i][0]\n");
-	        my $curr = sprintf('%08X%08X%08X',
-	            $timeline,
-	            $wal + int(($seg + $j)/$seg_per_wal),
-	            ($seg + $j)%$seg_per_wal
-	        );
+        # Check ALL archives are here.
+        for ( my $i=0, my $j=0; $i <= $#filelist_sorted ; $i++, $j++ ) {
+            # print ("Checking WAL $filelist_sorted[$i][0]\n");
+            my $curr = sprintf('%08X%08X%08X',
+                $timeline,
+                $wal + int(($seg + $j)/$seg_per_wal),
+                ($seg + $j)%$seg_per_wal
+            );
 
-	        unless ( grep( /^$curr/, $filelist_sorted[$i][0] ) ) {
-	            push @crit_msg => "wrong sequence or missing file @ '$curr'";
-	            last;
-	        }
+            unless ( grep( /^$curr/, $filelist_sorted[$i][0] ) ) {
+                push @crit_msg => "wrong sequence or missing file @ '$curr'";
+                last;
+            }
 
-	        if ( grep /$curr/, @branch_wals ) {
-	            # print( "Found a boundary @ $curr !\n" );
-	            $timeline++;
-	            $j--;
-	        }
-	    }
+            if ( grep /$curr/, @branch_wals ) {
+                # print( "Found a boundary @ $curr !\n" );
+                $timeline++;
+                $j--;
+            }
+        }
 
-   		push @msg, "$num_archives WAL archived, "
-       		."latest archived since ". to_interval($latest_wal_age);
-	}else{
-		push @crit_msg, $backups_info->{'status'}->{'message'};
-	}
+        push @msg, "$num_archives WAL archived, "
+            ."latest archived since ". to_interval($latest_wal_age);
+    }else{
+        push @crit_msg, $backups_info->{'status'}->{'message'};
+    }
 
-	return critical($me, \@crit_msg, \@longmsg) if @crit_msg;
-	return warning($me, \@warn_msg, \@longmsg) if @warn_msg;
-	return ok( $me, \@msg, \@longmsg );
+    return critical($me, \@crit_msg, \@longmsg) if @crit_msg;
+    return warning($me, \@warn_msg, \@longmsg) if @warn_msg;
+    return ok( $me, \@msg, \@longmsg );
 }
 
 # End of SERVICE section in pod doc
@@ -556,7 +609,8 @@ GetOptions(
         'retention-full=i',
         'service|s=s',
         'stanza|S=s',
-        'version|V!'
+        'version|V!',
+        'wal-segsize=s'
 ) or pod2usage( -exitval => 127 );
 
 list_services() if $args{'list'};

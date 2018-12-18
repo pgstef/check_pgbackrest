@@ -18,7 +18,11 @@ DESCRIPTION
         Name of the stanza to check.
 
     -F, --format OUTPUT_FORMAT
-        The output format. Supported outputs are: "human" and "nagios".
+        The output format. Supported outputs are: "human" and "nagios"
+        (default).
+
+    -c, --config CONFIGURATION_FILE
+        pgBackRest configuration file.
 
     -l, --list
         List available services.
@@ -54,6 +58,15 @@ DESCRIPTION
 
         Archives must be compressed (.gz). If needed, use "compress-level=0"
         instead of "compress=n".
+
+        Use the "--wal-segsize" argument to set the WAL segment size.
+
+        The following units are accepted (not case sensitive): b (Byte), k
+        (KB), m (MB), g (GB), t (TB), p (PB), e (EB) or Z (ZB). Only
+        integers are accepted. Eg. "1.5MB" will be refused, use "1500kB".
+
+        The factor between units is 1024 bytes. Eg. "1g = 1G =
+        1024*1024*1024."
 
 VERSION
     check_pgbackrest version 1.0, released on Fri Dec 14 2018.
