@@ -54,8 +54,6 @@ DESCRIPTION
         This service requires the "--repo-path" argument to specify where
         the archived WALs are stored (locally).
 
-        This service only works for PG >= 9.3.
-
         Archives must be compressed (.gz). If needed, use "compress-level=0"
         instead of "compress=n".
 

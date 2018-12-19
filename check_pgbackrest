@@ -458,8 +458,6 @@ WAL needed for the recovery.
 This service requires the C<--repo-path> argument to specify where 
 the archived WALs are stored (locally).
 
-This service only works for PG >= 9.3.
-
 Archives must be compressed (.gz). If needed, use "compress-level=0"
 instead of "compress=n".
 
@@ -481,10 +479,6 @@ sub check_wal_archives {
     my @longmsg;
     my $suffix = ".gz";
 
-    my $wal_segsize = $args{'wal-segsize'};
-    my $walsize = '4GB'; # 4 TB -> bytes
-    my $seg_per_wal = get_size($walsize) / get_size($wal_segsize); #Only for PG >= 9.3
-
     pod2usage(
         -message => 'FATAL: you must provide --repo-path.',
         -exitval => 127
@@ -499,6 +493,13 @@ sub check_wal_archives {
     die("Can't get pgBackRest info.\n") unless (defined $backups_info);
 
     if($backups_info->{'status'}->{'code'} == 0) {
+
+        my $wal_segsize = $args{'wal-segsize'};
+        my $walsize = '4GB'; # 4 TB -> bytes
+        my $seg_per_wal = get_size($walsize) / get_size($wal_segsize); #Only for PG >= 9.3
+        my $dbver=($backups_info->{'db'}[0]->{'version'}+0)*10;
+        $seg_per_wal-- if $dbver <= 92;
+
         my $archives_dir = $args{'repo-path'}."/".$args{'stanza'}."/".$backups_info->{'archive'}[0]->{'id'};
         my $min_wal = $backups_info->{'archive'}[0]->{'min'};
         my $max_wal = $backups_info->{'archive'}[0]->{'max'};
