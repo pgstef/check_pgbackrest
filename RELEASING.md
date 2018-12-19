@@ -19,7 +19,8 @@ podselect check_pgbackrest > README.pod
 
 ```
 TAG=REL1_1
-git -a $TAG
+git tag -a $TAG -m "Release $TAG"
+git tag
 git push --tags
 git archive --prefix=check_pgbackrest-$TAG/ -o /tmp/check_pgbackrest-$TAG.tgz $TAG
 ```
