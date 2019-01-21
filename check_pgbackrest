@@ -61,7 +61,7 @@ undef @path;
 # Reference to the output sub
 my $output_fmt;
 
-$VERSION = '1.1';
+$VERSION = '1.2';
 $PROGRAM = 'check_pgbackrest';
 
 # Available services and descriptions.
@@ -154,31 +154,33 @@ sub list_services {
 
 # Handle output formats
 #-----------------------------------------------------------------------------
-sub unknown($;$$) {
-    return $output_fmt->( 3, $_[0], $_[1], $_[2] );
+sub unknown($;$$$) {
+    return $output_fmt->( 3, $_[0], $_[1], $_[2], $_[3] );
 }
 
-sub critical($;$$) {
-    return $output_fmt->( 2, $_[0], $_[1], $_[2] );
+sub critical($;$$$) {
+    return $output_fmt->( 2, $_[0], $_[1], $_[2], $_[3] );
 }
 
-sub warning($;$$) {
-    return $output_fmt->( 1, $_[0], $_[1], $_[2] );
+sub warning($;$$$) {
+    return $output_fmt->( 1, $_[0], $_[1], $_[2], $_[3] );
 }
 
-sub ok($;$$) {
-    return $output_fmt->( 0, $_[0], $_[1], $_[2] );
+sub ok($;$$$) {
+    return $output_fmt->( 0, $_[0], $_[1], $_[2], $_[3] );
 }
 
-sub human_output ($$;$$) {
+sub human_output ($$;$$$) {
     my $rc      = shift;
     my $service = shift;
     my $ret;
     my @msg;
     my @longmsg;
+    my @human_only_longmsg;
 
     @msg      = @{ $_[0] } if defined $_[0];
     @longmsg  = @{ $_[1] } if defined $_[1];
+    @human_only_longmsg  = @{ $_[2] } if defined $_[2];
 
     $ret  = sprintf "%-15s: %s\n", 'Service', $service;
 
@@ -189,6 +191,7 @@ sub human_output ($$;$$) {
 
     $ret .= sprintf "%-15s: %s\n", "Message", $_ foreach @msg;
     $ret .= sprintf "%-15s: %s\n", "Long message", $_ foreach @longmsg;
+    $ret .= sprintf "%-15s: %s\n", "Long message", $_ foreach @human_only_longmsg;
 
     print $ret;
     return $rc;
@@ -477,6 +480,7 @@ sub check_wal_archives {
     my @warn_msg;
     my @crit_msg;
     my @longmsg;
+    my @human_only_longmsg;
     my $suffix = ".gz";
 
     pod2usage(
@@ -503,9 +507,9 @@ sub check_wal_archives {
         my $archives_dir = $args{'repo-path'}."/".$args{'stanza'}."/".$backups_info->{'archive'}[0]->{'id'};
         my $min_wal = $backups_info->{'archive'}[0]->{'min'};
         my $max_wal = $backups_info->{'archive'}[0]->{'max'};
-        push @longmsg, "archives_dir=$archives_dir";
-        push @longmsg, "min_wal=$min_wal";
-        push @longmsg, "max_wal=$max_wal";
+        push @human_only_longmsg, "archives_dir=$archives_dir";
+        push @human_only_longmsg, "min_wal=$min_wal";
+        push @human_only_longmsg, "max_wal=$max_wal";
 
         # Get all the WAL archives and history files
         my @filelist;
@@ -531,8 +535,8 @@ sub check_wal_archives {
         # start = min, last = max ?
         push @warn_msg, "min WAL is not the oldest archive" unless grep( /^$min_wal/, $filelist_sorted[0][0] );
         push @warn_msg, "max WAL is not the latest archive" unless grep( /^$max_wal/, $filelist_sorted[-1][0] );
-        push @longmsg, "oldest_archive=".$filelist_sorted[0][0];
-        push @longmsg, "latest_archive=".$filelist_sorted[-1][0];
+        push @human_only_longmsg, "oldest_archive=".$filelist_sorted[0][0];
+        push @human_only_longmsg, "latest_archive=".$filelist_sorted[-1][0];
 
         my $latest_wal_age = time() - $filelist_sorted[-1][1];
         my $num_archives = scalar(@filelist_sorted);
@@ -586,9 +590,9 @@ sub check_wal_archives {
         push @crit_msg, $backups_info->{'status'}->{'message'};
     }
 
-    return critical($me, \@crit_msg, \@longmsg) if @crit_msg;
-    return warning($me, \@warn_msg, \@longmsg) if @warn_msg;
-    return ok( $me, \@msg, \@longmsg );
+    return critical($me, \@crit_msg, \@longmsg, \@human_only_longmsg) if @crit_msg;
+    return warning($me, \@warn_msg, \@longmsg, \@human_only_longmsg) if @warn_msg;
+    return ok( $me, \@msg, \@longmsg, \@human_only_longmsg);
 }
 
 # End of SERVICE section in pod doc
@@ -664,7 +668,7 @@ __END__
 
 =head1 VERSION
 
-check_pgbackrest version 1.1, released on Wed Dec 19 2018.
+check_pgbackrest version 1.2, released on Mon Jan 21 2019.
 
 =head1 LICENSING
 
