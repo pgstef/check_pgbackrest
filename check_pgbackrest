@@ -4,7 +4,7 @@
 # For license terms, see the LICENSE file.
 #
 # Author: Stefan Fercot
-# Copyright: (c) 2018, Dalibo.
+# Copyright: (c) 2018-2019, Dalibo.
 #-----------------------------------------------------------------------------
 
 =head1 NAME
@@ -61,7 +61,7 @@ undef @path;
 # Reference to the output sub
 my $output_fmt;
 
-$VERSION = '1.2';
+$VERSION = '1.3dev';
 $PROGRAM = 'check_pgbackrest';
 
 # Available services and descriptions.
@@ -678,6 +678,6 @@ For license terms, see the LICENSE file.
 =head1 AUTHORS
 
 Author: Stefan Fercot
-Copyright: (c) 2018, Dalibo.
+Copyright: (c) 2018-2019, Dalibo.
 
 =cut
