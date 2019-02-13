@@ -37,7 +37,6 @@ use Config;
 use FindBin;
 
 # Display error message if some specific modules are not loaded
-# JSON module (libjson-perl) needed to handle pgBackRest output
 BEGIN {
     my(@DBs, @missingDBs, $mod);
 
@@ -94,9 +93,18 @@ Name of the stanza to check.
 
 The output format. Supported outputs are: C<human> and C<nagios> (default).
 
+=item B<-C>, B<--command> FILE
+
+pgBackRest executable file  (default: "pgbackrest").
+
 =item B<-c>, B<--config> CONFIGURATION_FILE
 
 pgBackRest configuration file.
+
+=item B<-P>, B<--prefix> COMMAND
+
+Some prefix command to execute the pgBackRest info command 
+(eg: "sudo -iu postgres").
 
 =item B<-l>, B<--list>
 
@@ -115,6 +123,7 @@ Show this help page.
 =cut
 
 my %args = (
+    'command' => 'pgbackrest',
     'format' => 'nagios',
     'wal-segsize' => '16MB'
 );
@@ -353,15 +362,20 @@ sub get_size($;$) {
 #-----------------------------------------------------------------------------
 
 sub pgbackrest_info {
-    my $infocmd = "pgbackrest info";
+    my $infocmd = $args{'command'}." info";
     $infocmd .= " --stanza=".$args{'stanza'};
     $infocmd .= " --output=json";
 
     if(defined $args{'config'}) {
         $infocmd .= " --config=".$args{'config'};
+    }    
+
+    if(defined $args{'prefix'}) {
+        $infocmd = $args{'prefix'}." $infocmd";
     }
 
     my $json_output = `$infocmd 2>&1 |grep -v WARN |grep -v ERROR`;
+
     die("Can't get pgBackRest info.\nCommand was '$infocmd'.\n") unless ($? eq 0);
     
     my $decoded_json = decode_json($json_output);
@@ -605,10 +619,12 @@ sub check_wal_archives {
 Getopt::Long::Configure('bundling');
 GetOptions(
     \%args,
+        'command|C=s',
         'config|c=s',
         'format|F=s',
         'help|?!',
         'list|l!',
+        'prefix|P=s',
         'repo-path=s',
         'retention-age=s',
         'retention-full=i',

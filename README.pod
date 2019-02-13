@@ -28,9 +28,18 @@ Name of the stanza to check.
 
 The output format. Supported outputs are: C<human> and C<nagios> (default).
 
+=item B<-C>, B<--command> FILE
+
+pgBackRest executable file  (default: "pgbackrest").
+
 =item B<-c>, B<--config> CONFIGURATION_FILE
 
 pgBackRest configuration file.
+
+=item B<-P>, B<--prefix> COMMAND
+
+Some prefix command to execute the pgBackRest info command 
+(eg: "sudo -iu postgres").
 
 =item B<-l>, B<--list>
 
@@ -91,6 +100,7 @@ sub check_wal_archives {
     my @warn_msg;
     my @crit_msg;
     my @longmsg;
+    my @human_only_longmsg;
     my $suffix = ".gz";
 
     pod2usage(
@@ -117,9 +127,9 @@ sub check_wal_archives {
         my $archives_dir = $args{'repo-path'}."/".$args{'stanza'}."/".$backups_info->{'archive'}[0]->{'id'};
         my $min_wal = $backups_info->{'archive'}[0]->{'min'};
         my $max_wal = $backups_info->{'archive'}[0]->{'max'};
-        push @longmsg, "archives_dir=$archives_dir";
-        push @longmsg, "min_wal=$min_wal";
-        push @longmsg, "max_wal=$max_wal";
+        push @human_only_longmsg, "archives_dir=$archives_dir";
+        push @human_only_longmsg, "min_wal=$min_wal";
+        push @human_only_longmsg, "max_wal=$max_wal";
 
         # Get all the WAL archives and history files
         my @filelist;
@@ -145,8 +155,8 @@ sub check_wal_archives {
         # start = min, last = max ?
         push @warn_msg, "min WAL is not the oldest archive" unless grep( /^$min_wal/, $filelist_sorted[0][0] );
         push @warn_msg, "max WAL is not the latest archive" unless grep( /^$max_wal/, $filelist_sorted[-1][0] );
-        push @longmsg, "oldest_archive=".$filelist_sorted[0][0];
-        push @longmsg, "latest_archive=".$filelist_sorted[-1][0];
+        push @human_only_longmsg, "oldest_archive=".$filelist_sorted[0][0];
+        push @human_only_longmsg, "latest_archive=".$filelist_sorted[-1][0];
 
         my $latest_wal_age = time() - $filelist_sorted[-1][1];
         my $num_archives = scalar(@filelist_sorted);
@@ -200,9 +210,9 @@ sub check_wal_archives {
         push @crit_msg, $backups_info->{'status'}->{'message'};
     }
 
-    return critical($me, \@crit_msg, \@longmsg) if @crit_msg;
-    return warning($me, \@warn_msg, \@longmsg) if @warn_msg;
-    return ok( $me, \@msg, \@longmsg );
+    return critical($me, \@crit_msg, \@longmsg, \@human_only_longmsg) if @crit_msg;
+    return warning($me, \@warn_msg, \@longmsg, \@human_only_longmsg) if @warn_msg;
+    return ok( $me, \@msg, \@longmsg, \@human_only_longmsg);
 }
 
 # End of SERVICE section in pod doc
@@ -212,7 +222,7 @@ sub check_wal_archives {
 
 =head1 VERSION
 
-check_pgbackrest version 1.0, released on Fri Dec 14 2018.
+check_pgbackrest version 1.2, released on Mon Jan 21 2019.
 
 =head1 LICENSING
 
@@ -222,5 +232,5 @@ For license terms, see the LICENSE file.
 =head1 AUTHORS
 
 Author: Stefan Fercot
-Copyright: (c) 2018, Dalibo.
+Copyright: (c) 2018-2019, Dalibo.
 

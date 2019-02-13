@@ -21,8 +21,15 @@ DESCRIPTION
         The output format. Supported outputs are: "human" and "nagios"
         (default).
 
+    -C, --command FILE
+        pgBackRest executable file (default: "pgbackrest").
+
     -c, --config CONFIGURATION_FILE
         pgBackRest configuration file.
+
+    -P, --prefix COMMAND
+        Some prefix command to execute the pgBackRest info command (eg:
+        "sudo -iu postgres").
 
     -l, --list
         List available services.
@@ -67,12 +74,12 @@ DESCRIPTION
         1024*1024*1024."
 
 VERSION
-    check_pgbackrest version 1.0, released on Fri Dec 14 2018.
+    check_pgbackrest version 1.2, released on Mon Jan 21 2019.
 
 LICENSING
     This program is open source, licensed under the PostgreSQL license. For
     license terms, see the LICENSE file.
 
 AUTHORS
-    Author: Stefan Fercot Copyright: (c) 2018, Dalibo.
+    Author: Stefan Fercot Copyright: (c) 2018-2019, Dalibo.
 
