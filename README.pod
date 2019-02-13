@@ -79,7 +79,10 @@ Check if all archived WALs exist between the oldest and the latest
 WAL needed for the recovery.
 
 This service requires the C<--repo-path> argument to specify where 
-the archived WALs are stored (locally).
+the archived WALs are stored.
+
+The C<--repo-host> and C<--repo-host-user> arguments allow to list
+remote archived WALs using SFTP.
 
 Archives must be compressed (.gz). If needed, use "compress-level=0"
 instead of "compress=n".
@@ -108,11 +111,6 @@ sub check_wal_archives {
         -exitval => 127
     ) if ( not defined $args{'repo-path'} );
 
-    pod2usage(
-        -message => "FATAL: \"$args{'repo-path'}\" is not a valid folder.",
-        -exitval => 127
-    ) unless -d $args{'repo-path'};
-
     my $backups_info = pgbackrest_info();
     die("Can't get pgBackRest info.\n") unless (defined $backups_info);
 
@@ -128,23 +126,46 @@ sub check_wal_archives {
         my $min_wal = $backups_info->{'archive'}[0]->{'min'};
         my $max_wal = $backups_info->{'archive'}[0]->{'max'};
         push @human_only_longmsg, "archives_dir=$archives_dir";
-        push @human_only_longmsg, "min_wal=$min_wal";
-        push @human_only_longmsg, "max_wal=$max_wal";
+        push @human_only_longmsg, "min_wal=$min_wal" if $min_wal;
+        push @human_only_longmsg, "max_wal=$max_wal" if $max_wal;
 
         # Get all the WAL archives and history files
         my @filelist;
         my @filelist_simplified;
-        find ( sub {
-            return unless -f;
-            my $filename_re = qr/^[0-9A-F]{24}.*$suffix$/;
-            return unless /$filename_re/;
-            push @filelist, [$_, (stat($File::Find::name))[9,7], $File::Find::name];
-            push @filelist_simplified, substr($_, 0, 24);
-        }, $archives_dir );
+        my $filename_re = qr/^[0-9A-F]{24}.*$suffix$/;
+
+        if($args{'repo-host'}){
+            use Net::SFTP::Foreign;
+            my $sftp;
+            if($args{'repo-host-user'}){
+                $sftp = Net::SFTP::Foreign->new($args{'repo-host'}, user => $args{'repo-host-user'});
+            }else{
+                $sftp = Net::SFTP::Foreign->new($args{'repo-host'});
+            }
+            $sftp->die_on_error("Unable to establish SFTP connection");
+            my @files = $sftp->find($archives_dir,
+                                    wanted => sub {
+                                        my $file_fullpath = $_[1]->{filename};
+                                        my @split_tab = split('/', $file_fullpath);
+                                        my $filename = $split_tab[-1];
+                                        return undef unless $filename =~ /$filename_re/;
+                                        my $attributes = $sftp->stat($_[1]->{filename})
+                                            or die "remote stat command failed: ".$sftp->status;
+                                        push @filelist, [$filename, $attributes->mtime, $attributes->size, $file_fullpath];
+                                        push @filelist_simplified, substr($filename, 0, 24);
+                                    });
+        }else{
+            find ( sub {
+                return unless -f;
+                return unless /$filename_re/;
+                push @filelist, [$_, (stat($File::Find::name))[9,7], $File::Find::name];
+                push @filelist_simplified, substr($_, 0, 24);
+            }, $archives_dir );
+        }
 
         return unknown $me, ['no archived WAL found'] unless @filelist;
-        return critical $me, ['min WAL not found: '.$min_wal] unless grep( /^$min_wal$/, @filelist_simplified );
-        return critical $me, ['max WAL not found: '.$max_wal] unless grep( /^$max_wal$/, @filelist_simplified );
+        return critical $me, ['min WAL not found: '.$min_wal] if($min_wal && ! grep( /^$min_wal$/, @filelist_simplified ));
+        return critical $me, ['max WAL not found: '.$max_wal] if($max_wal && ! grep( /^$max_wal$/, @filelist_simplified ));
 
         # Sort by mtime
         my @filelist_sorted = sort { ($a->[1] <=> $b->[1]) || ($a->[0] cmp $b->[0]) }
@@ -153,8 +174,8 @@ sub check_wal_archives {
             } @filelist;
 
         # start = min, last = max ?
-        push @warn_msg, "min WAL is not the oldest archive" unless grep( /^$min_wal/, $filelist_sorted[0][0] );
-        push @warn_msg, "max WAL is not the latest archive" unless grep( /^$max_wal/, $filelist_sorted[-1][0] );
+        push @warn_msg, "min WAL is not the oldest archive" if($min_wal && ! grep( /^$min_wal/, $filelist_sorted[0][0] ));
+        push @warn_msg, "max WAL is not the latest archive" if($max_wal && ! grep( /^$max_wal/, $filelist_sorted[-1][0] ));
         push @human_only_longmsg, "oldest_archive=".$filelist_sorted[0][0];
         push @human_only_longmsg, "latest_archive=".$filelist_sorted[-1][0];
 
@@ -222,7 +243,7 @@ sub check_wal_archives {
 
 =head1 VERSION
 
-check_pgbackrest version 1.2, released on Mon Jan 21 2019.
+check_pgbackrest version 1.3, released on Wed Feb 13 2019.
 
 =head1 LICENSING
 
