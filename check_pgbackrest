@@ -529,7 +529,7 @@ sub check_wal_archives {
         my $filename_re = qr/^[0-9A-F]{24}.*$suffix$/;
 
         if($args{'repo-host'}){
-            use Net::SFTP::Foreign;
+            require Net::SFTP::Foreign;
             my $sftp;
             if($args{'repo-host-user'}){
                 $sftp = Net::SFTP::Foreign->new($args{'repo-host'}, user => $args{'repo-host-user'});
