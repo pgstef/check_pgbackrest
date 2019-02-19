@@ -60,7 +60,7 @@ undef @path;
 # Reference to the output sub
 my $output_fmt;
 
-$VERSION = '1.3';
+$VERSION = '1.4';
 $PROGRAM = 'check_pgbackrest';
 
 # Available services and descriptions.
@@ -706,9 +706,13 @@ exit $services{ $args{'service'} }{'sub'}->( \%args );
 
 __END__
 
+=head1 CONTRIBUTING
+
+check_pgbackrest is an open project. Any contribution to improve it is welcome.
+
 =head1 VERSION
 
-check_pgbackrest version 1.3, released on Wed Feb 13 2019.
+check_pgbackrest version 1.4, released on Tue Feb 19 2019.
 
 =head1 LICENSING
 
@@ -717,7 +721,8 @@ For license terms, see the LICENSE file.
 
 =head1 AUTHORS
 
-Author: Stefan Fercot
+Author: Stefan Fercot.
+
 Copyright: (c) 2018-2019, Dalibo.
 
 =cut

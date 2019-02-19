@@ -76,13 +76,19 @@ DESCRIPTION
         The factor between units is 1024 bytes. Eg. "1g = 1G =
         1024*1024*1024."
 
+CONTRIBUTING
+    check_pgbackrest is an open project. Any contribution to improve it is
+    welcome.
+
 VERSION
-    check_pgbackrest version 1.3, released on Wed Feb 13 2019.
+    check_pgbackrest version 1.4, released on Tue Feb 19 2019.
 
 LICENSING
     This program is open source, licensed under the PostgreSQL license. For
     license terms, see the LICENSE file.
 
 AUTHORS
-    Author: Stefan Fercot Copyright: (c) 2018-2019, Dalibo.
+    Author: Stefan Fercot.
+
+    Copyright: (c) 2018-2019, Dalibo.
 

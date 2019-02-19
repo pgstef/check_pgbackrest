@@ -135,7 +135,7 @@ sub check_wal_archives {
         my $filename_re = qr/^[0-9A-F]{24}.*$suffix$/;
 
         if($args{'repo-host'}){
-            use Net::SFTP::Foreign;
+            require Net::SFTP::Foreign;
             my $sftp;
             if($args{'repo-host-user'}){
                 $sftp = Net::SFTP::Foreign->new($args{'repo-host'}, user => $args{'repo-host-user'});
@@ -241,9 +241,13 @@ sub check_wal_archives {
 
 =back
 
+=head1 CONTRIBUTING
+
+check_pgbackrest is an open project. Any contribution to improve it is welcome.
+
 =head1 VERSION
 
-check_pgbackrest version 1.3, released on Wed Feb 13 2019.
+check_pgbackrest version 1.4, released on Tue Feb 19 2019.
 
 =head1 LICENSING
 
@@ -252,6 +256,7 @@ For license terms, see the LICENSE file.
 
 =head1 AUTHORS
 
-Author: Stefan Fercot
+Author: Stefan Fercot.
+
 Copyright: (c) 2018-2019, Dalibo.
 

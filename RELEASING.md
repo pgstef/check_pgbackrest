@@ -18,7 +18,7 @@ podselect check_pgbackrest > README.pod
 ## Tagging and building tar file
 
 ```
-TAG=REL1_1
+TAG=REL1_4
 git tag -a $TAG -m "Release $TAG"
 git tag
 git push --tags
