@@ -561,8 +561,8 @@ sub check_wal_archives {
         return critical $me, ['min WAL not found: '.$min_wal] if($min_wal && ! grep( /^$min_wal$/, @filelist_simplified ));
         return critical $me, ['max WAL not found: '.$max_wal] if($max_wal && ! grep( /^$max_wal$/, @filelist_simplified ));
 
-        # Sort by mtime
-        my @filelist_sorted = sort { ($a->[1] <=> $b->[1]) || ($a->[0] cmp $b->[0]) }
+        # Sort by filename
+        my @filelist_sorted = sort { $a->[0] cmp $b->[0] }
             grep{ (defined($_->[0]) and defined($_->[1]))
                 or die "Can't read WAL files."
             } @filelist;
