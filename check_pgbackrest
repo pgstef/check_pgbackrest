@@ -8,9 +8,7 @@
 #-----------------------------------------------------------------------------
 
 # To Do : 
-# - alerte si latest_archived_age
-# - ne pas mesurer la chaine de wal plus récents que ...
-# - debug
+# - alert regarding latest_archived_age
 
 =head1 NAME
 
@@ -504,6 +502,15 @@ b (Byte), k (KB), m (MB), g (GB), t (TB), p (PB), e (EB) or Z (ZB). Only
 integers are accepted. Eg. C<1.5MB> will be refused, use C<1500kB>.
 
 The factor between units is 1024 bytes. Eg. C<1g = 1G = 1024*1024*1024.> 
+
+Use the C<--ignore-archived-since> argument to ignore the archived 
+WALs since the provided interval.
+
+The following units are accepted (not case sensitive):
+s (second), m (minute), h (hour), d (day). You can use more than 
+one unit per given value. If not set, the last unit is in seconds. 
+Eg. "1h 55m 6" = "1h55m6s".
+
 =cut
 
 sub check_wal_archives {
@@ -537,7 +544,6 @@ sub check_wal_archives {
         my $max_wal = $backups_info->{'archive'}[0]->{'max'};
         push @human_only_longmsg, "archives_dir=$archives_dir";
         push @human_only_longmsg, "min_wal=$min_wal" if $min_wal;
-        push @human_only_longmsg, "max_wal=$max_wal" if $max_wal;
 
         # Get all the WAL archives and history files
         my @filelist;
@@ -561,6 +567,13 @@ sub check_wal_archives {
                                         return undef unless $filename =~ /$filename_re/;
                                         my $attributes = $sftp->stat($_[1]->{filename})
                                             or die "remote stat command failed: ".$sftp->status;
+
+                                        if ( $args{'ignore-archived-since'} ) {
+                                            my $diff_epoch = time() - $attributes->mtime;
+                                            dprint ("file ".$filename." as interval since epoch : ".to_interval($diff_epoch)."\n");
+                                            return if ( $diff_epoch <= get_time($args{'ignore-archived-since'}) );
+                                        }
+
                                         push @filelist, [$filename, $attributes->mtime, $attributes->size, $file_fullpath];
                                         push @filelist_simplified, substr($filename, 0, 24);
                                     });
@@ -568,14 +581,19 @@ sub check_wal_archives {
             find ( sub {
                 return unless -f;
                 return unless /$filename_re/;
+
+                if ( $args{'ignore-archived-since'} ) {
+                    my $diff_epoch = time() - (stat($File::Find::name))[9];
+                    dprint ("file ".$_." as interval since epoch : ".to_interval($diff_epoch)."\n");
+                    return if ( $diff_epoch <= get_time($args{'ignore-archived-since'}) );
+                }
+
                 push @filelist, [$_, (stat($File::Find::name))[9,7], $File::Find::name];
                 push @filelist_simplified, substr($_, 0, 24);
             }, $archives_dir );
         }
 
         return unknown $me, ['no archived WAL found'] unless @filelist;
-        return critical $me, ['min WAL not found: '.$min_wal] if($min_wal && ! grep( /^$min_wal$/, @filelist_simplified ));
-        return critical $me, ['max WAL not found: '.$max_wal] if($max_wal && ! grep( /^$max_wal$/, @filelist_simplified ));
 
         # Sort by filename
         my @filelist_sorted = sort { $a->[0] cmp $b->[0] }
@@ -583,7 +601,16 @@ sub check_wal_archives {
                 or die "Can't read WAL files."
             } @filelist;
 
-        # start = min, last = max ?
+        # Change max_wal if some archived are ignored
+        if ( $args{'ignore-archived-since'} && $max_wal ) {
+            $max_wal = substr($filelist_sorted[-1][0], 0, 24);
+            dprint ("max_wal changed to ".$max_wal."\n");
+        }
+        push @human_only_longmsg, "max_wal=$max_wal" if $max_wal;
+
+        # Check min/max exists, start = min, last = max ?
+        return critical $me, ['min WAL not found: '.$min_wal] if($min_wal && ! grep( /^$min_wal$/, @filelist_simplified ));
+        return critical $me, ['max WAL not found: '.$max_wal] if($max_wal && ! grep( /^$max_wal$/, @filelist_simplified ));
         push @warn_msg, "min WAL is not the oldest archive" if($min_wal && ! grep( /^$min_wal/, $filelist_sorted[0][0] ));
         push @warn_msg, "max WAL is not the latest archive" if($max_wal && ! grep( /^$max_wal/, $filelist_sorted[-1][0] ));
         push @human_only_longmsg, "oldest_archive=".$filelist_sorted[0][0];
@@ -616,7 +643,7 @@ sub check_wal_archives {
 
         # Check ALL archives are here.
         for ( my $i=0, my $j=0; $i <= $#filelist_sorted ; $i++, $j++ ) {
-            dprint("Checking WAL $filelist_sorted[$i][0]\n");
+            dprint("checking WAL $filelist_sorted[$i][0]\n");
             my $curr = sprintf('%08X%08X%08X',
                 $timeline,
                 $wal + int(($seg + $j)/$seg_per_wal),
@@ -629,7 +656,7 @@ sub check_wal_archives {
             }
 
             if ( grep /$curr/, @branch_wals ) {
-                dprint("Found a boundary @ '$curr' !\n");
+                dprint("found a boundary @ '$curr' !\n");
                 $timeline++;
                 $j--;
             }
@@ -661,6 +688,7 @@ GetOptions(
         'debug!',
         'format|F=s',
         'help|?!',
+        'ignore-archived-since=s',
         'list|l!',
         'prefix|P=s',
         'repo-host=s',
