@@ -7,6 +7,11 @@
 # Copyright: (c) 2018-2019, Dalibo.
 #-----------------------------------------------------------------------------
 
+# To Do : 
+# - alerte si latest_archived_age
+# - ne pas mesurer la chaine de wal plus récents que ...
+# - debug
+
 =head1 NAME
 
 check_pgbackrest - pgBackRest backup check plugin for Nagios
@@ -60,7 +65,7 @@ undef @path;
 # Reference to the output sub
 my $output_fmt;
 
-$VERSION = '1.4';
+$VERSION = '1.5dev';
 $PROGRAM = 'check_pgbackrest';
 
 # Available services and descriptions.
@@ -109,6 +114,10 @@ Some prefix command to execute the pgBackRest info command
 =item B<-l>, B<--list>
 
 List available services.
+
+=item B<--debug>
+
+Print some debug messages.
 
 =item B<-V>, B<--version>
 
@@ -163,6 +172,13 @@ sub list_services {
 
 # Handle output formats
 #-----------------------------------------------------------------------------
+sub dprint {
+    return unless $args{'debug'};
+    foreach (@_) {
+        print "DEBUG: $_";
+    }
+}
+
 sub unknown($;$$$) {
     return $output_fmt->( 3, $_[0], $_[1], $_[2], $_[3] );
 }
@@ -600,7 +616,7 @@ sub check_wal_archives {
 
         # Check ALL archives are here.
         for ( my $i=0, my $j=0; $i <= $#filelist_sorted ; $i++, $j++ ) {
-            # print ("Checking WAL $filelist_sorted[$i][0]\n");
+            dprint("Checking WAL $filelist_sorted[$i][0]\n");
             my $curr = sprintf('%08X%08X%08X',
                 $timeline,
                 $wal + int(($seg + $j)/$seg_per_wal),
@@ -613,7 +629,7 @@ sub check_wal_archives {
             }
 
             if ( grep /$curr/, @branch_wals ) {
-                # print( "Found a boundary @ $curr !\n" );
+                dprint("Found a boundary @ '$curr' !\n");
                 $timeline++;
                 $j--;
             }
@@ -642,6 +658,7 @@ GetOptions(
     \%args,
         'command|C=s',
         'config|c=s',
+        'debug!',
         'format|F=s',
         'help|?!',
         'list|l!',
