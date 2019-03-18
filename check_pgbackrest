@@ -7,9 +7,6 @@
 # Copyright: (c) 2018-2019, Dalibo.
 #-----------------------------------------------------------------------------
 
-# To Do : 
-# - alert regarding latest_archived_age
-
 =head1 NAME
 
 check_pgbackrest - pgBackRest backup check plugin for Nagios
@@ -506,7 +503,11 @@ The factor between units is 1024 bytes. Eg. C<1g = 1G = 1024*1024*1024.>
 Use the C<--ignore-archived-since> argument to ignore the archived 
 WALs since the provided interval.
 
-The following units are accepted (not case sensitive):
+The C<--latest-archive-age-alert> argument defines the max age of 
+the latest archived WAL as an interval before raising a critical 
+alert.
+
+The following units are accepted as interval (not case sensitive):
 s (second), m (minute), h (hour), d (day). You can use more than 
 one unit per given value. If not set, the last unit is in seconds. 
 Eg. "1h 55m 6" = "1h55m6s".
@@ -616,10 +617,15 @@ sub check_wal_archives {
         push @human_only_longmsg, "oldest_archive=".$filelist_sorted[0][0];
         push @human_only_longmsg, "latest_archive=".$filelist_sorted[-1][0];
 
-        my $latest_wal_age = time() - $filelist_sorted[-1][1];
+        my $latest_archive_age = time() - $filelist_sorted[-1][1];
         my $num_archives = scalar(@filelist_sorted);
-        push @longmsg, "latest_wal_age=".to_interval($latest_wal_age);
+        push @longmsg, "latest_archive_age=".to_interval($latest_archive_age);
         push @longmsg, "num_archives=$num_archives";
+
+        # Is the latest archive too old ?
+        if ( $args{'latest-archive-age-alert'} && $latest_archive_age > get_time($args{'latest-archive-age-alert'})){
+            push @crit_msg => "latest_archive_age (".to_interval($latest_archive_age).") exceeded";
+        }
 
         my $start_tl = substr($filelist_sorted[0][0], 0, 8);
         my $end_tl   = substr($filelist_sorted[-1][0], 0, 8);
@@ -663,7 +669,7 @@ sub check_wal_archives {
         }
 
         push @msg, "$num_archives WAL archived, "
-            ."latest archived since ". to_interval($latest_wal_age);
+            ."latest archived since ". to_interval($latest_archive_age);
     }else{
         push @crit_msg, $backups_info->{'status'}->{'message'};
     }
@@ -689,6 +695,7 @@ GetOptions(
         'format|F=s',
         'help|?!',
         'ignore-archived-since=s',
+        'latest-archive-age-alert=s',
         'list|l!',
         'prefix|P=s',
         'repo-host=s',
@@ -732,7 +739,14 @@ pod2usage(
 pod2usage(
     -message => 'FATAL: "repo-path", "repo-host" and "repo-host-user" are only allowed with "archives" service.',
     -exitval => 127
-) if ( $args{'repo-path'} or $args{'repo-host'} or $args{'repo-host-user'})
+) if ( $args{'repo-path'} or $args{'repo-host'} or $args{'repo-host-user'} )
+    and $args{'service'} ne 'archives';
+
+# Check "archives" specific args --ignore-archived-since and --latest-archive-age-alert
+pod2usage(
+    -message => 'FATAL: "ignore-archived-since" and "latest-archive-age-alert" are only allowed with "archives" service.',
+    -exitval => 127
+) if ( $args{'ignore-archived-since'} or $args{'latest-archive-age-alert'} )
     and $args{'service'} ne 'archives';
 
 # Output format
