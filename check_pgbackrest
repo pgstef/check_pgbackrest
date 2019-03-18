@@ -60,7 +60,7 @@ undef @path;
 # Reference to the output sub
 my $output_fmt;
 
-$VERSION = '1.5dev';
+$VERSION = '1.5';
 $PROGRAM = 'check_pgbackrest';
 
 # Available services and descriptions.
@@ -771,7 +771,7 @@ check_pgbackrest is an open project. Any contribution to improve it is welcome.
 
 =head1 VERSION
 
-check_pgbackrest version 1.4, released on Tue Feb 19 2019.
+check_pgbackrest version 1.5, released on Mon Mar 18 2019.
 
 =head1 LICENSING
 

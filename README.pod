@@ -45,6 +45,10 @@ Some prefix command to execute the pgBackRest info command
 
 List available services.
 
+=item B<--debug>
+
+Print some debug messages.
+
 =item B<-V>, B<--version>
 
 Print version and exit.
@@ -94,150 +98,18 @@ b (Byte), k (KB), m (MB), g (GB), t (TB), p (PB), e (EB) or Z (ZB). Only
 integers are accepted. Eg. C<1.5MB> will be refused, use C<1500kB>.
 
 The factor between units is 1024 bytes. Eg. C<1g = 1G = 1024*1024*1024.> 
-=cut
 
-sub check_wal_archives {
-    my $me             = 'WAL_ARCHIVES';
-    my %args           = %{ $_[0] };
-    my @msg;
-    my @warn_msg;
-    my @crit_msg;
-    my @longmsg;
-    my @human_only_longmsg;
-    my $suffix = ".gz";
+Use the C<--ignore-archived-since> argument to ignore the archived 
+WALs since the provided interval.
 
-    pod2usage(
-        -message => 'FATAL: you must provide --repo-path.',
-        -exitval => 127
-    ) if ( not defined $args{'repo-path'} );
+The C<--latest-archive-age-alert> argument defines the max age of 
+the latest archived WAL as an interval before raising a critical 
+alert.
 
-    my $backups_info = pgbackrest_info();
-    die("Can't get pgBackRest info.\n") unless (defined $backups_info);
-
-    if($backups_info->{'status'}->{'code'} == 0) {
-
-        my $wal_segsize = $args{'wal-segsize'};
-        my $walsize = '4GB'; # 4 TB -> bytes
-        my $seg_per_wal = get_size($walsize) / get_size($wal_segsize); #Only for PG >= 9.3
-        my $dbver=($backups_info->{'db'}[0]->{'version'}+0)*10;
-        $seg_per_wal-- if $dbver <= 92;
-
-        my $archives_dir = $args{'repo-path'}."/".$args{'stanza'}."/".$backups_info->{'archive'}[0]->{'id'};
-        my $min_wal = $backups_info->{'archive'}[0]->{'min'};
-        my $max_wal = $backups_info->{'archive'}[0]->{'max'};
-        push @human_only_longmsg, "archives_dir=$archives_dir";
-        push @human_only_longmsg, "min_wal=$min_wal" if $min_wal;
-        push @human_only_longmsg, "max_wal=$max_wal" if $max_wal;
-
-        # Get all the WAL archives and history files
-        my @filelist;
-        my @filelist_simplified;
-        my $filename_re = qr/^[0-9A-F]{24}.*$suffix$/;
-
-        if($args{'repo-host'}){
-            require Net::SFTP::Foreign;
-            my $sftp;
-            if($args{'repo-host-user'}){
-                $sftp = Net::SFTP::Foreign->new($args{'repo-host'}, user => $args{'repo-host-user'});
-            }else{
-                $sftp = Net::SFTP::Foreign->new($args{'repo-host'});
-            }
-            $sftp->die_on_error("Unable to establish SFTP connection");
-            my @files = $sftp->find($archives_dir,
-                                    wanted => sub {
-                                        my $file_fullpath = $_[1]->{filename};
-                                        my @split_tab = split('/', $file_fullpath);
-                                        my $filename = $split_tab[-1];
-                                        return undef unless $filename =~ /$filename_re/;
-                                        my $attributes = $sftp->stat($_[1]->{filename})
-                                            or die "remote stat command failed: ".$sftp->status;
-                                        push @filelist, [$filename, $attributes->mtime, $attributes->size, $file_fullpath];
-                                        push @filelist_simplified, substr($filename, 0, 24);
-                                    });
-        }else{
-            find ( sub {
-                return unless -f;
-                return unless /$filename_re/;
-                push @filelist, [$_, (stat($File::Find::name))[9,7], $File::Find::name];
-                push @filelist_simplified, substr($_, 0, 24);
-            }, $archives_dir );
-        }
-
-        return unknown $me, ['no archived WAL found'] unless @filelist;
-        return critical $me, ['min WAL not found: '.$min_wal] if($min_wal && ! grep( /^$min_wal$/, @filelist_simplified ));
-        return critical $me, ['max WAL not found: '.$max_wal] if($max_wal && ! grep( /^$max_wal$/, @filelist_simplified ));
-
-        # Sort by mtime
-        my @filelist_sorted = sort { ($a->[1] <=> $b->[1]) || ($a->[0] cmp $b->[0]) }
-            grep{ (defined($_->[0]) and defined($_->[1]))
-                or die "Can't read WAL files."
-            } @filelist;
-
-        # start = min, last = max ?
-        push @warn_msg, "min WAL is not the oldest archive" if($min_wal && ! grep( /^$min_wal/, $filelist_sorted[0][0] ));
-        push @warn_msg, "max WAL is not the latest archive" if($max_wal && ! grep( /^$max_wal/, $filelist_sorted[-1][0] ));
-        push @human_only_longmsg, "oldest_archive=".$filelist_sorted[0][0];
-        push @human_only_longmsg, "latest_archive=".$filelist_sorted[-1][0];
-
-        my $latest_wal_age = time() - $filelist_sorted[-1][1];
-        my $num_archives = scalar(@filelist_sorted);
-        push @longmsg, "latest_wal_age=".to_interval($latest_wal_age);
-        push @longmsg, "num_archives=$num_archives";
-
-        my $start_tl = substr($filelist_sorted[0][0], 0, 8);
-        my $end_tl   = substr($filelist_sorted[-1][0], 0, 8);
-        my $timeline = hex($start_tl);
-        my $wal = hex(substr($filelist_sorted[0][0], 8, 8));
-        my $seg = hex(substr($filelist_sorted[0][0], 16, 8));
-
-        # look for history files if timeline differs
-        my @branch_wals;
-        if ( $start_tl ne $end_tl ) {
-            if ( -s "$archives_dir/$end_tl.history" ) {
-                open my $fd, "<", "$archives_dir/$end_tl.history";
-                while ( <$fd> ) {
-                    next unless m{^\s*(\d)\t([0-9A-F]+)/([0-9A-F]+)\t.*$};
-                    push @branch_wals =>
-                        sprintf("%08d%08s%08X", $1, $2, hex($3)>>24);
-                }
-                close $fd;
-            }
-        }
-
-        # Check ALL archives are here.
-        for ( my $i=0, my $j=0; $i <= $#filelist_sorted ; $i++, $j++ ) {
-            # print ("Checking WAL $filelist_sorted[$i][0]\n");
-            my $curr = sprintf('%08X%08X%08X',
-                $timeline,
-                $wal + int(($seg + $j)/$seg_per_wal),
-                ($seg + $j)%$seg_per_wal
-            );
-
-            unless ( grep( /^$curr/, $filelist_sorted[$i][0] ) ) {
-                push @crit_msg => "wrong sequence or missing file @ '$curr'";
-                last;
-            }
-
-            if ( grep /$curr/, @branch_wals ) {
-                # print( "Found a boundary @ $curr !\n" );
-                $timeline++;
-                $j--;
-            }
-        }
-
-        push @msg, "$num_archives WAL archived, "
-            ."latest archived since ". to_interval($latest_wal_age);
-    }else{
-        push @crit_msg, $backups_info->{'status'}->{'message'};
-    }
-
-    return critical($me, \@crit_msg, \@longmsg, \@human_only_longmsg) if @crit_msg;
-    return warning($me, \@warn_msg, \@longmsg, \@human_only_longmsg) if @warn_msg;
-    return ok( $me, \@msg, \@longmsg, \@human_only_longmsg);
-}
-
-# End of SERVICE section in pod doc
-=pod
+The following units are accepted as interval (not case sensitive):
+s (second), m (minute), h (hour), d (day). You can use more than 
+one unit per given value. If not set, the last unit is in seconds. 
+Eg. "1h 55m 6" = "1h55m6s".
 
 =back
 
@@ -247,7 +119,7 @@ check_pgbackrest is an open project. Any contribution to improve it is welcome.
 
 =head1 VERSION
 
-check_pgbackrest version 1.4, released on Tue Feb 19 2019.
+check_pgbackrest version 1.5, released on Mon Mar 18 2019.
 
 =head1 LICENSING
 
