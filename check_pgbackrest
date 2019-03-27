@@ -550,6 +550,7 @@ sub check_wal_archives {
         my @filelist;
         my @filelist_simplified;
         my $filename_re = qr/^[0-9A-F]{24}.*$suffix$/;
+        my $filename_re_full = qr/[0-9A-F]{24}.*$suffix$/;
 
         if($args{'repo-host'}){
             require Net::SFTP::Foreign;
@@ -579,19 +580,19 @@ sub check_wal_archives {
                                         push @filelist_simplified, substr($filename, 0, 24);
                                     });
         }else{
-            find ( sub {
+            find ({ wanted => sub {
                 return unless -f;
-                return unless /$filename_re/;
+		return unless /$filename_re_full/;
 
                 if ( $args{'ignore-archived-since'} ) {
                     my $diff_epoch = time() - (stat($File::Find::name))[9];
                     dprint ("file ".$_." as interval since epoch : ".to_interval($diff_epoch)."\n");
                     return if ( $diff_epoch <= get_time($args{'ignore-archived-since'}) );
                 }
-
-                push @filelist, [$_, (stat($File::Find::name))[9,7], $File::Find::name];
-                push @filelist_simplified, substr($_, 0, 24);
-            }, $archives_dir );
+                push @filelist, [basename($_), (stat($File::Find::name))[9,7], $File::Find::name];
+                push @filelist_simplified, substr(basename($_), 0, 24);
+                }, no_chdir=> 1
+               }, $archives_dir );
         }
 
         return unknown $me, ['no archived WAL found'] unless @filelist;
