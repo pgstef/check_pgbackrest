@@ -15,7 +15,7 @@ _Build and Logon_:
 ```bash
 cd test
 make all
-vagrant ssh
+vagrant ssh -c "sudo /check_pgbackrest/test/regress/tests.bash"
 ```
 
 ## Tips

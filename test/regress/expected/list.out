@@ -1,0 +1,4 @@
+List of available services:
+
+	archives         	Check WAL archives.
+	retention        	Check the retention policy.

@@ -34,5 +34,3 @@ SELECT pg_reload_conf();
 EOS
 
 sudo -iu postgres pgbackrest --stanza=my_stanza check
-sudo -iu postgres pgbackrest --stanza=my_stanza --type=full backup
-sudo -iu postgres pgbackrest --stanza=my_stanza info
