@@ -489,6 +489,8 @@ the archived WALs are stored.
 The C<--repo-host> and C<--repo-host-user> arguments allow to list
 remote archived WALs using SFTP.
 
+The C<--repo-s3> enables remote archived WALs stored in Amazon S3.
+
 Archives must be compressed (.gz). If needed, use "compress-level=0"
 instead of "compress=n".
 
@@ -578,6 +580,48 @@ sub check_wal_archives {
                                         push @filelist, [$filename, $attributes->mtime, $attributes->size, $file_fullpath];
                                         push @filelist_simplified, substr($filename, 0, 24);
                                     });
+        }elsif($args{'repo-s3'}){
+            require Net::Amazon::S3;
+            require Config::IniFiles;
+
+            my $cfg = Config::IniFiles->new( -file => $args{config} );
+            my $aws_key = $cfg->val( 'global', 'repo1-s3-key' );
+            my $aws_secret = $cfg->val( 'global', 'repo1-s3-key-secret' );
+            my $repo1_bucket = $cfg->val( 'global', 'repo1-s3-bucket' );
+
+            pod2usage(
+                -message => 'FATAL: you must provide --config and be sure to set repo1-s3-key, repo1-s3-key-secret, and repo1-s3-bucket.',
+                -exitval => 127
+            ) unless ( defined $aws_key and defined $aws_secret and defined $repo1_bucket );
+
+            my $s3 = Net::Amazon::S3->new(
+                aws_access_key_id     => $aws_key,
+                aws_secret_access_key => $aws_secret,
+                host                  => $cfg->val( 'global', 'repo1-s3-endpoint' ),
+                retry                 => 1,
+            );
+
+            my $client = Net::Amazon::S3::Client->new( s3 => $s3 );
+            my $bucket = $client->bucket( name => $repo1_bucket );
+
+            my $stream = $bucket->list({ prefix => substr($archives_dir, 1) });
+            until ( $stream->is_done ) {
+                foreach my $object ( $stream->items ) {
+                    my @split_tab = split('/', $object->key);
+                    my $filename = $split_tab[-1];
+                    next unless $filename =~ /$filename_re/;
+                    my $dt = $object->last_modified;
+
+                    if ( $args{'ignore-archived-since'} ) {
+                        my $diff_epoch = time() - $dt->epoch();
+                        dprint ("s3 file ".$filename." as interval since epoch : ".to_interval($diff_epoch)."\n");
+                        next if ( $diff_epoch <= get_time($args{'ignore-archived-since'}) );
+                    }
+
+                    push @filelist, [$filename, $dt->epoch(), $object->size, $object->key];
+                    push @filelist_simplified, substr($filename, 0, 24);
+                }
+            }
         }else{
             find ( sub {
                 return unless -f;
@@ -698,6 +742,7 @@ GetOptions(
         'latest-archive-age-alert=s',
         'list|l!',
         'prefix|P=s',
+        'repo-s3!',
         'repo-host=s',
         'repo-host-user=s',
         'repo-path=s',
@@ -735,11 +780,11 @@ pod2usage(
 ) if ( $args{'retention-age'} or $args{'retention-full'} )
     and $args{'service'} ne 'retention';
 
-# Check "archives" specific args --repo-path, --repo-host and --repo-host-user
+# Check "archives" specific args --repo-path, --repo-host,  --repo-host-user, and --repo-s3
 pod2usage(
-    -message => 'FATAL: "repo-path", "repo-host" and "repo-host-user" are only allowed with "archives" service.',
+    -message => 'FATAL: "repo-path", "repo-host", "repo-host-user", and "repo-s3" are only allowed with "archives" service.',
     -exitval => 127
-) if ( $args{'repo-path'} or $args{'repo-host'} or $args{'repo-host-user'} )
+) if ( $args{'repo-path'} or $args{'repo-host'} or $args{'repo-host-user'} or $args{'repo-s3'} )
     and $args{'service'} ne 'archives';
 
 # Check "archives" specific args --ignore-archived-since and --latest-archive-age-alert
