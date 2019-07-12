@@ -70,7 +70,7 @@ rpmbuild -ba check_pgbackrest/check_pgbackrest.spec
 
 The RPM is generated into `rpmbuild/RPMS/noarch`.
 
-Don't forget to upload the package on github release page.
+Don't forget to upload the package on GitHub release page.
 
 ### Community
 
