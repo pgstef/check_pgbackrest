@@ -5,7 +5,6 @@ Vagrant.configure(2) do |config|
 
 	pgdata = "/var/lib/pgsql/#{pgver}/data"
 
-	# https://vagrantcloud.com/search.
     config.vm.box = 'centos/7'
 
     # hardware and host settings
@@ -15,30 +14,68 @@ Vagrant.configure(2) do |config|
         lv.default_prefix = vm_prefix
 	end
 
-	# don't mind about insecure ssh key
+    # don't mind about insecure ssh key
     config.ssh.insert_key = false
 
-    # build pgsql-srv instance
-    config.vm.provision 'pgsql', type: 'shell',
-        path: 'provision/pgsql.bash',
+    # don't share the default vagrant folder
+    config.vm.synced_folder ".", "/vagrant", disabled: true
+
+    # mount check_pgbackrest path for testing
+    config.vm.synced_folder "..", "/check_pgbackrest", nfs_udp: false
+
+    # check_pgbackrest install on all the nodes
+    config.vm.provision 'check_pgbackrest', type: 'shell', path: 'provision/check_pgbackrest.bash'
+
+    # install PostgreSQL on all the nodes
+    config.vm.provision 'pgsql', type: 'shell', 
+        path: 'provision/pgsql.bash', 
         args: [ pgver, pgdata ]
 
-    # pgbackrest local setup. Use "vagrant up --provision-with=pgbackrest_local"
-    config.vm.provision 'pgbackrest_local', type: 'shell',
-    	path: 'provision/pgbackrest_local.bash',
-        args: [ pgver, pgdata ],
-        run: 'never'
-
-    # check_pgbackrest install. Use "vagrant up --provision-with=check_pgbackrest"
-    config.vm.provision 'check_pgbackrest', type: 'shell',
-    	path: 'provision/check_pgbackrest.bash',
-        run: 'never'
-
-	# don't share the default vagrant folder
-	config.vm.synced_folder ".", "/vagrant", disabled: true
-
-	# copy check_pgbackrest directory
-    config.vm.synced_folder '..', '/check_pgbackrest', type: 'rsync',
-    	owner: 'root', group: 'root',
+    # ssh configuration
+    config.vm.synced_folder 'ssh', '/root/.ssh', type: 'rsync',
+        owner: 'root', group: 'root',
         rsync__args: [ "--verbose", "--archive", "--delete", "--copy-links", "--no-perms" ]
+
+    # system setup for all nodes
+    config.vm.define "icinga-srv" do |icinga|
+        icinga.vm.hostname = "icinga-srv"
+
+        # icinga2 local setup
+        icinga.vm.provision 'icinga2', type: 'shell', path: 'provision/icinga2.bash'
+
+        # pgbackrest local setup. Use "vagrant up --provision-with=icinga2_local"
+        icinga.vm.provision 'icinga2_local', type: 'shell',
+          path: 'provision/icinga2_local.bash', run: 'never'
+
+        # pgbackrest remote setup. Use "vagrant up --provision-with=icinga2_remote"
+        icinga.vm.provision 'icinga2_remote', type: 'shell',
+          path: 'provision/icinga2_remote.bash', run: 'never'
+    end
+
+    config.vm.define "pgsql-srv" do |pgsql|
+        pgsql.vm.hostname = "pgsql-srv"
+ 
+        # pgbackrest local setup. Use "vagrant up --provision-with=pgbackrest_local"
+        pgsql.vm.provision 'pgbackrest_local', type: 'shell',
+          path: 'provision/pgbackrest_local.bash',
+            args: [ pgver, pgdata ],
+            run: 'never'
+ 
+        # pgbackrest remote setup. Use "vagrant up --provision-with=pgbackrest_remote_primary"
+        pgsql.vm.provision 'pgbackrest_remote_primary', type: 'shell',
+          path: 'provision/pgbackrest_remote_primary.bash',
+            args: [ pgver, pgdata ],
+            run: 'never'
+    end
+
+    config.vm.define "backup-srv" do |backup|
+        backup.vm.hostname = "backup-srv"
+ 
+        # pgbackrest remote setup. Use "vagrant up --provision-with=pgbackrest_remote_standby"
+        backup.vm.provision 'pgbackrest_remote_standby', type: 'shell',
+          path: 'provision/pgbackrest_remote_standby.bash',
+            args: [ pgver, pgdata ],
+            run: 'never'
+    end
+
 end

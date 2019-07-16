@@ -7,10 +7,6 @@ set -o pipefail
 PGVER="$1"
 PGDATA="$2"
 
-# assign a host name
-sed -i 's/^127\.0\.0\.1\t.*/127\.0\.0\.1\tlocalhost pgsql-srv/' /etc/hosts
-hostnamectl set-hostname "pgsql-srv"
-
 # install required packages
 P=$(curl -s "https://download.postgresql.org/pub/repos/yum/${PGVER}/redhat/rhel-7-x86_64/"|grep -Eo "pgdg-centos[0-9.]+-${PGVER}-[0-9]+\.noarch.rpm"|head -1)
 
@@ -36,14 +32,19 @@ firewall-cmd --quiet --reload
 systemctl stop "postgresql-${PGVER}"
 systemctl disable "postgresql-${PGVER}"
 rm -rf "${PGDATA}"
+export PGSETUP_INITDB_OPTIONS="--data-checksums"
 "/usr/pgsql-${PGVER}/bin/postgresql-${PGVER}-setup" initdb
 
 # pg_hba setup
 cat<<EOC > "${PGDATA}/pg_hba.conf"
 local all         all                      trust
 host  all         all      0.0.0.0/0       trust
+host  all         all      ::/0            trust
+host  replication all      0.0.0.0/0       trust
+host  replication all      ::/0            trust
 EOC
 
+systemctl enable "postgresql-${PGVER}"
 systemctl start "postgresql-${PGVER}"
 
 # postgresql.conf setup
@@ -54,5 +55,23 @@ ALTER SYSTEM SET "archive_mode" TO 'on';
 ALTER SYSTEM SET "archive_command" TO '/bin/true';
 EOS
 
-# restart master pgsql
+# restart pgsql server
 systemctl restart "postgresql-${PGVER}"
+echo "export PATH=\$PATH:/usr/pgsql-${PGVER}/bin" >> /etc/profile
+
+# force proper permissions on .ssh files
+chmod -R 0600 /root/.ssh
+chmod 0700 /root/.ssh
+cp -rf /root/.ssh /var/lib/pgsql/.ssh
+chown -R postgres: /var/lib/pgsql/.ssh
+restorecon -R /root/.ssh
+restorecon -R /var/lib/pgsql/.ssh
+
+# create user to be accessed by ssh
+adduser accessed_by_ssh
+usermod -aG wheel accessed_by_ssh
+usermod -aG postgres accessed_by_ssh
+echo "accessed_by_ssh ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+cp -rf /root/.ssh /home/accessed_by_ssh/.ssh
+chown -R accessed_by_ssh: /home/accessed_by_ssh/.ssh
+restorecon -R /home/accessed_by_ssh/.ssh

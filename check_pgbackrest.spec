@@ -14,6 +14,7 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires: nagios-plugins
 Requires: perl-JSON
 Requires: perl-Net-SFTP-Foreign
+Requires: perl-Data-Dumper
 Provides: check_pgbackrest = %{version}
 
 %description

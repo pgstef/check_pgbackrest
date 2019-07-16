@@ -1,2 +1,4 @@
 pgbackrest.conf
 /test/.vagrant/
+/packaging/.vagrant/
+*.rpm

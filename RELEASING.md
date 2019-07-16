@@ -12,18 +12,22 @@ In `check_pgbackrest.spec`:
   * update the version in `Version:`
   * edit the changelog
 
+Update the `CHANGELOG.md` file too.
+
+Update the tests results `test/regress/expected/version.out`.
+
 ## Documentation
 
 Generate updated documentation:
 
-```
+```bash
 pod2text check_pgbackrest > README
 podselect check_pgbackrest > README.pod
 ```
 
 ## Tagging and building tar file
 
-```
+```bash
 TAG=REL1_6
 git tag -a $TAG -m "Release $TAG"
 git tag
@@ -52,7 +56,7 @@ git archive --prefix=check_pgbackrest-$TAG/ -o /tmp/check_pgbackrest-1.6.tar.gz 
 
 ### Installation
 
-```
+```bash
 yum group install "Development Tools"
 yum install rpmdevtools
 useradd makerpm
@@ -60,7 +64,7 @@ useradd makerpm
 
 ### Building the package
 
-```
+```bash
 su - makerpm
 rpmdev-setuptree
 git clone https://github.com/dalibo/check_pgbackrest.git
@@ -72,9 +76,18 @@ The RPM is generated into `rpmbuild/RPMS/noarch`.
 
 Don't forget to upload the package on GitHub release page.
 
-### Community
+### Vagrant
 
-## pgsql-announce
+A specific Vagrant script has been created in the `packaging` directory to 
+build the rpm. To launch it, go the the `packaging` directory and execute:
+
+```bash
+make all
+```
+
+## Community
+
+### pgsql-announce
 
 Send a mail to the pgsql-announce mailing list. Eg.:
 

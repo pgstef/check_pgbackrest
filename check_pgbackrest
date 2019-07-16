@@ -385,6 +385,7 @@ sub pgbackrest_info {
         $infocmd = $args{'prefix'}." $infocmd";
     }
 
+    dprint("pgBackRest info command was : '$infocmd'\n");
     my $json_output = `$infocmd 2>&1 |grep -v WARN |grep -v ERROR`;
 
     die("Can't get pgBackRest info.\nCommand was '$infocmd'.\n") unless ($? eq 0);
@@ -581,18 +582,18 @@ sub check_wal_archives {
                                     });
         }else{
             find ({ wanted => sub {
-                return unless -f;
-		return unless /$filename_re_full/;
+                    return unless -f;
+                    return unless /$filename_re_full/;
 
-                if ( $args{'ignore-archived-since'} ) {
-                    my $diff_epoch = time() - (stat($File::Find::name))[9];
-                    dprint ("file ".$_." as interval since epoch : ".to_interval($diff_epoch)."\n");
-                    return if ( $diff_epoch <= get_time($args{'ignore-archived-since'}) );
-                }
-                push @filelist, [basename($_), (stat($File::Find::name))[9,7], $File::Find::name];
-                push @filelist_simplified, substr(basename($_), 0, 24);
+                    if ( $args{'ignore-archived-since'} ) {
+                        my $diff_epoch = time() - (stat($File::Find::name))[9];
+                        dprint ("file ".$_." as interval since epoch : ".to_interval($diff_epoch)."\n");
+                        return if ( $diff_epoch <= get_time($args{'ignore-archived-since'}) );
+                    }
+                    push @filelist, [basename($_), (stat($File::Find::name))[9,7], $File::Find::name];
+                    push @filelist_simplified, substr(basename($_), 0, 24);
                 }, no_chdir=> 1
-               }, $archives_dir );
+            }, $archives_dir );
         }
 
         return unknown $me, ['no archived WAL found'] unless @filelist;

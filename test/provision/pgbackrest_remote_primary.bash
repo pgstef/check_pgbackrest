@@ -16,27 +16,19 @@ yum install --nogpgcheck --quiet -y -e 0 "${PACKAGES[@]}"
 # pgbackrest.conf setup
 cat<<EOC > "/etc/pgbackrest.conf"
 [global]
-repo1-path=/var/lib/pgbackrest
-repo1-retention-full=1
+repo1-host=backup-srv
+repo1-host-user=postgres
 process-max=2
 log-level-console=warn
 log-level-file=info
-start-fast=y
 delta=y
 
 [my_stanza]
 pg1-path=${PGDATA}
 EOC
 
-sudo -iu postgres pgbackrest --stanza=my_stanza stanza-create
-
 # archive_command setup
 cat <<'EOS' | "/usr/pgsql-${PGVER}/bin/psql" -U postgres
 ALTER SYSTEM SET "archive_command" TO 'pgbackrest --stanza=my_stanza archive-push %p';
 SELECT pg_reload_conf();
 EOS
-
-sudo -iu postgres pgbackrest --stanza=my_stanza check
-
-# force proper permissions on repo1-path
-chmod 755 /var/lib/pgbackrest

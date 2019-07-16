@@ -4,14 +4,19 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-# build rpm and install check_pgbackrest
+PLUGIN_PATH=/usr/lib64/nagios/plugins
+
 yum install --nogpgcheck --quiet -y -e 0 epel-release
-yum groups mark install "Development Tools"
-yum groups mark convert "Development Tools"
-yum groupinstall --nogpgcheck --quiet -y -e 0 "Development Tools"
-yum install --nogpgcheck --quiet -y -e 0 rpmdevtools
-rpmdev-setuptree
-spectool -R -g /check_pgbackrest/check_pgbackrest.spec
-rpmbuild -ba /check_pgbackrest/check_pgbackrest.spec
-ls -lr ~/rpmbuild/RPMS/noarch/*
-yum install --nogpgcheck --quiet -y -e 0 ~/rpmbuild/RPMS/noarch/*.rpm
+
+PACKAGES=(
+    nagios-plugins
+    nagios-plugins-all
+    perl-JSON
+    perl-Net-SFTP-Foreign
+    perl-Data-Dumper
+)
+
+yum install --nogpgcheck --quiet -y -e 0 "${PACKAGES[@]}"
+cp /check_pgbackrest/check_pgbackrest $PLUGIN_PATH
+chmod 755 $PLUGIN_PATH/check_pgbackrest
+echo "export PATH=\$PATH:/usr/lib64/nagios/plugins" >> /etc/profile

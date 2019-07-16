@@ -3,7 +3,8 @@ Changelog
 
 2019-xx-xx v1.6:
 
-  - 
+  - Avoid chdir when scanning a directory to avoid some problems with 
+  `sudo -u` (Christophe Courtois).
 
 2019-03-18 v1.5:
 
