@@ -14,6 +14,7 @@ PACKAGES=(
     perl-JSON
     perl-Net-SFTP-Foreign
     perl-Data-Dumper
+    wget
 )
 
 yum install --nogpgcheck --quiet -y -e 0 "${PACKAGES[@]}"

@@ -25,6 +25,12 @@ remotely (on `pgsql-srv`). Checks are performed from `icinga-srv` by ssh.
 pgBackRest backups are use to build a Streaming Replication with `backup-srv` 
 as standby server.
 
+### 3. pgBackRest configured to backup and archive to a MinIO S3 bucket
+
+  * `icinga-srv` executes check_pgbackrest by ssh with Icinga 2;
+  * `pgsql-srv` hosting a pgsql cluster with pgBackRest installed;
+  * `backup-srv` hosting the MinIO server.
+
 ## Testing
 
 The easiest way to start testing is with the included `Makefile`.
@@ -74,6 +80,33 @@ vagrant ssh pgsql-srv -c "sudo /check_pgbackrest/test/regress/test-s2-from-prima
 ```
 
 Expected run time: 30 sec.
+
+### Test case 3
+
+_Build_:
+
+```bash
+cd test
+make s3
+```
+
+Expected make time: 7 min.
+
+_Check the results of a manual execution of check_pgbackrest_:
+
+```bash
+vagrant ssh pgsql-srv -c "sudo /check_pgbackrest/test/regress/test-s3.bash"
+```
+
+Expected run time: 40 sec.
+
+_To simulate some activity with pgBackRest_:
+
+```bash
+vagrant ssh pgsql-srv -c "sudo /check_pgbackrest/test/regress/simulate-activity-local.bash"
+```
+
+Modify `SCALE` factor or `ACTIVITY_TIME` in this script to simulate more activity.
 
 ### Icinga 2 connectivity
 

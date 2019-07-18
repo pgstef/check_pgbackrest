@@ -50,6 +50,10 @@ Vagrant.configure(2) do |config|
         # pgbackrest remote setup. Use "vagrant up --provision-with=icinga2_remote"
         icinga.vm.provision 'icinga2_remote', type: 'shell',
           path: 'provision/icinga2_remote.bash', run: 'never'
+
+        # pgbackrest minio setup. Use "vagrant up --provision-with=icinga2_minio"
+        icinga.vm.provision 'icinga2_minio', type: 'shell',
+          path: 'provision/icinga2_minio.bash', run: 'never'
     end
 
     config.vm.define "pgsql-srv" do |pgsql|
@@ -66,6 +70,12 @@ Vagrant.configure(2) do |config|
           path: 'provision/pgbackrest_remote_primary.bash',
             args: [ pgver, pgdata ],
             run: 'never'
+ 
+        # pgbackrest minio setup. Use "vagrant up --provision-with=pgbackrest_minio"
+        pgsql.vm.provision 'pgbackrest_minio', type: 'shell',
+          path: 'provision/pgbackrest_minio.bash',
+            args: [ pgver, pgdata ],
+            run: 'never'
     end
 
     config.vm.define "backup-srv" do |backup|
@@ -76,6 +86,10 @@ Vagrant.configure(2) do |config|
           path: 'provision/pgbackrest_remote_standby.bash',
             args: [ pgver, pgdata ],
             run: 'never'
+
+        # minio local setup. Use "vagrant up --provision-with=minio"
+        backup.vm.provision 'minio', type: 'shell', 
+          path: 'provision/minio.bash', run: 'never'
     end
 
 end
