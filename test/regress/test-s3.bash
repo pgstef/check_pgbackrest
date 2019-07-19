@@ -43,23 +43,23 @@ sudo -iu postgres psql -c "SELECT pg_sleep(1);" > /dev/null 2>&1
 $PLUGIN_PATH/check_pgbackrest --stanza=my_stanza --service=retention --retention-full=2 --retention-age=1s | cut -f1 -d"|" > $RESULTS_DIR/retention-fail.out
 
 # # --service=archives missing arg
-# echo "--service=archives missing arg"
-# $PLUGIN_PATH/check_pgbackrest --stanza=my_stanza --service=archives > $RESULTS_DIR/archives-missing-arg.out 2>&1
+echo "--service=archives missing arg"
+$PLUGIN_PATH/check_pgbackrest --stanza=my_stanza --service=archives > $RESULTS_DIR/archives-missing-arg.out 2>&1
 
 # # --service=archives --repo-path
-# echo "--service=archives --repo-path"
-# sudo -iu postgres psql -c "SELECT pg_switch_xlog();" > /dev/null 2>&1
-# sudo -iu postgres psql -c "SELECT pg_switch_wal();" > /dev/null 2>&1
-# $PLUGIN_PATH/check_pgbackrest --stanza=my_stanza --service=archives --repo-path=/var/lib/pgbackrest/archive | cut -f1 -d"-" > $RESULTS_DIR/archives-ok.out
+echo "--service=archives --repo-path"
+sudo -iu postgres psql -c "SELECT pg_switch_xlog();" > /dev/null 2>&1
+sudo -iu postgres psql -c "SELECT pg_switch_wal();" > /dev/null 2>&1
+$PLUGIN_PATH/check_pgbackrest --stanza=my_stanza --service=archives --repo-path=/repo1/archive --repo-s3 --repo-s3-over-http | cut -f1 -d"-" > $RESULTS_DIR/archives-ok.out
 
 # # --service=archives --ignore-archived-since
-# echo "--service=archives --ignore-archived-since"
-# $PLUGIN_PATH/check_pgbackrest --stanza=my_stanza --service=archives --repo-path=/var/lib/pgbackrest/archive --ignore-archived-since=1h > $RESULTS_DIR/archives-ignore-since.out
+echo "--service=archives --ignore-archived-since"
+$PLUGIN_PATH/check_pgbackrest --stanza=my_stanza --service=archives --repo-path=/repo1/archive --repo-s3 --repo-s3-over-http --ignore-archived-since=1h > $RESULTS_DIR/archives-ignore-since.out
 
 # # --service=archives --latest-archive-age-alert
-# echo "--service=archives --latest-archive-age-alert"
-# $PLUGIN_PATH/check_pgbackrest --stanza=my_stanza --service=archives --repo-path=/var/lib/pgbackrest/archive --latest-archive-age-alert=1h | cut -f1 -d"-" > $RESULTS_DIR/archives-age-alert-ok.out
-# $PLUGIN_PATH/check_pgbackrest --stanza=my_stanza --service=archives --repo-path=/var/lib/pgbackrest/archive --latest-archive-age-alert=1s | cut -f1 -d"-" > $RESULTS_DIR/archives-age-alert-ko.out
+echo "--service=archives --latest-archive-age-alert"
+$PLUGIN_PATH/check_pgbackrest --stanza=my_stanza --service=archives --repo-path=/repo1/archive --repo-s3 --repo-s3-over-http --latest-archive-age-alert=1h | cut -f1 -d"-" > $RESULTS_DIR/archives-age-alert-ok.out
+$PLUGIN_PATH/check_pgbackrest --stanza=my_stanza --service=archives --repo-path=/repo1/archive --repo-s3 --repo-s3-over-http --latest-archive-age-alert=1s | cut -f1 -d"-" > $RESULTS_DIR/archives-age-alert-ko.out
 
 ## Results
 diff -abB expected/ $RESULTS_DIR/ > /tmp/regression.diffs

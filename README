@@ -67,6 +67,11 @@ DESCRIPTION
         The "--repo-host" and "--repo-host-user" arguments allow to list
         remote archived WALs using SFTP.
 
+        The "--repo-s3" enables remote archived WALs stored in Amazon S3.
+
+        The "--repo-s3-over-http" switch to HTTP connection instead of
+        HTTPS.
+
         Archives must be compressed (.gz). If needed, use "compress-level=0"
         instead of "compress=n".
 
@@ -102,7 +107,9 @@ LICENSING
     license terms, see the LICENSE file.
 
 AUTHORS
-    Author: Stefan Fercot. Logo: Damien Cazeils (www.damiencazeils.com).
+    Author: Stefan Fercot.
+
+    Logo: Damien Cazeils (www.damiencazeils.com).
 
     Copyright: (c) 2018-2019, Dalibo.
 

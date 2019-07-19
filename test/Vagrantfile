@@ -90,6 +90,10 @@ Vagrant.configure(2) do |config|
         # minio local setup. Use "vagrant up --provision-with=minio"
         backup.vm.provision 'minio', type: 'shell', 
           path: 'provision/minio.bash', run: 'never'
+
+        # minio http setup. Use "vagrant up --provision-with=minio_http"
+        backup.vm.provision 'minio_http', type: 'shell', 
+          path: 'provision/minio_http.bash', run: 'never'
     end
 
 end

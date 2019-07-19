@@ -95,7 +95,7 @@ The output format. Supported outputs are: C<human> and C<nagios> (default).
 
 =item B<-C>, B<--command> FILE
 
-pgBackRest executable file  (default: "pgbackrest").
+pgBackRest executable file (default: "pgbackrest").
 
 =item B<-c>, B<--config> CONFIGURATION_FILE
 
@@ -129,7 +129,8 @@ Show this help page.
 my %args = (
     'command' => 'pgbackrest',
     'format' => 'nagios',
-    'wal-segsize' => '16MB'
+    'wal-segsize' => '16MB',
+    'default-pgbackrest-config-file' => '/etc/pgbackrest.conf',
 );
 
 # Set name of the program without path*
@@ -492,6 +493,8 @@ remote archived WALs using SFTP.
 
 The C<--repo-s3> enables remote archived WALs stored in Amazon S3.
 
+The C<--repo-s3-over-http> switch to HTTP connection instead of HTTPS.
+
 Archives must be compressed (.gz). If needed, use "compress-level=0"
 instead of "compress=n".
 
@@ -544,6 +547,7 @@ sub check_wal_archives {
         $seg_per_wal-- if $dbver <= 92;
 
         my $archives_dir = $args{'repo-path'}."/".$args{'stanza'}."/".$backups_info->{'archive'}[0]->{'id'};
+        dprint("archives_dir: $archives_dir\n");
         my $min_wal = $backups_info->{'archive'}[0]->{'min'};
         my $max_wal = $backups_info->{'archive'}[0]->{'max'};
         push @human_only_longmsg, "archives_dir=$archives_dir";
@@ -586,27 +590,39 @@ sub check_wal_archives {
             require Net::Amazon::S3;
             require Config::IniFiles;
 
-            my $cfg = Config::IniFiles->new( -file => $args{config} );
+            my $cfg_file=$args{'default-pgbackrest-config-file'};
+            if(defined $args{'config'}) {
+                $cfg_file=$args{'config'};
+            }
+            dprint("cfg_file: $cfg_file\n");
+
+            my $cfg = Config::IniFiles->new( -file => $cfg_file );
             my $aws_key = $cfg->val( 'global', 'repo1-s3-key' );
             my $aws_secret = $cfg->val( 'global', 'repo1-s3-key-secret' );
             my $repo1_bucket = $cfg->val( 'global', 'repo1-s3-bucket' );
+            my $repo1_endpoint = $cfg->val( 'global', 'repo1-s3-endpoint' );
+            dprint("repo1-s3-bucket: $repo1_bucket\n");
+            dprint("repo1-s3-endpoint: $repo1_endpoint\n");
+
+            my $secure = defined $args{'repo-s3-over-http'} ? 0 : 1;
 
             pod2usage(
-                -message => 'FATAL: you must provide --config and be sure to set repo1-s3-key, repo1-s3-key-secret, and repo1-s3-bucket.',
+                -message => 'FATAL: be sure to set repo1-s3-endpoint, repo1-s3-key, repo1-s3-key-secret, and repo1-s3-bucket in the pgBackRest configuration file.',
                 -exitval => 127
-            ) unless ( defined $aws_key and defined $aws_secret and defined $repo1_bucket );
+            ) unless ( defined $aws_key and defined $aws_secret and defined $repo1_bucket and defined $repo1_endpoint );
 
             my $s3 = Net::Amazon::S3->new(
                 aws_access_key_id     => $aws_key,
                 aws_secret_access_key => $aws_secret,
-                host                  => $cfg->val( 'global', 'repo1-s3-endpoint' ),
+                host                  => $repo1_endpoint,
                 retry                 => 1,
+                secure                => $secure,
             );
 
             my $client = Net::Amazon::S3::Client->new( s3 => $s3 );
             my $bucket = $client->bucket( name => $repo1_bucket );
 
-            my $stream = $bucket->list({ prefix => substr($archives_dir, 1) });
+            my $stream = $bucket->list({ prefix => $archives_dir, delimiter => '/' });
             until ( $stream->is_done ) {
                 foreach my $object ( $stream->items ) {
                     my @split_tab = split('/', $object->key);
@@ -745,6 +761,7 @@ GetOptions(
         'list|l!',
         'prefix|P=s',
         'repo-s3!',
+        'repo-s3-over-http!',
         'repo-host=s',
         'repo-host-user=s',
         'repo-path=s',
@@ -782,11 +799,11 @@ pod2usage(
 ) if ( $args{'retention-age'} or $args{'retention-full'} )
     and $args{'service'} ne 'retention';
 
-# Check "archives" specific args --repo-path, --repo-host,  --repo-host-user, and --repo-s3
+# Check "archives" specific args --repo-path, --repo-host, --repo-host-user, --repo-s3 and --repo-s3-over-http
 pod2usage(
-    -message => 'FATAL: "repo-path", "repo-host", "repo-host-user", and "repo-s3" are only allowed with "archives" service.',
+    -message => 'FATAL: "repo-path", "repo-host", "repo-host-user", "repo-s3" and "repo-s3-over-http" are only allowed with "archives" service.',
     -exitval => 127
-) if ( $args{'repo-path'} or $args{'repo-host'} or $args{'repo-host-user'} or $args{'repo-s3'} )
+) if ( $args{'repo-path'} or $args{'repo-host'} or $args{'repo-host-user'} or $args{'repo-s3'}  or $args{'repo-s3-over-http'} )
     and $args{'service'} ne 'archives';
 
 # Check "archives" specific args --ignore-archived-since and --latest-archive-age-alert
@@ -828,6 +845,7 @@ For license terms, see the LICENSE file.
 =head1 AUTHORS
 
 Author: Stefan Fercot.
+
 Logo: Damien Cazeils (www.damiencazeils.com).
 
 Copyright: (c) 2018-2019, Dalibo.

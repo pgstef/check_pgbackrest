@@ -51,3 +51,7 @@ SELECT pg_reload_conf();
 EOS
 
 sudo -iu postgres pgbackrest --stanza=my_stanza check
+
+# install perl modules needed for check_pgbackrest S3 compatibility
+yum install --nogpgcheck --quiet -y -e 0 http://repo.openfusion.net/centos7-x86_64/openfusion-release-0.7-1.of.el7.noarch.rpm
+yum install  --nogpgcheck --quiet -y -e 0 perl-Config-IniFiles perl-Net-Amazon-S3

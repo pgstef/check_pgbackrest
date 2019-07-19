@@ -16,6 +16,7 @@ pgbackrest_remote:
 
 pgbackrest_minio:
 	vagrant up --provision-with=minio
+	vagrant up --provision-with=minio_http
 	vagrant up --provision-with=pgbackrest_minio
 	vagrant up --provision-with=icinga2_minio
 

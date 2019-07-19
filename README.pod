@@ -1,16 +1,3 @@
-
- * Waiting in queue... 
- * Loading list of packages.... 
-The following packages have to be installed:
- perl-Pod-Parser-1.63-419.fc30.noarch	Basic perl modules for handling Plain Old Documentation (POD)
-
- * Waiting in queue... 
- * Waiting for authentication... 
- * Waiting in queue... 
- * Downloading packages... 
- * Requesting data... 
- * Testing changes... 
- * Installing packages... 
 =head1 NAME
 
 check_pgbackrest - pgBackRest backup check plugin for Nagios
@@ -43,7 +30,7 @@ The output format. Supported outputs are: C<human> and C<nagios> (default).
 
 =item B<-C>, B<--command> FILE
 
-pgBackRest executable file  (default: "pgbackrest").
+pgBackRest executable file (default: "pgbackrest").
 
 =item B<-c>, B<--config> CONFIGURATION_FILE
 
@@ -101,6 +88,10 @@ the archived WALs are stored.
 The C<--repo-host> and C<--repo-host-user> arguments allow to list
 remote archived WALs using SFTP.
 
+The C<--repo-s3> enables remote archived WALs stored in Amazon S3.
+
+The C<--repo-s3-over-http> switch to HTTP connection instead of HTTPS.
+
 Archives must be compressed (.gz). If needed, use "compress-level=0"
 instead of "compress=n".
 
@@ -142,8 +133,8 @@ For license terms, see the LICENSE file.
 =head1 AUTHORS
 
 Author: Stefan Fercot.
+
 Logo: Damien Cazeils (www.damiencazeils.com).
 
 Copyright: (c) 2018-2019, Dalibo.
-
 
