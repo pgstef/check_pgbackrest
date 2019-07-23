@@ -6,6 +6,7 @@ Changelog
   - Add Amazon s3 support for archives service (Andrew E. Bruno).
   - Avoid chdir when scanning a directory to avoid some problems with 
   `sudo -u` (Christophe Courtois).
+  - New check_pgb_version service (suggested by Christophe Courtois).
 
 2019-03-18 v1.5:
 

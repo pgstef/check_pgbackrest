@@ -69,11 +69,18 @@ $PROGRAM = 'check_pgbackrest';
 my %services = (
     'retention' => {
         'sub'  => \&check_retention,
-        'desc' => 'Check the retention policy.'
+        'desc' => 'Check the retention policy.',
+        'stanza-arg' => 1
     },
     'archives' => {
         'sub'  => \&check_wal_archives,
-        'desc' => 'Check WAL archives.'
+        'desc' => 'Check WAL archives.',
+        'stanza-arg' => 1
+    },
+    'check_pgb_version' => {
+        'sub'  => \&check_pgb_version,
+        'desc' => 'Check the version of this check_pgbackrest script.',
+        'stanza-arg' => 0
     }
 );
 
@@ -741,6 +748,44 @@ sub check_wal_archives {
     return ok( $me, \@msg, \@longmsg, \@human_only_longmsg);
 }
 
+=item B<check_pgb_version>
+
+Check if this script is running a given version.
+
+You must provide the expected version using C<--target-version>.
+
+=cut
+
+sub check_pgb_version {
+    my $me             = 'CHECK_PGBACKREST_VERSION';
+    my %args           = %{ $_[0] };
+    my @msg;
+    my @warn_msg;
+    my @crit_msg;
+    my @longmsg;
+
+    pod2usage(
+        -message => 'FATAL: you must provide --target-version.',
+        -exitval => 127
+    ) if not defined $args{'target-version'};
+
+    pod2usage(
+        -message => "FATAL: given version does not look like a $PROGRAM version!",
+        -exitval => 127
+    ) if ( defined $args{'target-version'} and $args{'target-version'} !~ m/^\d\.\d+(?:_?(?:dev|beta|rc)\d*)?$/ );
+
+    if (defined $args{'target-version'} and $VERSION ne $args{'target-version'}){
+        push @crit_msg, sprintf("%s version should be %s", $PROGRAM, $args{'target-version'});
+        push @longmsg, sprintf("%s version %s, Perl %vd", $PROGRAM, $VERSION, $^V);
+    }
+
+    return critical($me, \@crit_msg, \@longmsg) if @crit_msg;
+    return warning($me, \@warn_msg, \@longmsg) if @warn_msg;
+
+    push @msg, sprintf("%s version %s, Perl %vd", $PROGRAM, $VERSION, $^V);
+    return ok( $me, \@msg, \@longmsg );
+}
+
 # End of SERVICE section in pod doc
 =pod
 
@@ -769,6 +814,7 @@ GetOptions(
         'retention-full=i',
         'service|s=s',
         'stanza|S=s',
+        'target-version=s',
         'version|V!',
         'wal-segsize=s'
 ) or pod2usage( -exitval => 127 );
@@ -785,12 +831,12 @@ pod2usage(
     -exitval => 127
 ) unless exists $services{ $args{'service'} };
 
-# The stanza name must be given if a service is specified
+# The stanza name must be given if a service is specified and 'stanza-arg' is required
 pod2usage(
     -message => "FATAL: you must specify a stanza name.\n"
         . "    See -S or --stanza command line option.",
     -exitval => 127
-) if defined $args{'service'} and not defined $args{'stanza'};
+) if defined $args{'service'} and $services{$args{'service'}}{'stanza-arg'} and not defined $args{'stanza'};
 
 # Check "retention" specific args --retention-age and --retention-full
 pod2usage(
@@ -812,6 +858,12 @@ pod2usage(
     -exitval => 127
 ) if ( $args{'ignore-archived-since'} or $args{'latest-archive-age-alert'} )
     and $args{'service'} ne 'archives';
+
+# Check "check_pgb_version" specific arg --target-version
+pod2usage(
+    -message => 'FATAL: "target-version" is only allowed with "check_pgb_version" service.',
+    -exitval => 127
+) if $args{'itarget-version'} and $args{'service'} ne 'check_pgb_version';
 
 # Output format
 for ( $args{'format'} ) {
