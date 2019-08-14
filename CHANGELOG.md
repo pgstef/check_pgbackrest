@@ -3,6 +3,7 @@ Changelog
 
 2019-xx-xx v1.6:
 
+  - Fix bad behavior on CIFS mount (reported by `renesepp`).
   - Add Amazon s3 support for archives service (Andrew E. Bruno).
   - Avoid chdir when scanning a directory to avoid some problems with 
   `sudo -u` (Christophe Courtois).

@@ -9,13 +9,29 @@ PGDATA="$2"
 
 PACKAGES=(
     pgbackrest
+    samba
+    samba-client
+    cifs-utils
 )
 
 yum install --nogpgcheck --quiet -y -e 0 "${PACKAGES[@]}"
 
+# cifs mount
+mkdir -p /mnt/backups
+groupadd --gid 2000 sambagroup
+usermod -aG sambagroup postgres
+
+cat<<EOF >>"/etc/fstab"
+//backup-srv/bckp_storage/pgbackrest /var/lib/pgbackrest cifs  username=samba_user1,password=samba,uid=postgres,gid=postgres,dir_mode=0750,file_mode=0740  0 0
+EOF
+
+chmod 755 /var/lib/pgbackrest
+mount /var/lib/pgbackrest
+
 # pgbackrest.conf setup
 cat<<EOC > "/etc/pgbackrest.conf"
 [global]
+repo-type=cifs
 repo1-path=/var/lib/pgbackrest
 repo1-retention-full=1
 process-max=2
@@ -38,5 +54,6 @@ EOS
 
 sudo -iu postgres pgbackrest --stanza=my_stanza check
 
-# force proper permissions on repo1-path
-chmod 755 /var/lib/pgbackrest
+
+ 
+

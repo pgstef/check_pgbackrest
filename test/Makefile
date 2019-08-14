@@ -6,6 +6,7 @@ create_vm:
 	vagrant up
 
 pgbackrest_local:
+	vagrant up --provision-with=cifs
 	vagrant up --provision-with=pgbackrest_local
 	vagrant up --provision-with=icinga2_local
 

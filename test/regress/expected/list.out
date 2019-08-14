@@ -1,4 +1,5 @@
 List of available services:
 
 	archives         	Check WAL archives.
+	check_pgb_version	Check the version of this check_pgbackrest script.
 	retention        	Check the retention policy.

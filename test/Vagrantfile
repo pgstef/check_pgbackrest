@@ -81,6 +81,10 @@ Vagrant.configure(2) do |config|
     config.vm.define "backup-srv" do |backup|
         backup.vm.hostname = "backup-srv"
  
+        # cifs share to store pgbackrest backups. Use "vagrant up --provision-with=cifs"
+        backup.vm.provision 'cifs', type: 'shell',
+          path: 'provision/cifs.bash', run: 'never'
+
         # pgbackrest remote setup. Use "vagrant up --provision-with=pgbackrest_remote_standby"
         backup.vm.provision 'pgbackrest_remote_standby', type: 'shell',
           path: 'provision/pgbackrest_remote_standby.bash',

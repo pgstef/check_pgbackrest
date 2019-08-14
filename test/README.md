@@ -4,13 +4,13 @@
 
 This `Vagrantfile` is bootstrapping 3 possible test cases:
 
-### 1. pgBackRest configured to backup and archive locally
+### 1. pgBackRest configured to backup and archive on a CIFS mount
 
   * `icinga-srv` executes check_pgbackrest by ssh with Icinga 2;
   * `pgsql-srv` hosting a pgsql cluster with pgBackRest installed;
-  * `backup-srv` not used, clean pgsql cluster running on it.
+  * `backup-srv` hosting the CIFS share.
 
-Backups and archiving are done locally on `pgsql-srv`.
+Backups and archiving are done locally on `pgsql-srv` on the CIFS mount point.
 
 ### 2. pgBackRest configured to backup and archive remotely
 
@@ -52,7 +52,7 @@ _Check the results of a manual execution of check_pgbackrest_:
 vagrant ssh pgsql-srv -c "sudo /check_pgbackrest/test/regress/test-s1.bash"
 ```
 
-Expected run time: 15 sec.
+Expected run time: 20 sec.
 
 _To simulate some activity with pgBackRest_:
 

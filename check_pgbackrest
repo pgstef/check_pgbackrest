@@ -659,7 +659,7 @@ sub check_wal_archives {
                     }
                     push @filelist, [basename($_), (stat($File::Find::name))[9,7], $File::Find::name];
                     push @filelist_simplified, substr(basename($_), 0, 24);
-                }, no_chdir=> 1
+                }, no_chdir => 1, follow => 1
             }, $archives_dir );
         }
 
