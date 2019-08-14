@@ -671,6 +671,10 @@ sub check_wal_archives {
                 or die "Can't read WAL files."
             } @filelist;
 
+        # Refresh max_wal after archives scan, assume pgBackRest info cmd returns very fast
+        $backups_info = pgbackrest_info();
+        $max_wal = $backups_info->{'archive'}[0]->{'max'};
+
         # Change max_wal if some archived are ignored
         if ( $args{'ignore-archived-since'} && $max_wal ) {
             $max_wal = substr($filelist_sorted[-1][0], 0, 24);
