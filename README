@@ -53,9 +53,14 @@ DESCRIPTION
         Fail when the newest backup is older than the "--retention-age"
         argument.
 
+        Fail when the newest full backup is older than the
+        "--retention-age-to-full" argument.
+
         The following units are accepted (not case sensitive): s (second), m
         (minute), h (hour), d (day). You can use more than one unit per
         given value.
+
+        Arguments are not mandatory to only show some information.
 
     archives
         Check if all archived WALs exist between the oldest and the latest

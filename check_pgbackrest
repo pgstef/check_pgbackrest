@@ -424,9 +424,14 @@ C<--retention-full> argument.
 Fail when the newest backup is older than the C<--retention-age> 
 argument.
 
+Fail when the newest full backup is older than the 
+C<--retention-age-to-full> argument.
+
 The following units are accepted (not case sensitive): s (second), m 
 (minute), h (hour), d (day). You can use more than one unit per 
 given value.
+
+Arguments are not mandatory to only show some information.
 
 =cut
 
@@ -438,11 +443,6 @@ sub check_retention {
     my @crit_msg;
     my @longmsg;
 
-    pod2usage(
-        -message => 'FATAL: you must provide --retention-age and/or --retention-full.',
-        -exitval => 127
-    ) if ( not defined $args{'retention-full'} and not defined $args{'retention-age'} );
-
     my $backups_info = pgbackrest_info();
     die("Can't get pgBackRest info.\n") unless (defined $backups_info);
 
@@ -452,9 +452,9 @@ sub check_retention {
         my @incr_bck;
 
         foreach my $line (@{$backups_info->{'backup'}}){
-            push @full_bck, $line->{'label'} if($line->{'type'} eq "full");
-            push @diff_bck, $line->{'label'} if($line->{'type'} eq "diff");
-            push @incr_bck, $line->{'label'} if($line->{'type'} eq "incr");
+            push @full_bck, $line if($line->{'type'} eq "full");
+            push @diff_bck, $line if($line->{'type'} eq "diff");
+            push @incr_bck, $line if($line->{'type'} eq "incr");
         }
 
         push @longmsg, "full=".scalar(@full_bck);
@@ -476,6 +476,17 @@ sub check_retention {
         if(defined $args{'retention-age'}){
             my $bck_age_limit = get_time($args{'retention-age'} );
             push @crit_msg, "backups are too old" if $latest_bck_age >= $bck_age_limit;
+        }
+
+        # check latest full backup age
+        if(defined $args{'retention-age-to-full'}){
+            my $latest_full_bck = $full_bck[-1];
+            my $latest_full_bck_age = time() - $latest_full_bck->{'timestamp'}->{'stop'};
+            push @longmsg, "latest_full=".$latest_full_bck->{'label'};
+            push @longmsg, "latest_full_age=".to_interval($latest_full_bck_age);
+
+            my $bck_age_limit = get_time($args{'retention-age-to-full'} );
+            push @crit_msg, "full backups are too old" if $latest_full_bck_age >= $bck_age_limit;
         }
     }else{
         push @crit_msg, $backups_info->{'status'}->{'message'};
@@ -815,6 +826,7 @@ GetOptions(
         'repo-host-user=s',
         'repo-path=s',
         'retention-age=s',
+        'retention-age-to-full=s',
         'retention-full=i',
         'service|s=s',
         'stanza|S=s',
@@ -842,11 +854,11 @@ pod2usage(
     -exitval => 127
 ) if defined $args{'service'} and $services{$args{'service'}}{'stanza-arg'} and not defined $args{'stanza'};
 
-# Check "retention" specific args --retention-age and --retention-full
+# Check "retention" specific args --retention-age, --retention-age-to-full and --retention-full
 pod2usage(
-    -message => 'FATAL: "retention-age" and "retention-full" are only allowed with "retention" service.',
+    -message => 'FATAL: "retention-age", "retention-age-to-full" and "retention-full" are only allowed with "retention" service.',
     -exitval => 127
-) if ( $args{'retention-age'} or $args{'retention-full'} )
+) if ( $args{'retention-age'} or $args{'retention-age-to-full'} or $args{'retention-full'} )
     and $args{'service'} ne 'retention';
 
 # Check "archives" specific args --repo-path, --repo-host, --repo-host-user, --repo-s3 and --repo-s3-over-http
