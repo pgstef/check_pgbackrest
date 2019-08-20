@@ -21,3 +21,6 @@ yum install --nogpgcheck --quiet -y -e 0 "${PACKAGES[@]}"
 cp /check_pgbackrest/check_pgbackrest $PLUGIN_PATH
 chmod 755 $PLUGIN_PATH/check_pgbackrest
 echo "export PATH=\$PATH:/usr/lib64/nagios/plugins" >> /etc/profile
+
+# set timezone
+ln -sf /usr/share/zoneinfo/Europe/Brussels /etc/localtime
