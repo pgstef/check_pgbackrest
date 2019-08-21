@@ -79,7 +79,7 @@ _Check the results of a manual execution of check_pgbackrest_:
 vagrant ssh pgsql-srv -c "sudo /check_pgbackrest/test/regress/test-s2-from-primary.bash"
 ```
 
-Expected run time: 30 sec.
+Expected run time: 40 sec.
 
 ### Test case 3
 
@@ -90,7 +90,7 @@ cd test
 make s3
 ```
 
-Expected make time: 8 min.
+Expected make time: 8 min. (depends on MinIO download time)
 
 _Check the results of a manual execution of check_pgbackrest_:
 
@@ -98,7 +98,7 @@ _Check the results of a manual execution of check_pgbackrest_:
 vagrant ssh pgsql-srv -c "sudo /check_pgbackrest/test/regress/test-s3.bash"
 ```
 
-Expected run time: 45 sec.
+Expected run time: 40 sec.
 
 _To simulate some activity with pgBackRest_:
 
