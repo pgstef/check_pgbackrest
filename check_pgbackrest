@@ -788,6 +788,7 @@ sub check_wal_archives {
         my $max_wal = $backups_info->{'archive'}[0]->{'max'};
 
         # Get all the WAL archives and history files
+        dprint("Get all the WAL archives and history files...\n");
         my ($filelist_ref, $branch_wals_ref) = &get_archived_wal_list($min_wal, $max_wal, \%args);
         my @filelist;
         @filelist = @{ $filelist_ref } if $filelist_ref;
@@ -849,6 +850,7 @@ sub check_wal_archives {
         my $seg_per_wal = get_size($walsize) / get_size($wal_segsize); #Only for PG >= 9.3
         my $dbver=($backups_info->{'db'}[0]->{'version'}+0)*10;
         $seg_per_wal-- if $dbver <= 92;
+        dprint("Get all the needed wal archives...\n");
         my @needed_wal_archives_list=&generate_needed_wal_archives_list($min_wal, $max_wal, \@branch_wals, $seg_per_wal);
 
         # Get the latest backup info
@@ -857,16 +859,36 @@ sub check_wal_archives {
         push @human_only_longmsg, "latest_bck_archive_start=".$latest_bck_archive_start;
         push @human_only_longmsg, "latest_bck_type=".$latest_bck->{'type'};
 
+        my @warn_missing_file_msg;
+        my @crit_missing_file_msg;
         # Go through needed wal list and check if it exists in the file list
         foreach my $needed_wal (@needed_wal_archives_list) {
             unless (grep /$needed_wal/, @filelist_simplified) {
                 if($needed_wal lt $latest_bck_archive_start) {
-                    push @warn_msg => "wrong sequence or missing file @ '$needed_wal'";
+                    push @warn_missing_file_msg => "wrong sequence or missing file @ '$needed_wal'";
                 }else{
-                    push @crit_msg => "wrong sequence or missing file @ '$needed_wal'";
+                    push @crit_missing_file_msg => "wrong sequence or missing file @ '$needed_wal'";
                 }
             }
         }
+
+        # Go through each backup to check their needed wal archives
+        foreach my $line (@{$backups_info->{'backup'}}){
+            dprint("Get all the needed wal archives for ".$line->{'label'}."...\n");
+            foreach my $needed_wal (&generate_needed_wal_archives_list($line->{'archive'}->{'start'}, $line->{'archive'}->{'stop'}, \@branch_wals, $seg_per_wal)) {
+                unless (grep /$needed_wal/, @filelist_simplified) {
+                    push @crit_missing_file_msg => "wrong sequence or missing file @ '$needed_wal'";
+                }
+            }
+        }
+
+        # Generate @warn_msg and @crit_msg with missing files (sorted and unique messages)
+        my @unique_warn_missing_file_msg = do { my %seen; grep { !$seen{$_}++ } @warn_missing_file_msg };
+        push @warn_msg, sort @unique_warn_missing_file_msg;
+        
+        push @crit_missing_file_msg, @warn_missing_file_msg if @warn_missing_file_msg and @crit_missing_file_msg;
+        my @unique_crit_missing_file_msg = do { my %seen; grep { !$seen{$_}++ } @crit_missing_file_msg };
+        push @crit_msg, sort @unique_crit_missing_file_msg;
 
     }else{
         push @crit_msg, $backups_info->{'status'}->{'message'};
