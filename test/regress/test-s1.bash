@@ -58,9 +58,9 @@ sudo -iu postgres psql -c "SELECT pg_switch_xlog();" > /dev/null 2>&1
 sudo -iu postgres psql -c "SELECT pg_switch_wal();" > /dev/null 2>&1
 $PLUGIN_PATH/check_pgbackrest --stanza=my_stanza --service=archives --repo-path=/var/lib/pgbackrest/archive | cut -f1 -d"-" > $RESULTS_DIR/archives-ok.out
 
-# --service=archives --ignore-archived-since
-echo "--service=archives --ignore-archived-since"
-$PLUGIN_PATH/check_pgbackrest --stanza=my_stanza --service=archives --repo-path=/var/lib/pgbackrest/archive --ignore-archived-since=1h > $RESULTS_DIR/archives-ignore-since.out
+# --service=archives --ignore-archived-after
+echo "--service=archives --ignore-archived-after"
+$PLUGIN_PATH/check_pgbackrest --stanza=my_stanza --service=archives --repo-path=/var/lib/pgbackrest/archive --ignore-archived-after=1h > $RESULTS_DIR/archives-ignore-after.out
 
 # --service=archives --latest-archive-age-alert
 echo "--service=archives --latest-archive-age-alert"

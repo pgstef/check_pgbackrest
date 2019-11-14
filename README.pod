@@ -108,8 +108,8 @@ integers are accepted. Eg. C<1.5MB> will be refused, use C<1500kB>.
 
 The factor between units is 1024 bytes. Eg. C<1g = 1G = 1024*1024*1024.> 
 
-Use the C<--ignore-archived-since> argument to ignore the archived 
-WALs since the provided interval.
+Use the C<--ignore-archived-after> argument to ignore the archived 
+WALs generated after the provided interval.
 
 The C<--latest-archive-age-alert> argument defines the max age of 
 the latest archived WAL as an interval before raising a critical 

@@ -3,6 +3,7 @@ Changelog
 
 2019-xx-xx v1.6:
 
+  - Rename ignore-archived-since argument to ignore-archived-after.
   - Add --retention-age-to-full argument to check the latest full backup age.
   - Fix bad behavior on CIFS mount (reported by `renesepp`).
   - Add Amazon s3 support for archives service (Andrew E. Bruno).

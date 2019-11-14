@@ -89,8 +89,8 @@ DESCRIPTION
         The factor between units is 1024 bytes. Eg. "1g = 1G =
         1024*1024*1024."
 
-        Use the "--ignore-archived-since" argument to ignore the archived
-        WALs since the provided interval.
+        Use the "--ignore-archived-after" argument to ignore the archived
+        WALs generated after the provided interval.
 
         The "--latest-archive-age-alert" argument defines the max age of the
         latest archived WAL as an interval before raising a critical alert.
