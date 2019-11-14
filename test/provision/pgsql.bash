@@ -8,11 +8,7 @@ PGVER="$1"
 PGDATA="$2"
 
 # install required packages
-P=$(curl -s "https://download.postgresql.org/pub/repos/yum/${PGVER}/redhat/rhel-7-x86_64/"|grep -Eo "pgdg-centos[0-9.]+-${PGVER}-[0-9]+\.noarch.rpm"|head -1)
-
-if ! rpm --quiet -q "${P/.rpm}"; then
-    yum install --nogpgcheck --quiet -y -e 0 "https://download.postgresql.org/pub/repos/yum/${PGVER}/redhat/rhel-7-x86_64/$P"
-fi
+yum install --nogpgcheck --quiet -y -e 0 "https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm"
 
 PACKAGES=(
     "postgresql${PGVER}"

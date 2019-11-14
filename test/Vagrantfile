@@ -1,4 +1,4 @@
-pgver = '11' # pg version to use
+pgver = '12' # pg version to use
 vm_prefix = 'c_pgbr_c7'
 
 Vagrant.configure(2) do |config|
