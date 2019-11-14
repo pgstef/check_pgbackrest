@@ -3,6 +3,8 @@ Changelog
 
 2019-xx-xx v1.6:
 
+  - Return WARNING instead of CRITICAL in case of missing archived WAL prior 
+  to latest backup, regardless its type.
   - Add ignore-archived-before argument to ignore the archived WALs before the 
   provided interval.
   - Rename ignore-archived-since argument to ignore-archived-after.

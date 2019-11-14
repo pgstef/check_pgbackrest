@@ -851,10 +851,20 @@ sub check_wal_archives {
         $seg_per_wal-- if $dbver <= 92;
         my @needed_wal_archives_list=&generate_needed_wal_archives_list($min_wal, $max_wal, \@branch_wals, $seg_per_wal);
 
+        # Get the latest backup info
+        my $latest_bck = @{$backups_info->{'backup'}}[-1];
+        my $latest_bck_archive_start = $latest_bck->{'archive'}->{'start'};
+        push @human_only_longmsg, "latest_bck_archive_start=".$latest_bck_archive_start;
+        push @human_only_longmsg, "latest_bck_type=".$latest_bck->{'type'};
+
         # Go through needed wal list and check if it exists in the file list
         foreach my $needed_wal (@needed_wal_archives_list) {
             unless (grep /$needed_wal/, @filelist_simplified) {
-                push @crit_msg => "wrong sequence or missing file @ '$needed_wal'";
+                if($needed_wal lt $latest_bck_archive_start) {
+                    push @warn_msg => "wrong sequence or missing file @ '$needed_wal'";
+                }else{
+                    push @crit_msg => "wrong sequence or missing file @ '$needed_wal'";
+                }
             }
         }
 
