@@ -538,6 +538,223 @@ Eg. "1h 55m 6" = "1h55m6s".
 
 =cut
 
+sub get_archived_wal_list {
+    my $min_wal = shift;
+    my $max_wal = shift;
+    my $args_ref = shift;
+    my %args = %{ $args_ref };
+    my $suffix = ".gz";
+    my $archives_dir = $args{'archives_dir'};
+
+    my @filelist;
+    my @branch_wals;
+    my $filename_re = qr/^[0-9A-F]{24}.*$suffix$/;
+    my $filename_re_full = qr/[0-9A-F]{24}.*$suffix$/;
+    my $start_tl = substr($min_wal, 0, 8);
+    my $end_tl   = substr($max_wal, 0, 8);
+    my $history_re = qr/$end_tl.history$/;
+    my $history_re_full = qr/$end_tl.history$/;
+
+    if($args{'repo-host'}){
+        # SFTP connection
+        require Net::SFTP::Foreign;
+        my $sftp;
+        if($args{'repo-host-user'}){
+            $sftp = Net::SFTP::Foreign->new($args{'repo-host'}, user => $args{'repo-host-user'});
+        }else{
+            $sftp = Net::SFTP::Foreign->new($args{'repo-host'});
+        }
+        $sftp->die_on_error("Unable to establish SFTP connection");
+
+        $sftp->find($archives_dir,
+            wanted => sub {
+                my $file_fullpath = $_[1]->{filename};
+                my @split_tab = split('/', $file_fullpath);
+                my $filename = $split_tab[-1];
+
+                if($filename =~ /$filename_re/){
+                    # Get stats of the archived wals
+                    my $attributes = $sftp->stat($_[1]->{filename})
+                        or die "remote stat command failed : ".$sftp->status;
+
+                    if ( $args{'ignore-archived-since'} ) {
+                        my $diff_epoch = time() - $attributes->mtime;
+                        dprint ("file ".$filename." as interval since epoch : ".to_interval($diff_epoch)."\n");
+                        return if ( $diff_epoch <= get_time($args{'ignore-archived-since'}) );
+                    }
+
+                    push @filelist, [substr($filename, 0, 24), $filename, $attributes->mtime, $attributes->size, $file_fullpath];
+
+                }elsif($filename =~ /$history_re/ && $start_tl ne $end_tl){
+                    # Look for the last history file if needed
+                    dprint("history file to open : $filename\n");
+                    
+                    my $history_content = $sftp->get_content($file_fullpath)
+                        or die "remote get_content command failed : ".$sftp->status;
+
+                    my @history_lines = split /\n/, $history_content;
+                    foreach my $line ( @history_lines ){ 
+
+                        my $line_re = qr/^\s*(\d)\t([0-9A-F]+)\/([0-9A-F]+)\t.*$/;
+                        $line =~ /$line_re/ || next;
+                        push @branch_wals =>
+                            sprintf("%08d%08s%08X", $1, $2, hex($3)>>24);
+                    }
+                }             
+            }
+        );
+
+    }elsif($args{'repo-s3'}){
+        require Net::Amazon::S3;
+        require Config::IniFiles;
+
+        my $cfg_file=$args{'default-pgbackrest-config-file'};
+        if(defined $args{'config'}) {
+            $cfg_file=$args{'config'};
+        }
+        dprint("cfg_file: $cfg_file\n");
+
+        my $cfg = Config::IniFiles->new( -file => $cfg_file );
+        my $aws_key = $cfg->val( 'global', 'repo1-s3-key' );
+        my $aws_secret = $cfg->val( 'global', 'repo1-s3-key-secret' );
+        my $repo1_bucket = $cfg->val( 'global', 'repo1-s3-bucket' );
+        my $repo1_endpoint = $cfg->val( 'global', 'repo1-s3-endpoint' );
+        dprint("repo1-s3-bucket: $repo1_bucket\n");
+        dprint("repo1-s3-endpoint: $repo1_endpoint\n");
+
+        my $secure = defined $args{'repo-s3-over-http'} ? 0 : 1;
+
+        pod2usage(
+            -message => 'FATAL: be sure to set repo1-s3-endpoint, repo1-s3-key, repo1-s3-key-secret, and repo1-s3-bucket in the pgBackRest configuration file.',
+            -exitval => 127
+        ) unless ( defined $aws_key and defined $aws_secret and defined $repo1_bucket and defined $repo1_endpoint );
+
+        my $s3 = Net::Amazon::S3->new(
+            aws_access_key_id     => $aws_key,
+            aws_secret_access_key => $aws_secret,
+            host                  => $repo1_endpoint,
+            retry                 => 1,
+            secure                => $secure,
+        );
+
+        my $client = Net::Amazon::S3::Client->new( s3 => $s3 );
+        my $bucket = $client->bucket( name => $repo1_bucket );
+
+        my $stream = $bucket->list({ prefix => $archives_dir, delimiter => '/' });
+        until ( $stream->is_done ) {
+            foreach my $object ( $stream->items ) {
+                my $file_fullpath = $object->key;
+                my @split_tab = split('/', $file_fullpath);
+                my $filename = $split_tab[-1];
+
+                if($filename =~ /$filename_re/){
+                    # Get stats of the archived wals
+                    my $dt = $object->last_modified;
+
+                    if ( $args{'ignore-archived-since'} ) {
+                        my $diff_epoch = time() - $dt->epoch();
+                        dprint ("file ".$filename." as interval since epoch : ".to_interval($diff_epoch)."\n");
+                        return if ( $diff_epoch <= get_time($args{'ignore-archived-since'}) );
+                    }
+
+                    push @filelist, [substr($filename, 0, 24), $filename, $dt->epoch(), $object->size, $file_fullpath];
+
+                }elsif($filename =~ /$history_re/ && $start_tl ne $end_tl){
+                    # Look for the last history file if needed
+                    dprint("history file to open : $filename\n");
+                    
+                    my $history_content = $object->get;
+                    my @history_lines = split /\n/, $history_content;
+                    foreach my $line ( @history_lines ){ 
+
+                        my $line_re = qr/^\s*(\d)\t([0-9A-F]+)\/([0-9A-F]+)\t.*$/;
+                        $line =~ /$line_re/ || next;
+                        push @branch_wals =>
+                            sprintf("%08d%08s%08X", $1, $2, hex($3)>>24);
+                    }
+                }
+            }
+        }
+
+    }else{
+        find ({ wanted => sub {
+                return unless -f;
+                my $file_fullpath = $File::Find::name;
+                my @split_tab = split('/', $file_fullpath);
+                my $filename = $split_tab[-1];
+
+                if($filename =~ /$filename_re_full/){
+                    # Get stats of the archived wals
+                    if ( $args{'ignore-archived-since'} ) {
+                        my $diff_epoch = time() - (stat($file_fullpath))[9];
+                        dprint ("file ".$filename." as interval since epoch : ".to_interval($diff_epoch)."\n");
+                        return if ( $diff_epoch <= get_time($args{'ignore-archived-since'}) );
+                    }
+
+                    push @filelist, [substr($filename, 0, 24), $filename, (stat($File::Find::name))[9,7], $file_fullpath];
+                
+                }elsif($filename =~ /$history_re_full/ && $start_tl ne $end_tl){
+                    # Look for the last history file if needed
+                    dprint("history file to open : $filename\n");
+
+                    open my $fd, "<", "$file_fullpath"
+                        or die "Can't open < $file_fullpath : $!";
+
+                    while ( <$fd> ) {
+                        next unless m{^\s*(\d)\t([0-9A-F]+)/([0-9A-F]+)\t.*$};
+                        push @branch_wals =>
+                            sprintf("%08d%08s%08X", $1, $2, hex($3)>>24);
+                    }
+                    close $fd; 
+                }
+            }, no_chdir => 1, follow => 1
+        }, $archives_dir );
+    }
+
+    my @unique_branch_wals = do { my %seen; grep { !$seen{$_}++ } @branch_wals };
+    return(\@filelist, \@unique_branch_wals);
+}
+
+sub generate_needed_wal_archives_list {
+    my $min_wal = shift;
+    my $max_wal = shift;
+    my $branch_wals_ref = shift;
+    my @branch_wals = @{ $branch_wals_ref };
+    my $seg_per_wal = shift;
+    my $start_tl = substr($min_wal, 0, 8);
+    my $end_tl   = substr($max_wal, 0, 8);
+    my $timeline = hex($start_tl);
+    my $wal = hex(substr($min_wal, 8, 8));
+    my $seg = hex(substr($min_wal, 16, 8));
+
+    # Generate list
+    my $curr = $min_wal;
+    my @needed_wal_archives_list;
+    dprint("$min_wal WAL needed\n");
+    push @needed_wal_archives_list, $min_wal;
+
+    for ( my $i=0, my $j=1; $curr lt $max_wal ; $i++, $j++ ) {
+        $curr = sprintf('%08X%08X%08X',
+            $timeline,
+            $wal + int(($seg + $j)/$seg_per_wal),
+            ($seg + $j)%$seg_per_wal
+        );
+
+        dprint("$curr WAL needed\n");
+        push @needed_wal_archives_list, $curr;
+
+        if ( grep /$curr/, @branch_wals ) {
+            dprint("found a boundary @ '$curr' !\n");
+            $timeline++;
+            $j--;
+            next;
+        }
+    }
+
+    my @unique_needed_wal_archives_list = do { my %seen; grep { !$seen{$_}++ } @needed_wal_archives_list };
+    return sort @unique_needed_wal_archives_list;
+}
+
 sub check_wal_archives {
     my $me             = 'WAL_ARCHIVES';
     my %args           = %{ $_[0] };
@@ -546,7 +763,6 @@ sub check_wal_archives {
     my @crit_msg;
     my @longmsg;
     my @human_only_longmsg;
-    my $suffix = ".gz";
 
     pod2usage(
         -message => 'FATAL: you must provide --repo-path.',
@@ -557,123 +773,20 @@ sub check_wal_archives {
     die("Can't get pgBackRest info.\n") unless (defined $backups_info);
 
     if($backups_info->{'status'}->{'code'} == 0) {
-
-        my $wal_segsize = $args{'wal-segsize'};
-        my $walsize = '4GB'; # 4 TB -> bytes
-        my $seg_per_wal = get_size($walsize) / get_size($wal_segsize); #Only for PG >= 9.3
-        my $dbver=($backups_info->{'db'}[0]->{'version'}+0)*10;
-        $seg_per_wal-- if $dbver <= 92;
-
         my $archives_dir = $args{'repo-path'}."/".$args{'stanza'}."/".$backups_info->{'archive'}[0]->{'id'};
         dprint("archives_dir: $archives_dir\n");
+        $args{'archives_dir'} = $archives_dir;
+        push @human_only_longmsg, "archives_dir=$archives_dir";
         my $min_wal = $backups_info->{'archive'}[0]->{'min'};
         my $max_wal = $backups_info->{'archive'}[0]->{'max'};
-        push @human_only_longmsg, "archives_dir=$archives_dir";
         push @human_only_longmsg, "min_wal=$min_wal" if $min_wal;
 
         # Get all the WAL archives and history files
+        my ($filelist_ref, $branch_wals_ref) = &get_archived_wal_list($min_wal, $max_wal, \%args);
         my @filelist;
-        my @filelist_simplified;
-        my $filename_re = qr/^[0-9A-F]{24}.*$suffix$/;
-        my $filename_re_full = qr/[0-9A-F]{24}.*$suffix$/;
-
-        if($args{'repo-host'}){
-            require Net::SFTP::Foreign;
-            my $sftp;
-            if($args{'repo-host-user'}){
-                $sftp = Net::SFTP::Foreign->new($args{'repo-host'}, user => $args{'repo-host-user'});
-            }else{
-                $sftp = Net::SFTP::Foreign->new($args{'repo-host'});
-            }
-            $sftp->die_on_error("Unable to establish SFTP connection");
-            my @files = $sftp->find($archives_dir,
-                                    wanted => sub {
-                                        my $file_fullpath = $_[1]->{filename};
-                                        my @split_tab = split('/', $file_fullpath);
-                                        my $filename = $split_tab[-1];
-                                        return undef unless $filename =~ /$filename_re/;
-                                        my $attributes = $sftp->stat($_[1]->{filename})
-                                            or die "remote stat command failed: ".$sftp->status;
-
-                                        if ( $args{'ignore-archived-since'} ) {
-                                            my $diff_epoch = time() - $attributes->mtime;
-                                            dprint ("file ".$filename." as interval since epoch : ".to_interval($diff_epoch)."\n");
-                                            return if ( $diff_epoch <= get_time($args{'ignore-archived-since'}) );
-                                        }
-
-                                        push @filelist, [$filename, $attributes->mtime, $attributes->size, $file_fullpath];
-                                        push @filelist_simplified, substr($filename, 0, 24);
-                                    });
-        }elsif($args{'repo-s3'}){
-            require Net::Amazon::S3;
-            require Config::IniFiles;
-
-            my $cfg_file=$args{'default-pgbackrest-config-file'};
-            if(defined $args{'config'}) {
-                $cfg_file=$args{'config'};
-            }
-            dprint("cfg_file: $cfg_file\n");
-
-            my $cfg = Config::IniFiles->new( -file => $cfg_file );
-            my $aws_key = $cfg->val( 'global', 'repo1-s3-key' );
-            my $aws_secret = $cfg->val( 'global', 'repo1-s3-key-secret' );
-            my $repo1_bucket = $cfg->val( 'global', 'repo1-s3-bucket' );
-            my $repo1_endpoint = $cfg->val( 'global', 'repo1-s3-endpoint' );
-            dprint("repo1-s3-bucket: $repo1_bucket\n");
-            dprint("repo1-s3-endpoint: $repo1_endpoint\n");
-
-            my $secure = defined $args{'repo-s3-over-http'} ? 0 : 1;
-
-            pod2usage(
-                -message => 'FATAL: be sure to set repo1-s3-endpoint, repo1-s3-key, repo1-s3-key-secret, and repo1-s3-bucket in the pgBackRest configuration file.',
-                -exitval => 127
-            ) unless ( defined $aws_key and defined $aws_secret and defined $repo1_bucket and defined $repo1_endpoint );
-
-            my $s3 = Net::Amazon::S3->new(
-                aws_access_key_id     => $aws_key,
-                aws_secret_access_key => $aws_secret,
-                host                  => $repo1_endpoint,
-                retry                 => 1,
-                secure                => $secure,
-            );
-
-            my $client = Net::Amazon::S3::Client->new( s3 => $s3 );
-            my $bucket = $client->bucket( name => $repo1_bucket );
-
-            my $stream = $bucket->list({ prefix => $archives_dir, delimiter => '/' });
-            until ( $stream->is_done ) {
-                foreach my $object ( $stream->items ) {
-                    my @split_tab = split('/', $object->key);
-                    my $filename = $split_tab[-1];
-                    next unless $filename =~ /$filename_re/;
-                    my $dt = $object->last_modified;
-
-                    if ( $args{'ignore-archived-since'} ) {
-                        my $diff_epoch = time() - $dt->epoch();
-                        dprint ("s3 file ".$filename." as interval since epoch : ".to_interval($diff_epoch)."\n");
-                        next if ( $diff_epoch <= get_time($args{'ignore-archived-since'}) );
-                    }
-
-                    push @filelist, [$filename, $dt->epoch(), $object->size, $object->key];
-                    push @filelist_simplified, substr($filename, 0, 24);
-                }
-            }
-        }else{
-            find ({ wanted => sub {
-                    return unless -f;
-                    return unless /$filename_re_full/;
-
-                    if ( $args{'ignore-archived-since'} ) {
-                        my $diff_epoch = time() - (stat($File::Find::name))[9];
-                        dprint ("file ".$_." as interval since epoch : ".to_interval($diff_epoch)."\n");
-                        return if ( $diff_epoch <= get_time($args{'ignore-archived-since'}) );
-                    }
-                    push @filelist, [basename($_), (stat($File::Find::name))[9,7], $File::Find::name];
-                    push @filelist_simplified, substr(basename($_), 0, 24);
-                }, no_chdir => 1, follow => 1
-            }, $archives_dir );
-        }
-
+        @filelist = @{ $filelist_ref } if $filelist_ref;
+        my @branch_wals;
+        @branch_wals = @{ $branch_wals_ref } if $branch_wals_ref;
         return unknown $me, ['no archived WAL found'] unless @filelist;
 
         # Sort by filename
@@ -682,7 +795,12 @@ sub check_wal_archives {
                 or die "Can't read WAL files."
             } @filelist;
 
-        # Refresh max_wal after archives scan, assume pgBackRest info cmd returns very fast
+        my @filelist_simplified;
+        foreach my $elem (@filelist_sorted) {
+            push @filelist_simplified, $elem->[0];
+        }
+
+        # Refresh after archives scan, assume pgBackRest info cmd returns very fast
         $backups_info = pgbackrest_info();
         $max_wal = $backups_info->{'archive'}[0]->{'max'};
 
@@ -701,7 +819,7 @@ sub check_wal_archives {
         push @human_only_longmsg, "oldest_archive=".$filelist_sorted[0][0];
         push @human_only_longmsg, "latest_archive=".$filelist_sorted[-1][0];
 
-        my $latest_archive_age = time() - $filelist_sorted[-1][1];
+        my $latest_archive_age = time() - $filelist_sorted[-1][2];
         my $num_archives = scalar(@filelist_sorted);
         push @longmsg, "latest_archive_age=".to_interval($latest_archive_age);
         push @longmsg, "num_archives=$num_archives";
@@ -710,50 +828,23 @@ sub check_wal_archives {
         if ( $args{'latest-archive-age-alert'} && $latest_archive_age > get_time($args{'latest-archive-age-alert'})){
             push @crit_msg => "latest_archive_age (".to_interval($latest_archive_age).") exceeded";
         }
+        push @msg, "$num_archives WAL archived, latest archived since ". to_interval($latest_archive_age);
 
-        my $start_tl = substr($filelist_sorted[0][0], 0, 8);
-        my $end_tl   = substr($filelist_sorted[-1][0], 0, 8);
-        my $timeline = hex($start_tl);
-        my $wal = hex(substr($filelist_sorted[0][0], 8, 8));
-        my $seg = hex(substr($filelist_sorted[0][0], 16, 8));
+        # Get all the needed wal archives based on min/max pgBackRest info
+        my $wal_segsize = $args{'wal-segsize'};
+        my $walsize = '4GB'; # 4 TB -> bytes
+        my $seg_per_wal = get_size($walsize) / get_size($wal_segsize); #Only for PG >= 9.3
+        my $dbver=($backups_info->{'db'}[0]->{'version'}+0)*10;
+        $seg_per_wal-- if $dbver <= 92;
+        my @needed_wal_archives_list=&generate_needed_wal_archives_list($min_wal, $max_wal, \@branch_wals, $seg_per_wal);
 
-        # look for history files if timeline differs
-        my @branch_wals;
-        if ( $start_tl ne $end_tl ) {
-            if ( -s "$archives_dir/$end_tl.history" ) {
-                open my $fd, "<", "$archives_dir/$end_tl.history";
-                while ( <$fd> ) {
-                    next unless m{^\s*(\d)\t([0-9A-F]+)/([0-9A-F]+)\t.*$};
-                    push @branch_wals =>
-                        sprintf("%08d%08s%08X", $1, $2, hex($3)>>24);
-                }
-                close $fd;
+        # Go through needed wal list and check if it exists in the file list
+        foreach my $needed_wal (@needed_wal_archives_list) {
+            unless (grep /$needed_wal/, @filelist_simplified) {
+                push @crit_msg => "wrong sequence or missing file @ '$needed_wal'";
             }
         }
 
-        # Check ALL archives are here.
-        for ( my $i=0, my $j=0; $i <= $#filelist_sorted ; $i++, $j++ ) {
-            dprint("checking WAL $filelist_sorted[$i][0]\n");
-            my $curr = sprintf('%08X%08X%08X',
-                $timeline,
-                $wal + int(($seg + $j)/$seg_per_wal),
-                ($seg + $j)%$seg_per_wal
-            );
-
-            unless ( grep( /^$curr/, $filelist_sorted[$i][0] ) ) {
-                push @crit_msg => "wrong sequence or missing file @ '$curr'";
-                last;
-            }
-
-            if ( grep /$curr/, @branch_wals ) {
-                dprint("found a boundary @ '$curr' !\n");
-                $timeline++;
-                $j--;
-            }
-        }
-
-        push @msg, "$num_archives WAL archived, "
-            ."latest archived since ". to_interval($latest_archive_age);
     }else{
         push @crit_msg, $backups_info->{'status'}->{'message'};
     }

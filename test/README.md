@@ -44,7 +44,7 @@ cd test
 make s1
 ```
 
-Expected make time: 6 min.
+Expected make time: 7 min.
 
 _Check the results of a manual execution of check_pgbackrest_:
 
@@ -71,7 +71,7 @@ cd test
 make s2
 ```
 
-Expected make time: 7 min.
+Expected make time: 6 min.
 
 _Check the results of a manual execution of check_pgbackrest_:
 
