@@ -524,6 +524,10 @@ integers are accepted. Eg. C<1.5MB> will be refused, use C<1500kB>.
 
 The factor between units is 1024 bytes. Eg. C<1g = 1G = 1024*1024*1024.> 
 
+Use the C<--ignore-archived-before> argument to ignore the archived 
+WALs generated before the provided interval. Used to only check the
+latest archives.
+
 Use the C<--ignore-archived-after> argument to ignore the archived 
 WALs generated after the provided interval.
 
@@ -577,10 +581,11 @@ sub get_archived_wal_list {
                     my $attributes = $sftp->stat($_[1]->{filename})
                         or die "remote stat command failed : ".$sftp->status;
 
-                    if ( $args{'ignore-archived-after'} ) {
+                    if ( $args{'ignore-archived-after'} or $args{'ignore-archived-before'} ) {
                         my $diff_epoch = time() - $attributes->mtime;
                         dprint ("file ".$filename." as interval since epoch : ".to_interval($diff_epoch)."\n");
-                        return if ( $diff_epoch <= get_time($args{'ignore-archived-after'}) );
+                        return if ( $args{'ignore-archived-after'} && $diff_epoch <= get_time($args{'ignore-archived-after'}) );
+                        return if ( $args{'ignore-archived-before'} && $diff_epoch >= get_time($args{'ignore-archived-before'}) );
                     }
 
                     push @filelist, [substr($filename, 0, 24), $filename, $attributes->mtime, $attributes->size, $file_fullpath];
@@ -651,10 +656,11 @@ sub get_archived_wal_list {
                     # Get stats of the archived wals
                     my $dt = $object->last_modified;
 
-                    if ( $args{'ignore-archived-after'} ) {
+                    if ( $args{'ignore-archived-after'} or $args{'ignore-archived-before'} ) {
                         my $diff_epoch = time() - $dt->epoch();
                         dprint ("file ".$filename." as interval since epoch : ".to_interval($diff_epoch)."\n");
-                        return if ( $diff_epoch <= get_time($args{'ignore-archived-after'}) );
+                        return if ( $args{'ignore-archived-after'} && $diff_epoch <= get_time($args{'ignore-archived-after'}) );
+                        return if ( $args{'ignore-archived-before'} && $diff_epoch >= get_time($args{'ignore-archived-before'}) );
                     }
 
                     push @filelist, [substr($filename, 0, 24), $filename, $dt->epoch(), $object->size, $file_fullpath];
@@ -685,10 +691,11 @@ sub get_archived_wal_list {
 
                 if($filename =~ /$filename_re_full/){
                     # Get stats of the archived wals
-                    if ( $args{'ignore-archived-after'} ) {
+                    if ( $args{'ignore-archived-after'} or $args{'ignore-archived-before'} ) {
                         my $diff_epoch = time() - (stat($file_fullpath))[9];
                         dprint ("file ".$filename." as interval since epoch : ".to_interval($diff_epoch)."\n");
-                        return if ( $diff_epoch <= get_time($args{'ignore-archived-after'}) );
+                        return if ( $args{'ignore-archived-after'} && $diff_epoch <= get_time($args{'ignore-archived-after'}) );
+                        return if ( $args{'ignore-archived-before'} && $diff_epoch >= get_time($args{'ignore-archived-before'}) );
                     }
 
                     push @filelist, [substr($filename, 0, 24), $filename, (stat($File::Find::name))[9,7], $file_fullpath];
@@ -779,7 +786,6 @@ sub check_wal_archives {
         push @human_only_longmsg, "archives_dir=$archives_dir";
         my $min_wal = $backups_info->{'archive'}[0]->{'min'};
         my $max_wal = $backups_info->{'archive'}[0]->{'max'};
-        push @human_only_longmsg, "min_wal=$min_wal" if $min_wal;
 
         # Get all the WAL archives and history files
         my ($filelist_ref, $branch_wals_ref) = &get_archived_wal_list($min_wal, $max_wal, \%args);
@@ -803,6 +809,13 @@ sub check_wal_archives {
         # Refresh after archives scan, assume pgBackRest info cmd returns very fast
         $backups_info = pgbackrest_info();
         $max_wal = $backups_info->{'archive'}[0]->{'max'};
+
+        # Change min_wal if some archived are ignored
+        if ( $args{'ignore-archived-before'} && $min_wal ) {
+            $min_wal = substr($filelist_sorted[0][0], 0, 24);
+            dprint ("min_wal changed to ".$min_wal."\n");
+        }
+        push @human_only_longmsg, "min_wal=$min_wal" if $min_wal;
 
         # Change max_wal if some archived are ignored
         if ( $args{'ignore-archived-after'} && $max_wal ) {
@@ -908,6 +921,7 @@ GetOptions(
         'format|F=s',
         'help|?!',
         'ignore-archived-after=s',
+        'ignore-archived-before=s',
         'latest-archive-age-alert=s',
         'list|l!',
         'prefix|P=s',
@@ -959,11 +973,11 @@ pod2usage(
 ) if ( $args{'repo-path'} or $args{'repo-host'} or $args{'repo-host-user'} or $args{'repo-s3'}  or $args{'repo-s3-over-http'} )
     and $args{'service'} ne 'archives';
 
-# Check "archives" specific args --ignore-archived-after and --latest-archive-age-alert
+# Check "archives" specific args --ignore-archived-after, --ignore-archived-before and --latest-archive-age-alert
 pod2usage(
-    -message => 'FATAL: "ignore-archived-after" and "latest-archive-age-alert" are only allowed with "archives" service.',
+    -message => 'FATAL: "ignore-archived-after", "ignore-archived-before" and "latest-archive-age-alert" are only allowed with "archives" service.',
     -exitval => 127
-) if ( $args{'ignore-archived-after'} or $args{'latest-archive-age-alert'} )
+) if ( $args{'ignore-archived-after'} or $args{'ignore-archived-before'} or $args{'latest-archive-age-alert'} )
     and $args{'service'} ne 'archives';
 
 # Check "check_pgb_version" specific arg --target-version

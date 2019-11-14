@@ -48,21 +48,26 @@ echo "--service=retention fail"
 sudo -iu postgres psql -c "SELECT pg_sleep(2);" > /dev/null 2>&1
 $PLUGIN_PATH/check_pgbackrest --stanza=my_stanza --service=retention --retention-full=2 --retention-age=1s --retention-age-to-full=1s | cut -f1 -d"|" > $RESULTS_DIR/retention-fail.out
 
-# # --service=archives missing arg
+# --service=archives missing arg
 echo "--service=archives missing arg"
 $PLUGIN_PATH/check_pgbackrest --stanza=my_stanza --service=archives > $RESULTS_DIR/archives-missing-arg.out 2>&1
 
-# # --service=archives --repo-path
+# --service=archives --repo-path
 echo "--service=archives --repo-path"
 sudo -iu postgres psql -c "SELECT pg_switch_xlog();" > /dev/null 2>&1
 sudo -iu postgres psql -c "SELECT pg_switch_wal();" > /dev/null 2>&1
 $PLUGIN_PATH/check_pgbackrest --stanza=my_stanza --service=archives --repo-path=/repo1/archive --repo-s3 --repo-s3-over-http | cut -f1 -d"-" > $RESULTS_DIR/archives-ok.out
 
-# # --service=archives --ignore-archived-after
+# --service=archives --ignore-archived-before
+echo "--service=archives --ignore-archived-before"
+sudo -iu postgres psql -c "SELECT pg_sleep(2);" > /dev/null 2>&1
+$PLUGIN_PATH/check_pgbackrest --stanza=my_stanza --service=archives --repo-path=/repo1/archive --repo-s3 --repo-s3-over-http --ignore-archived-before=1s > $RESULTS_DIR/archives-ignore-before.out
+
+# --service=archives --ignore-archived-after
 echo "--service=archives --ignore-archived-after"
 $PLUGIN_PATH/check_pgbackrest --stanza=my_stanza --service=archives --repo-path=/repo1/archive --repo-s3 --repo-s3-over-http --ignore-archived-after=1h > $RESULTS_DIR/archives-ignore-after.out
 
-# # --service=archives --latest-archive-age-alert
+# --service=archives --latest-archive-age-alert
 echo "--service=archives --latest-archive-age-alert"
 sudo -iu postgres psql -c "SELECT pg_sleep(2);" > /dev/null 2>&1
 $PLUGIN_PATH/check_pgbackrest --stanza=my_stanza --service=archives --repo-path=/repo1/archive --repo-s3 --repo-s3-over-http --latest-archive-age-alert=1h | cut -f1 -d"-" > $RESULTS_DIR/archives-age-alert-ok.out

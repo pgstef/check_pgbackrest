@@ -3,6 +3,8 @@ Changelog
 
 2019-xx-xx v1.6:
 
+  - Add ignore-archived-before argument to ignore the archived WALs before the 
+  provided interval.
   - Rename ignore-archived-since argument to ignore-archived-after.
   - Add --retention-age-to-full argument to check the latest full backup age.
   - Fix bad behavior on CIFS mount (reported by `renesepp`).
