@@ -60,7 +60,7 @@ undef @path;
 # Reference to the output sub
 my $output_fmt;
 
-$VERSION = '1.6dev';
+$VERSION = '1.6';
 $PROGRAM = 'check_pgbackrest';
 
 # Available services and descriptions.
@@ -885,7 +885,7 @@ sub check_wal_archives {
         # Generate @warn_msg and @crit_msg with missing files (sorted and unique messages)
         my @unique_warn_missing_file_msg = do { my %seen; grep { !$seen{$_}++ } @warn_missing_file_msg };
         push @warn_msg, sort @unique_warn_missing_file_msg;
-        
+
         push @crit_missing_file_msg, @warn_missing_file_msg if @warn_missing_file_msg and @crit_missing_file_msg;
         my @unique_crit_missing_file_msg = do { my %seen; grep { !$seen{$_}++ } @crit_missing_file_msg };
         push @crit_msg, sort @unique_crit_missing_file_msg;
@@ -1040,7 +1040,7 @@ check_pgbackrest is an open project. Any contribution to improve it is welcome.
 
 =head1 VERSION
 
-check_pgbackrest version 1.5, released on Mon Mar 18 2019.
+check_pgbackrest version 1.6, released on Thu Nov 14 2019.
 
 =head1 LICENSING
 
