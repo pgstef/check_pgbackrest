@@ -79,7 +79,7 @@ _Check the results of a manual execution of check_pgbackrest_:
 vagrant ssh pgsql-srv -c "sudo /check_pgbackrest/test/regress/test-s2-from-primary.bash"
 ```
 
-Expected run time: 40 sec.
+Expected run time: 50 sec.
 
 ### Test case 3
 

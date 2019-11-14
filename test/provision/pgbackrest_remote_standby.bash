@@ -47,11 +47,10 @@ delta=y
 
 [my_stanza]
 pg1-path=${PGDATA}
-recovery-option=standby_mode=on
 recovery-option=primary_conninfo=host=pgsql-srv
 recovery-option=recovery_target_timeline=latest
 EOC
 
-systemctl stop postgresql-11.service
-sudo -iu postgres pgbackrest --stanza=my_stanza --config=/etc/pgbackrest-restore.conf restore
-systemctl start postgresql-11.service
+systemctl stop "postgresql-${PGVER}"
+sudo -iu postgres pgbackrest --stanza=my_stanza --config=/etc/pgbackrest-restore.conf --type=standby restore
+systemctl start "postgresql-${PGVER}"
