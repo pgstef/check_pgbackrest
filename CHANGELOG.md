@@ -1,7 +1,11 @@
 Changelog
 =========
 
-2019-xx-xx v1.6:
+2019-xx-xx v1.7:
+
+  - ...
+
+2019-11-14 v1.6:
 
   - Check for each backup its needed archived WALs based on wal start/stop 
   information given by the pgBackRest "info" command.

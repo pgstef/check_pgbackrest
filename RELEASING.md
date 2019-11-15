@@ -28,11 +28,11 @@ podselect check_pgbackrest > README.pod
 ## Tagging and building tar file
 
 ```bash
-TAG=REL1_6
+TAG=REL1_7
 git tag -a $TAG -m "Release $TAG"
 git tag
 git push --tags
-git archive --prefix=check_pgbackrest-$TAG/ -o /tmp/check_pgbackrest-1.6.tar.gz $TAG
+git archive --prefix=check_pgbackrest-$TAG/ -o /tmp/check_pgbackrest-1.7.tar.gz $TAG
 ```
 
 ## Release on github
@@ -92,7 +92,7 @@ make all
 Send a mail to the pgsql-announce mailing list. Eg.:
 
 ```
-check_pgbackrest 1.6 has been released
+check_pgbackrest 1.7 has been released
 
 check_pgbackrest is designed to monitor pgBackRest backups from Nagios, 
 relying on the status information given by the "info" command.
@@ -100,7 +100,7 @@ relying on the status information given by the "info" command.
 It allows to monitor the backups retention and the consistency of the 
 archived WAL segments.
 
-Changes in check_pgbackrest 1.6:
+Changes in check_pgbackrest 1.7:
   - ...
   - ...
 
@@ -113,3 +113,46 @@ Links:
   - Download: https://github.com/dalibo/check_pgbackrest/releases
   - Support: https://github.com/dalibo/check_pgbackrest/issues
 ```
+
+### Submit a news on postgresql.org
+
+* organisation: Dalibo
+* Title: "check_pgbackrest 1.7 has been released"
+* Content:
+  
+```
+_Town, Country, Month xx, 2019_
+
+`check_pgbackrest` is designed to monitor [pgBackRest](https://pgbackrest.org) 
+backups from Nagios, relying on the status information given by the 
+[info](https://pgbackrest.org/command.html#command-info) command.
+
+It allows to monitor the backups retention and the consistency of the archived 
+WAL segments.
+
+Changes in check_pgbackrest 1.7
+------------------------------------------------------------------------------
+
+  * ...
+  * ...
+
+Links & Credits
+--------------------------------------------------------------------------------
+
+`check_pgbackrest` is part of the [Dalibo Labs] initiative. It is mainly 
+developed by [Stefan Fercot].
+This is an open project, licensed under the PostgreSQL license. 
+Any contribution to improve it is welcome.
+
+Links:
+
+  * [Download]: https://github.com/dalibo/check_pgbackrest/releases
+  * [Support]: https://github.com/dalibo/check_pgbackrest/issues
+
+Note: RPM package is available on the GitHub Release page. 
+
+[Dalibo Labs]: https://labs.dalibo.com
+[Stefan Fercot]: https://www.dalibo.com/en/equipe#stefan
+```
+  
+* check "Third Party Open Source"

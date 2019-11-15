@@ -60,7 +60,7 @@ undef @path;
 # Reference to the output sub
 my $output_fmt;
 
-$VERSION = '1.6';
+$VERSION = '1.7dev';
 $PROGRAM = 'check_pgbackrest';
 
 # Available services and descriptions.
