@@ -3,7 +3,8 @@ Changelog
 
 2019-xx-xx v1.7:
 
-  - ...
+  - Add timing debug information.
+  - Improve performance of the needed wal list check.
 
 2019-11-14 v1.6:
 

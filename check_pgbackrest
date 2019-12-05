@@ -583,9 +583,16 @@ sub get_archived_wal_list {
 
                     if ( $args{'ignore-archived-after'} or $args{'ignore-archived-before'} ) {
                         my $diff_epoch = time() - $attributes->mtime;
-                        dprint ("file ".$filename." as interval since epoch : ".to_interval($diff_epoch)."\n");
-                        return if ( $args{'ignore-archived-after'} && $diff_epoch <= get_time($args{'ignore-archived-after'}) );
-                        return if ( $args{'ignore-archived-before'} && $diff_epoch >= get_time($args{'ignore-archived-before'}) );
+                        
+                        if ( $args{'ignore-archived-after'} && $diff_epoch <= get_time($args{'ignore-archived-after'}) ){
+                        	dprint ("ignored file ".$filename." as interval since epoch : ".to_interval($diff_epoch)."\n");
+                        	return;
+                        }
+                        
+                        if ( $args{'ignore-archived-before'} && $diff_epoch >= get_time($args{'ignore-archived-before'}) ){
+                        	dprint ("ignored file ".$filename." as interval since epoch : ".to_interval($diff_epoch)."\n");
+                        	return;
+                        }
                     }
 
                     push @filelist, [substr($filename, 0, 24), $filename, $attributes->mtime, $attributes->size, $file_fullpath];
@@ -658,9 +665,16 @@ sub get_archived_wal_list {
 
                     if ( $args{'ignore-archived-after'} or $args{'ignore-archived-before'} ) {
                         my $diff_epoch = time() - $dt->epoch();
-                        dprint ("file ".$filename." as interval since epoch : ".to_interval($diff_epoch)."\n");
-                        return if ( $args{'ignore-archived-after'} && $diff_epoch <= get_time($args{'ignore-archived-after'}) );
-                        return if ( $args{'ignore-archived-before'} && $diff_epoch >= get_time($args{'ignore-archived-before'}) );
+
+                        if ( $args{'ignore-archived-after'} && $diff_epoch <= get_time($args{'ignore-archived-after'}) ){
+                        	dprint ("ignored file ".$filename." as interval since epoch : ".to_interval($diff_epoch)."\n");
+                        	return;
+                        }
+                        
+                        if ( $args{'ignore-archived-before'} && $diff_epoch >= get_time($args{'ignore-archived-before'}) ){
+                        	dprint ("ignored file ".$filename." as interval since epoch : ".to_interval($diff_epoch)."\n");
+                        	return;
+                        }
                     }
 
                     push @filelist, [substr($filename, 0, 24), $filename, $dt->epoch(), $object->size, $file_fullpath];
@@ -693,9 +707,16 @@ sub get_archived_wal_list {
                     # Get stats of the archived wals
                     if ( $args{'ignore-archived-after'} or $args{'ignore-archived-before'} ) {
                         my $diff_epoch = time() - (stat($file_fullpath))[9];
-                        dprint ("file ".$filename." as interval since epoch : ".to_interval($diff_epoch)."\n");
-                        return if ( $args{'ignore-archived-after'} && $diff_epoch <= get_time($args{'ignore-archived-after'}) );
-                        return if ( $args{'ignore-archived-before'} && $diff_epoch >= get_time($args{'ignore-archived-before'}) );
+
+                        if ( $args{'ignore-archived-after'} && $diff_epoch <= get_time($args{'ignore-archived-after'}) ){
+                        	dprint ("ignored file ".$filename." as interval since epoch : ".to_interval($diff_epoch)."\n");
+                        	return;
+                        }
+                        
+                        if ( $args{'ignore-archived-before'} && $diff_epoch >= get_time($args{'ignore-archived-before'}) ){
+                        	dprint ("ignored file ".$filename." as interval since epoch : ".to_interval($diff_epoch)."\n");
+                        	return;
+                        }
                     }
 
                     push @filelist, [substr($filename, 0, 24), $filename, (stat($File::Find::name))[9,7], $file_fullpath];
@@ -737,7 +758,7 @@ sub generate_needed_wal_archives_list {
     # Generate list
     my $curr = $min_wal;
     my @needed_wal_archives_list;
-    dprint("$min_wal WAL needed\n");
+    # dprint("$min_wal WAL needed\n");
     push @needed_wal_archives_list, $min_wal;
 
     for ( my $i=0, my $j=1; $curr lt $max_wal ; $i++, $j++ ) {
@@ -747,7 +768,7 @@ sub generate_needed_wal_archives_list {
             ($seg + $j)%$seg_per_wal
         );
 
-        dprint("$curr WAL needed\n");
+        # dprint("$curr WAL needed\n");
         push @needed_wal_archives_list, $curr;
 
         if ( grep /$curr/, @branch_wals ) {
@@ -776,8 +797,10 @@ sub check_wal_archives {
         -exitval => 127
     ) if ( not defined $args{'repo-path'} );
 
+    my $start_time = time();
     my $backups_info = pgbackrest_info();
     die("Can't get pgBackRest info.\n") unless (defined $backups_info);
+    dprint("!> pgBackRest info took ".(time() - $start_time)."s\n");
 
     if($backups_info->{'status'}->{'code'} == 0) {
         my $archives_dir = $args{'repo-path'}."/".$args{'stanza'}."/".$backups_info->{'archive'}[0]->{'id'};
@@ -788,6 +811,7 @@ sub check_wal_archives {
         my $max_wal = $backups_info->{'archive'}[0]->{'max'};
 
         # Get all the WAL archives and history files
+        $start_time = time();
         dprint("Get all the WAL archives and history files...\n");
         my ($filelist_ref, $branch_wals_ref) = &get_archived_wal_list($min_wal, $max_wal, \%args);
         my @filelist;
@@ -795,6 +819,7 @@ sub check_wal_archives {
         my @branch_wals;
         @branch_wals = @{ $branch_wals_ref } if $branch_wals_ref;
         return unknown $me, ['no archived WAL found'] unless @filelist;
+		dprint("!> Get all the WAL archives and history files took ".(time() - $start_time)."s\n");
 
         # Sort by filename
         my @filelist_sorted = sort { $a->[0] cmp $b->[0] }
@@ -803,13 +828,17 @@ sub check_wal_archives {
             } @filelist;
 
         my @filelist_simplified;
+		my %filelist_simplified_hash;
         foreach my $elem (@filelist_sorted) {
             push @filelist_simplified, $elem->[0];
+            $filelist_simplified_hash{ $elem->[0] } = $elem;
         }
 
         # Refresh after archives scan, assume pgBackRest info cmd returns very fast
+        $start_time = time();
         $backups_info = pgbackrest_info();
         $max_wal = $backups_info->{'archive'}[0]->{'max'};
+        dprint("!> Refresh pgBackRest info took ".(time() - $start_time)."s\n");
 
         # Change min_wal if some archived are ignored
         if ( $args{'ignore-archived-before'} && $min_wal ) {
@@ -851,7 +880,9 @@ sub check_wal_archives {
         my $dbver=($backups_info->{'db'}[0]->{'version'}+0)*10;
         $seg_per_wal-- if $dbver <= 92;
         dprint("Get all the needed wal archives...\n");
+        $start_time = time();
         my @needed_wal_archives_list=&generate_needed_wal_archives_list($min_wal, $max_wal, \@branch_wals, $seg_per_wal);
+		dprint("!> Get all the needed wal archives took ".(time() - $start_time)."s\n");
 
         # Get the latest backup info
         my $latest_bck = @{$backups_info->{'backup'}}[-1];
@@ -862,8 +893,9 @@ sub check_wal_archives {
         my @warn_missing_file_msg;
         my @crit_missing_file_msg;
         # Go through needed wal list and check if it exists in the file list
+        $start_time = time();
         foreach my $needed_wal (@needed_wal_archives_list) {
-            unless (grep /$needed_wal/, @filelist_simplified) {
+            unless ( $filelist_simplified_hash{ $needed_wal } ) {
                 if($needed_wal lt $latest_bck_archive_start) {
                     push @warn_missing_file_msg => "wrong sequence or missing file @ '$needed_wal'";
                 }else{
@@ -871,16 +903,19 @@ sub check_wal_archives {
                 }
             }
         }
+        dprint("!> Go through needed wal list and check took ".(time() - $start_time)."s\n");
 
         # Go through each backup to check their needed wal archives
+        $start_time = time();
         foreach my $line (@{$backups_info->{'backup'}}){
             dprint("Get all the needed wal archives for ".$line->{'label'}."...\n");
             foreach my $needed_wal (&generate_needed_wal_archives_list($line->{'archive'}->{'start'}, $line->{'archive'}->{'stop'}, \@branch_wals, $seg_per_wal)) {
-                unless (grep /$needed_wal/, @filelist_simplified) {
+                unless ( $filelist_simplified_hash{ $needed_wal } ) {
                     push @crit_missing_file_msg => "wrong sequence or missing file @ '$needed_wal'";
                 }
             }
         }
+        dprint("!> Go through each backup, get the needed wal and check took ".(time() - $start_time)."s\n");
 
         # Generate @warn_msg and @crit_msg with missing files (sorted and unique messages)
         my @unique_warn_missing_file_msg = do { my %seen; grep { !$seen{$_}++ } @warn_missing_file_msg };
