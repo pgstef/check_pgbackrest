@@ -3,6 +3,7 @@ Changelog
 
 2019-xx-xx v1.7:
 
+  - Add json output format.
   - Add timing debug information.
   - Improve performance of the needed wal list check.
 
