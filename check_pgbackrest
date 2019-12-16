@@ -98,7 +98,7 @@ Name of the stanza to check.
 
 =item B<-F>, B<--output> OUTPUT_FORMAT
 
-The output format. Supported outputs are: C<human> and C<nagios> (default).
+The output format. Supported outputs are: C<human>, C<json> and C<nagios> (default).
 
 =item B<-C>, B<--command> FILE
 
@@ -434,6 +434,29 @@ sub pgbackrest_info {
     return;
 }
 
+sub pgbackrest_ls {
+	my $args_ref = shift;
+    my %args = %{ $args_ref };
+    my $lscmd = $args{'command'}." ls";
+    $lscmd .= " ".$args{'archives_dir'};
+    $lscmd .= " --recurse --output=json";
+
+    if(defined $args{'config'}) {
+        $lscmd .= " --config=".$args{'config'};
+    }    
+
+    if(defined $args{'prefix'}) {
+        $lscmd = $args{'prefix'}." $lscmd";
+    }
+
+    dprint("pgBackRest ls command was : '$lscmd'\n");
+    my $json_output = `$lscmd 2>&1 |grep -v WARN |grep -v ERROR`;
+
+    die("Can't get pgBackRest list.\nCommand was '$lscmd'.\n") unless ($? eq 0);
+    
+    return decode_json($json_output);
+}
+
 # Services
 #-----------------------------------------------------------------------------
 
@@ -585,6 +608,25 @@ sub get_archived_wal_list {
     my $end_tl   = substr($max_wal, 0, 8);
     my $history_re = qr/$end_tl.history$/;
     my $history_re_full = qr/$end_tl.history$/;
+
+    # Prepare usage of pgBackRest ls command
+	if(0){
+		my $list=pgbackrest_ls(\%args);
+
+		foreach my $key (keys $list) {
+			next unless $list->{$key}->{'type'} eq 'file';
+            my @split_tab = split('/', $key);
+            my $filename = $split_tab[-1];
+
+            if($filename =~ /$filename_re/){
+				# FIXME - missing mtime
+				push @filelist, [substr($filename, 0, 24), $filename, 0, $list->{$key}->{'size'}, "$archives_dir/$key"];
+            }
+
+            # FIXME - missing "get_content" of history files
+		}
+
+    }
 
     if($args{'repo-host'}){
         # SFTP connection
@@ -767,6 +809,7 @@ sub get_archived_wal_list {
     }
 
     my @unique_branch_wals = do { my %seen; grep { !$seen{$_}++ } @branch_wals };
+    print Dumper @filelist;
     return(\@filelist, \@unique_branch_wals);
 }
 
@@ -898,7 +941,8 @@ sub check_wal_archives {
         if ( $args{'latest-archive-age-alert'} && $latest_archive_age > get_time($args{'latest-archive-age-alert'})){
             push @crit_msg => "latest_archive_age (".to_interval($latest_archive_age).") exceeded";
         }
-        push @msg, "$num_archives WAL archived, latest archived since ". to_interval($latest_archive_age);
+        push @msg, "$num_archives WAL archived";
+        push @msg, "latest archived since ". to_interval($latest_archive_age);
 
         # Get all the needed wal archives based on min/max pgBackRest info
         my $wal_segsize = $args{'wal-segsize'};
