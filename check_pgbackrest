@@ -809,7 +809,6 @@ sub get_archived_wal_list {
     }
 
     my @unique_branch_wals = do { my %seen; grep { !$seen{$_}++ } @branch_wals };
-    print Dumper @filelist;
     return(\@filelist, \@unique_branch_wals);
 }
 
