@@ -96,7 +96,7 @@ list.
 
 Name of the stanza to check.
 
-=item B<-F>, B<--format> OUTPUT_FORMAT
+=item B<-F>, B<--output> OUTPUT_FORMAT
 
 The output format. Supported outputs are: C<human> and C<nagios> (default).
 
@@ -135,7 +135,7 @@ Show this help page.
 
 my %args = (
     'command' => 'pgbackrest',
-    'format' => 'nagios',
+    'output' => 'nagios',
     'wal-segsize' => '16MB',
     'default-pgbackrest-config-file' => '/etc/pgbackrest.conf',
 );
@@ -1012,7 +1012,7 @@ GetOptions(
         'command|C=s',
         'config|c=s',
         'debug!',
-        'format|F=s',
+        'output|F=s',
         'help|?!',
         'ignore-archived-after=s',
         'ignore-archived-before=s',
@@ -1081,13 +1081,13 @@ pod2usage(
 ) if $args{'itarget-version'} and $args{'service'} ne 'check_pgb_version';
 
 # Output format
-for ( $args{'format'} ) {
+for ( $args{'output'} ) {
        if ( /^human$/         ) { $output_fmt = \&human_output  }
     elsif ( /^json$/        ) { $output_fmt = \&json_output }
     elsif ( /^nagios$/        ) { $output_fmt = \&nagios_output }
     else {
         pod2usage(
-            -message => "FATAL: unrecognized output format \"$_\" (see \"--format\")",
+            -message => "FATAL: unrecognized output format \"$_\" (see \"--output\")",
             -exitval => 127
         );
     }
