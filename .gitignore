@@ -1,4 +1,5 @@
 pgbackrest.conf
 /test/.vagrant/
 /packaging/.vagrant/
+/test/perf/nytprof*
 *.rpm
