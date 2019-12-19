@@ -90,8 +90,9 @@ firewall-cmd --quiet --reload
 systemctl enable minio
 systemctl start minio
 sudo -iu postgres psql -c "SELECT pg_sleep(5);" > /dev/null 2>&1
+systemctl restart minio
+sudo -iu postgres psql -c "SELECT pg_sleep(5);" > /dev/null 2>&1
 systemctl status minio
-grep -E 'accessKey|secretKey' /opt/minio/data/.minio.sys/config/config.json
 
 # install s3cmd
 yum --enablerepo epel-testing install --nogpgcheck --quiet -y -e 0 s3cmd

@@ -22,7 +22,7 @@ else
 fi
 
 echo "Initiate backup full"
-sudo -iu postgres pgbackrest --stanza=my_stanza backup --type=full --repo1-retention-full=1
+sudo -iu postgres ssh backup-srv "pgbackrest --stanza=my_stanza backup --type=full --repo1-retention-full=1"
 
 LOOPS=($(seq 1 1 $LOOP_NB))
 FIRST_VALUE=${LOOPS[0]}
@@ -48,7 +48,7 @@ do
 	echo -n "\__ --service=archives --repo-path"
 	export NYTPROF=file=$RESULTS_DIR/nytprof.out.2
 	START_TIME=`date +%s`
-	$NYTPROF_OPT $PLUGIN_PATH/check_pgbackrest --stanza=my_stanza --service=archives --repo-path=/var/lib/pgbackrest/archive >/dev/null 2>&1
+	$NYTPROF_OPT $PLUGIN_PATH/check_pgbackrest --stanza=my_stanza --service=archives --repo-path=/var/lib/pgbackrest/archive --repo-host="backup-srv" --repo-host-user=postgres >/dev/null 2>&1
 	echo " ... took "$((`date +%s` - $START_TIME))"s"
 	if [ -e $RESULTS_DIR/nytprof.out.2 ] && ([ $i -eq $FIRST_VALUE ] || [ $i -eq $LAST_VALUE ]); then
 		nytprofhtml --file $RESULTS_DIR/nytprof.out.2 --delete --out $RESULTS_DIR/nytprofhtml.$i.2 >/dev/null 2>&1

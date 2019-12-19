@@ -48,12 +48,12 @@ do
 	echo -n "\__ --service=archives --repo-path"
 	export NYTPROF=file=$RESULTS_DIR/nytprof.out.2
 	START_TIME=`date +%s`
-	$NYTPROF_OPT $PLUGIN_PATH/check_pgbackrest --stanza=my_stanza --service=archives --repo-path=/var/lib/pgbackrest/archive >/dev/null 2>&1
+	$NYTPROF_OPT $PLUGIN_PATH/check_pgbackrest --stanza=my_stanza --service=archives --repo-path=/repo1/archive --repo-s3 --repo-s3-over-http >/dev/null 2>&1
 	echo " ... took "$((`date +%s` - $START_TIME))"s"
 	if [ -e $RESULTS_DIR/nytprof.out.2 ] && ([ $i -eq $FIRST_VALUE ] || [ $i -eq $LAST_VALUE ]); then
 		nytprofhtml --file $RESULTS_DIR/nytprof.out.2 --delete --out $RESULTS_DIR/nytprofhtml.$i.2 >/dev/null 2>&1
 	fi
-
+	
 	rm -rf $RESULTS_DIR/nytprof.out.*
 	echo "\__ wait $SECONDS_TO_WAIT_AFTER_LOOP seconds"
 	sudo -iu postgres psql -c "SELECT pg_sleep($SECONDS_TO_WAIT_AFTER_LOOP);" > /dev/null 2>&1
