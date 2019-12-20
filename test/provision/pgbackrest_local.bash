@@ -31,7 +31,7 @@ mount /var/lib/pgbackrest
 # pgbackrest.conf setup
 cat<<EOC > "/etc/pgbackrest.conf"
 [global]
-repo-type=cifs
+repo1-type=cifs
 repo1-path=/var/lib/pgbackrest
 repo1-retention-full=1
 process-max=2

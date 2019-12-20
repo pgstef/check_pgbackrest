@@ -24,9 +24,9 @@ list.
 
 Name of the stanza to check.
 
-=item B<-F>, B<--format> OUTPUT_FORMAT
+=item B<-O>, B<--output> OUTPUT_FORMAT
 
-The output format. Supported outputs are: C<human> and C<nagios> (default).
+The output format. Supported outputs are: C<human>, C<json> and C<nagios> (default).
 
 =item B<-C>, B<--command> FILE
 

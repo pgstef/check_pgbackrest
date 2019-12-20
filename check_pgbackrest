@@ -96,7 +96,7 @@ list.
 
 Name of the stanza to check.
 
-=item B<-F>, B<--output> OUTPUT_FORMAT
+=item B<-O>, B<--output> OUTPUT_FORMAT
 
 The output format. Supported outputs are: C<human>, C<json> and C<nagios> (default).
 
@@ -1055,7 +1055,7 @@ GetOptions(
         'command|C=s',
         'config|c=s',
         'debug!',
-        'output|F=s',
+        'output|O=s',
         'help|?!',
         'ignore-archived-after=s',
         'ignore-archived-before=s',
