@@ -293,34 +293,42 @@ sub to_interval($) {
     return $val if $val =~ /^-?inf/i;
 
     $val = int($val);
+ 
+    if ( $val > 604800 ) {
+        $interval = int( $val / 604800 ) . "w ";
+        $val %= 604800;
+    }
 
-    unless ($args{'output'} =~ /^nagios$/) {
-	    if ( $val > 604800 ) {
-	        $interval = int( $val / 604800 ) . "w ";
-	        $val %= 604800;
-	    }
+    if ( $val > 86400 ) {
+        $interval .= int( $val / 86400 ) . "d ";
+        $val %= 86400;
+    }
 
-	    if ( $val > 86400 ) {
-	        $interval .= int( $val / 86400 ) . "d ";
-	        $val %= 86400;
-	    }
+    if ( $val > 3600 ) {
+        $interval .= int( $val / 3600 ) . "h";
+        $val %= 3600;
+    }
 
-	    if ( $val > 3600 ) {
-	        $interval .= int( $val / 3600 ) . "h";
-	        $val %= 3600;
-	    }
-
-	    if ( $val > 60 ) {
-	        $interval .= int( $val / 60 ) . "m";
-	        $val %= 60;
-	    }
-	}
+    if ( $val > 60 ) {
+        $interval .= int( $val / 60 ) . "m";
+        $val %= 60;
+    }
 
     $interval .= "${val}s" if $val > 0;
 
     return "${val}s" unless $interval; # return a value if $val <= 0
 
     return $interval;
+}
+
+sub to_interval_output_dependent($) {
+    my $val      = shift;
+    my $interval = '';
+
+    return $val if $val =~ /^-?inf/i;
+    $val = int($val);
+    return to_interval($val) unless $args{'output'} =~ /^nagios$/;
+    return "${val}s";
 }
 
 # Return a duration in seconds from an interval (with units).
@@ -523,7 +531,7 @@ sub check_retention {
         my $latest_bck = @{$backups_info->{'backup'}}[-1];
         my $latest_bck_age = time() - $latest_bck->{'timestamp'}->{'stop'};
         push @longmsg, "latest=".$latest_bck->{'type'}.",".$latest_bck->{'label'};
-        push @longmsg, "latest_age=".to_interval($latest_bck_age);
+        push @longmsg, "latest_age=".to_interval_output_dependent($latest_bck_age);
 
         if(defined $args{'retention-age'}){
             my $bck_age_limit = get_time($args{'retention-age'} );
@@ -535,7 +543,7 @@ sub check_retention {
             my $latest_full_bck = $full_bck[-1];
             my $latest_full_bck_age = time() - $latest_full_bck->{'timestamp'}->{'stop'};
             push @longmsg, "latest_full=".$latest_full_bck->{'label'};
-            push @longmsg, "latest_full_age=".to_interval($latest_full_bck_age);
+            push @longmsg, "latest_full_age=".to_interval_output_dependent($latest_full_bck_age);
 
             my $bck_age_limit = get_time($args{'retention-age-to-full'} );
             push @crit_msg, "full backups are too old" if $latest_full_bck_age >= $bck_age_limit;
@@ -624,7 +632,7 @@ sub get_archived_wal_list {
 		      # FIXME - missing mtime
 	# 			push @filelist, [substr($filename, 0, 24), $filename, 0, $list->{$key}->{'size'}, "$archives_dir/$key"];
     #       }
-    
+
             # FIXME - missing "get_content" of history files
 	# 	}
     # }
@@ -934,7 +942,7 @@ sub check_wal_archives {
 
         my $latest_archive_age = time() - $filelist_sorted[-1][2];
         my $num_archives = scalar(@filelist_sorted);
-        push @longmsg, "latest_archive_age=".to_interval($latest_archive_age);
+        push @longmsg, "latest_archive_age=".to_interval_output_dependent($latest_archive_age);
         push @longmsg, "num_archives=$num_archives";
 
         # Is the latest archive too old ?
