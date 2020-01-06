@@ -294,25 +294,27 @@ sub to_interval($) {
 
     $val = int($val);
 
-    if ( $val > 604800 ) {
-        $interval = int( $val / 604800 ) . "w ";
-        $val %= 604800;
-    }
+    unless ($args{'output'} =~ /^nagios$/) {
+	    if ( $val > 604800 ) {
+	        $interval = int( $val / 604800 ) . "w ";
+	        $val %= 604800;
+	    }
 
-    if ( $val > 86400 ) {
-        $interval .= int( $val / 86400 ) . "d ";
-        $val %= 86400;
-    }
+	    if ( $val > 86400 ) {
+	        $interval .= int( $val / 86400 ) . "d ";
+	        $val %= 86400;
+	    }
 
-    if ( $val > 3600 ) {
-        $interval .= int( $val / 3600 ) . "h";
-        $val %= 3600;
-    }
+	    if ( $val > 3600 ) {
+	        $interval .= int( $val / 3600 ) . "h";
+	        $val %= 3600;
+	    }
 
-    if ( $val > 60 ) {
-        $interval .= int( $val / 60 ) . "m";
-        $val %= 60;
-    }
+	    if ( $val > 60 ) {
+	        $interval .= int( $val / 60 ) . "m";
+	        $val %= 60;
+	    }
+	}
 
     $interval .= "${val}s" if $val > 0;
 
