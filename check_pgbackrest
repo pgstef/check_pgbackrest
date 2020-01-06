@@ -612,23 +612,22 @@ sub get_archived_wal_list {
     my $history_re_full = qr/$end_tl.history$/;
 
     # Prepare usage of pgBackRest ls command
-	if(0){
-		my $list=pgbackrest_ls(\%args);
+	# if(0){
+	# 	my $list=pgbackrest_ls(\%args);
 
-		foreach my $key (keys $list) {
-			next unless $list->{$key}->{'type'} eq 'file';
-            my @split_tab = split('/', $key);
-            my $filename = $split_tab[-1];
+	# 	foreach my $key (keys $list) {
+	# 		next unless $list->{$key}->{'type'} eq 'file';
+    #       my @split_tab = split('/', $key);
+    #       my $filename = $split_tab[-1];
 
-            if($filename =~ /$filename_re/){
-				# FIXME - missing mtime
-				push @filelist, [substr($filename, 0, 24), $filename, 0, $list->{$key}->{'size'}, "$archives_dir/$key"];
-            }
-
+    #       if($filename =~ /$filename_re/){
+		      # FIXME - missing mtime
+	# 			push @filelist, [substr($filename, 0, 24), $filename, 0, $list->{$key}->{'size'}, "$archives_dir/$key"];
+    #       }
+    
             # FIXME - missing "get_content" of history files
-		}
-
-    }
+	# 	}
+    # }
 
     if($args{'repo-host'}){
         # SFTP connection
