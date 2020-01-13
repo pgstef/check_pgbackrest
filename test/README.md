@@ -140,6 +140,15 @@ Edit the `test-*.bash` scripts and set `GENERATE_EXPECTED` to true. Run it.
 
 Currently, expected tests results are the same for test cases 1 and 2.
 
+## Build pgBackRest GitHub master version
+
+To perform tests using the latest GitHub version, execute the following script 
+on each server where pgBackRest is installed :
+
+```bash
+vagrant ssh pgsql-srv -c "sudo /check_pgbackrest/test/regress/pgbackrest_build.bash"
+```
+
 ## Tips
 
 Find all existing VM created by vagrant on your system:
