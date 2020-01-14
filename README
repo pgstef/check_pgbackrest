@@ -114,7 +114,7 @@ CONTRIBUTING
     welcome.
 
 VERSION
-    check_pgbackrest version 1.6, released on Thu Nov 14 2019.
+    check_pgbackrest version 1.7, released on Tue Jan 14 2020.
 
 LICENSING
     This program is open source, licensed under the PostgreSQL license. For
@@ -125,5 +125,5 @@ AUTHORS
 
     Logo: Damien Cazeils (www.damiencazeils.com).
 
-    Copyright: (c) 2018-2019, Dalibo.
+    Copyright: (c) 2018-2020, Dalibo.
 

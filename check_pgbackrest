@@ -4,7 +4,7 @@
 # For license terms, see the LICENSE file.
 #
 # Author: Stefan Fercot
-# Copyright: (c) 2018-2019, Dalibo.
+# Copyright: (c) 2018-2020, Dalibo.
 #-----------------------------------------------------------------------------
 
 =head1 NAME
@@ -60,7 +60,7 @@ undef @path;
 # Reference to the output sub
 my $output_fmt;
 
-$VERSION = '1.7dev';
+$VERSION = '1.7';
 $PROGRAM = 'check_pgbackrest';
 
 # Available services and descriptions.
@@ -1155,7 +1155,7 @@ check_pgbackrest is an open project. Any contribution to improve it is welcome.
 
 =head1 VERSION
 
-check_pgbackrest version 1.6, released on Thu Nov 14 2019.
+check_pgbackrest version 1.7, released on Tue Jan 14 2020.
 
 =head1 LICENSING
 
@@ -1168,6 +1168,6 @@ Author: Stefan Fercot.
 
 Logo: Damien Cazeils (www.damiencazeils.com).
 
-Copyright: (c) 2018-2019, Dalibo.
+Copyright: (c) 2018-2020, Dalibo.
 
 =cut

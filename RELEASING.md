@@ -39,7 +39,7 @@ git archive --prefix=check_pgbackrest-$TAG/ -o /tmp/check_pgbackrest-1.7.tar.gz 
 
   - Go to https://github.com/dalibo/check_pgbackrest/releases
   - Edit the release notes for the new tag
-  - Set "check_pgbackrest $VERSION" as title, eg. "check_pgbackrest 1.6"
+  - Set "check_pgbackrest $VERSION" as title, eg. "check_pgbackrest 1.7"
   - Here is the format of the release node itself:
     YYYY-MM-DD - Version X.Y
     
@@ -121,7 +121,7 @@ Links:
 * Content:
   
 ```
-_Town, Country, Month xx, 2019_
+_Town, Country, Month xx, 2020_
 
 `check_pgbackrest` is designed to monitor [pgBackRest](https://pgbackrest.org) 
 backups from Nagios, relying on the status information given by the 
