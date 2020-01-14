@@ -1,7 +1,11 @@
 Changelog
 =========
 
-2019-xx-xx v1.7:
+2020-xx-xx v1.8:
+
+  - ...
+
+2020-01-14 v1.7:
 
   - Rename --format argument to --output.
   - Add json output format.

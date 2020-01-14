@@ -28,18 +28,18 @@ podselect check_pgbackrest > README.pod
 ## Tagging and building tar file
 
 ```bash
-TAG=REL1_7
+TAG=REL1_8
 git tag -a $TAG -m "Release $TAG"
 git tag
 git push --tags
-git archive --prefix=check_pgbackrest-$TAG/ -o /tmp/check_pgbackrest-1.7.tar.gz $TAG
+git archive --prefix=check_pgbackrest-$TAG/ -o /tmp/check_pgbackrest-1.8.tar.gz $TAG
 ```
 
 ## Release on github
 
   - Go to https://github.com/dalibo/check_pgbackrest/releases
   - Edit the release notes for the new tag
-  - Set "check_pgbackrest $VERSION" as title, eg. "check_pgbackrest 1.7"
+  - Set "check_pgbackrest $VERSION" as title, eg. "check_pgbackrest 1.8"
   - Here is the format of the release node itself:
     YYYY-MM-DD - Version X.Y
     
@@ -92,7 +92,7 @@ make all
 Send a mail to the pgsql-announce mailing list. Eg.:
 
 ```
-check_pgbackrest 1.7 has been released
+check_pgbackrest 1.8 has been released
 
 check_pgbackrest is designed to monitor pgBackRest backups from Nagios, 
 relying on the status information given by the "info" command.
@@ -100,7 +100,7 @@ relying on the status information given by the "info" command.
 It allows to monitor the backups retention and the consistency of the 
 archived WAL segments.
 
-Changes in check_pgbackrest 1.7:
+Changes in check_pgbackrest 1.8:
   - ...
   - ...
 
@@ -130,7 +130,7 @@ backups from Nagios, relying on the status information given by the
 It allows to monitor the backups retention and the consistency of the archived 
 WAL segments.
 
-Changes in check_pgbackrest 1.7
+Changes in check_pgbackrest 1.8
 ------------------------------------------------------------------------------
 
   * ...
@@ -155,4 +155,4 @@ Note: RPM package is available on the GitHub Release page.
 [Stefan Fercot]: https://www.dalibo.com/en/equipe#stefan
 ```
   
-* check "Third Party Open Source"
+* check "Related Open Source"
