@@ -467,6 +467,27 @@ sub pgbackrest_ls {
     return decode_json($json_output);
 }
 
+sub pgbackrest_version {
+    my $args_ref = shift;
+    my %args = %{ $args_ref };
+    my $version_cmd = $args{'command'}." version";
+
+    if(defined $args{'config'}) {
+        $version_cmd .= " --config=".$args{'config'};
+    }    
+
+    if(defined $args{'prefix'}) {
+        $version_cmd = $args{'prefix'}." $version_cmd";
+    }
+
+    dprint("pgBackRest version command was : '$version_cmd'\n");
+    my $pgbackrest_version = `$version_cmd | sed -e s/pgBackRest\\ // | sed -e s/dev//`;
+
+    die("Can't get pgBackRest version.\nCommand was '$version_cmd'.\n") unless ($? eq 0);
+    
+    return $pgbackrest_version;
+}
+
 # Services
 #-----------------------------------------------------------------------------
 
@@ -619,25 +640,44 @@ sub get_archived_wal_list {
     my $history_re = qr/$end_tl.history$/;
     my $history_re_full = qr/$end_tl.history$/;
 
-    # Prepare usage of pgBackRest ls command
-	# if(0){
-	# 	my $list=pgbackrest_ls(\%args);
+    my $pgbackrest_version=pgbackrest_version(\%args);
+    my $activate_pgbackrest_ls_command=0;
+    if($pgbackrest_version >= '2.22' && $activate_pgbackrest_ls_command){
+        # pgBackRest ls command
+        my $list=pgbackrest_ls(\%args);
 
-	# 	foreach my $key (keys $list) {
-	# 		next unless $list->{$key}->{'type'} eq 'file';
-    #       my @split_tab = split('/', $key);
-    #       my $filename = $split_tab[-1];
+        foreach my $key (keys $list) {
+            next unless $list->{$key}->{'type'} eq 'file';
+            my @split_tab = split('/', $key);
+            my $filename = $split_tab[-1];
 
-    #       if($filename =~ /$filename_re/){
-		      # FIXME - missing mtime
-	# 			push @filelist, [substr($filename, 0, 24), $filename, 0, $list->{$key}->{'size'}, "$archives_dir/$key"];
-    #       }
+            if($filename =~ /$filename_re_full/){
+                # Get stats of the archived wals
+                if ( $args{'ignore-archived-after'} or $args{'ignore-archived-before'} ) {
+                    my $diff_epoch = time() - $list->{$key}->{'time'};
 
-            # FIXME - missing "get_content" of history files
-	# 	}
-    # }
+                    if ( $args{'ignore-archived-after'} && $diff_epoch <= get_time($args{'ignore-archived-after'}) ){
+                        dprint ("ignored file ".$filename." as interval since epoch : ".to_interval($diff_epoch)."\n");
+                        return;
+                    }
+                    
+                    if ( $args{'ignore-archived-before'} && $diff_epoch >= get_time($args{'ignore-archived-before'}) ){
+                        dprint ("ignored file ".$filename." as interval since epoch : ".to_interval($diff_epoch)."\n");
+                        return;
+                    }
+                }
 
-    if($args{'repo-host'}){
+                push @filelist, [substr($filename, 0, 24), $filename, $list->{$key}->{'time'}, $list->{$key}->{'size'}, "$archives_dir/$key"];
+
+            }elsif($filename =~ /$history_re_full/ && $start_tl ne $end_tl){
+                # Look for the last history file if needed
+                dprint("history file to open : $filename\n");
+
+                #FIXME - missing "get_content" of history files
+            }
+        }
+    
+    }elsif($args{'repo-host'}){
         # SFTP connection
         require Net::SFTP::Foreign;
         my $sftp;
