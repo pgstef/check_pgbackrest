@@ -621,6 +621,8 @@ s (second), m (minute), h (hour), d (day). You can use more than
 one unit per given value. If not set, the last unit is in seconds. 
 Eg. "1h 55m 6" = "1h55m6s".
 
+All the missing archives are only shown in the `--debug` mode.
+
 =cut
 
 sub get_archived_wal_list {
@@ -1009,16 +1011,16 @@ sub check_wal_archives {
         push @human_only_longmsg, "latest_bck_archive_start=".$latest_bck_archive_start;
         push @human_only_longmsg, "latest_bck_type=".$latest_bck->{'type'};
 
-        my @warn_missing_file_msg;
-        my @crit_missing_file_msg;
+        my @warn_missing_files;
+        my @crit_missing_files;
         # Go through needed wal list and check if it exists in the file list
         $start_time = time();
         foreach my $needed_wal (@needed_wal_archives_list) {
             unless ( $filelist_simplified_hash{ $needed_wal } ) {
                 if($needed_wal lt $latest_bck_archive_start) {
-                    push @warn_missing_file_msg => "wrong sequence or missing file @ '$needed_wal'";
+                    push @warn_missing_files => $needed_wal;
                 }else{
-                    push @crit_missing_file_msg => "wrong sequence or missing file @ '$needed_wal'";
+                    push @crit_missing_files => $needed_wal;
                 }
             }
         }
@@ -1030,19 +1032,38 @@ sub check_wal_archives {
             dprint("Get all the needed wal archives for ".$line->{'label'}."...\n");
             foreach my $needed_wal (&generate_needed_wal_archives_list($line->{'archive'}->{'start'}, $line->{'archive'}->{'stop'}, \@branch_wals, $seg_per_wal)) {
                 unless ( $filelist_simplified_hash{ $needed_wal } ) {
-                    push @crit_missing_file_msg => "wrong sequence or missing file @ '$needed_wal'";
+                    push @crit_missing_files => $needed_wal;
                 }
             }
         }
         dprint("!> Go through each backup, get the needed wal and check took ".(time() - $start_time)."s\n");
 
-        # Generate @warn_msg and @crit_msg with missing files (sorted and unique messages)
-        my @unique_warn_missing_file_msg = do { my %seen; grep { !$seen{$_}++ } @warn_missing_file_msg };
-        push @warn_msg, sort @unique_warn_missing_file_msg;
+        # Generate @warn_msg and @crit_msg with missing files (sorted and unique)
+        my @unique_warn_missing_files = do { my %seen; grep { !$seen{$_}++ } @warn_missing_files };
+        my @unique_warn_missing_files_sorted = sort @unique_warn_missing_files;
+        my $num_missing_archives = scalar(@unique_warn_missing_files_sorted);
+        my $oldest_missing_archive = $unique_warn_missing_files_sorted[0] || '000000000000000000000000';
+        my $latest_missing_archive = $unique_warn_missing_files_sorted[-1] || '000000000000000000000000';
+        push @warn_msg, "wrong sequence, $num_missing_archives missing file(s) ($oldest_missing_archive / $latest_missing_archive)" if @warn_missing_files;
+        
+        push @crit_missing_files, @warn_missing_files if @warn_missing_files and @crit_missing_files;
+        my @unique_crit_missing_files = do { my %seen; grep { !$seen{$_}++ } @crit_missing_files };
+        my @unique_crit_missing_files_sorted = sort @unique_crit_missing_files;
+        $num_missing_archives = scalar(@unique_crit_missing_files_sorted);
+        $oldest_missing_archive = $unique_crit_missing_files_sorted[0] || $oldest_missing_archive || '000000000000000000000000';
+        $latest_missing_archive = $unique_crit_missing_files_sorted[-1] || $latest_missing_archive || '000000000000000000000000';
+        push @crit_msg, "wrong sequence, $num_missing_archives missing file(s) ($oldest_missing_archive / $latest_missing_archive)" if @crit_missing_files;
+        push @longmsg, "num_missing_archives=$num_missing_archives" if $num_missing_archives;
+        push @longmsg, "oldest_missing_archive=$oldest_missing_archive" if $num_missing_archives;
+        push @longmsg, "latest_missing_archive=$latest_missing_archive" if $num_missing_archives;
 
-        push @crit_missing_file_msg, @warn_missing_file_msg if @warn_missing_file_msg and @crit_missing_file_msg;
-        my @unique_crit_missing_file_msg = do { my %seen; grep { !$seen{$_}++ } @crit_missing_file_msg };
-        push @crit_msg, sort @unique_crit_missing_file_msg;
+        # DEBUG print all missing archives
+        if(@warn_missing_files and not @crit_missing_files) {
+        	foreach (@unique_warn_missing_files_sorted) { dprint("missing $_\n"); }
+        
+        }elsif(@crit_missing_files) {
+        	foreach (@unique_crit_missing_files_sorted) { dprint("missing $_\n"); }
+        }
 
     }else{
         push @crit_msg, $backups_info->{'status'}->{'message'};

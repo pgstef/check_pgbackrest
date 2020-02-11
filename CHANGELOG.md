@@ -3,6 +3,8 @@ Changelog
 
 2020-xx-xx v1.8:
 
+  - Change output of missing archives. The complete list is now only shown in 
+  `--debug` mode (suggested by Guillaume Lelarge).
   - ...
 
 2020-01-14 v1.7:

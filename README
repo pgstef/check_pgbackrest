@@ -104,6 +104,8 @@ DESCRIPTION
         unit per given value. If not set, the last unit is in seconds. Eg.
         "1h 55m 6" = "1h55m6s".
 
+        All the missing archives are only shown in the `--debug` mode.
+
     check_pgb_version
         Check if this script is running a given version.
 
