@@ -8,7 +8,7 @@ Changelog
 2020-03-16 v1.8:
 
   - Change output of missing archives. The complete list is now only shown in 
-  `--debug` mode (suggested by Guillaume Lelarge).
+  --debug mode (suggested by Guillaume Lelarge).
   - Add --list-archives argument to print the list of all the archived WAL 
   segments.
 
