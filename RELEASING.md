@@ -117,7 +117,7 @@ Links:
 ### Submit a news on postgresql.org
 
 * organisation: Dalibo
-* Title: "check_pgbackrest 1.7 has been released"
+* Title: "check_pgbackrest 1.9 has been released"
 * Content:
   
 ```
