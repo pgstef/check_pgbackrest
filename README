@@ -106,6 +106,9 @@ DESCRIPTION
 
         All the missing archives are only shown in the `--debug` mode.
 
+        Use `--list-archives` in addition with `--debug` to print the list
+        of all the archived WAL segments.
+
     check_pgb_version
         Check if this script is running a given version.
 

@@ -623,6 +623,9 @@ Eg. "1h 55m 6" = "1h55m6s".
 
 All the missing archives are only shown in the `--debug` mode.
 
+Use `--list-archives` in addition with `--debug` to print the list of all the 
+archived WAL segments.
+
 =cut
 
 sub get_archived_wal_list {
@@ -1065,6 +1068,12 @@ sub check_wal_archives {
         	foreach (@unique_crit_missing_files_sorted) { dprint("missing $_\n"); }
         }
 
+        # DEBUG print all archives
+        if($args{'list-archives'}) {
+            my @unique_wals = do { my %seen; grep { !$seen{$_}++ } @filelist_simplified };
+            foreach (@unique_wals) { dprint("found $_\n"); }
+        }
+
     }else{
         push @crit_msg, $backups_info->{'status'}->{'message'};
     }
@@ -1131,6 +1140,7 @@ GetOptions(
         'ignore-archived-before=s',
         'latest-archive-age-alert=s',
         'list|l!',
+        'list-archives|L!',
         'prefix|P=s',
         'repo-s3!',
         'repo-s3-over-http!',
@@ -1187,11 +1197,17 @@ pod2usage(
 ) if ( $args{'ignore-archived-after'} or $args{'ignore-archived-before'} or $args{'latest-archive-age-alert'} )
     and $args{'service'} ne 'archives';
 
+# Check "archives" specific arg --list-archives
+pod2usage(
+    -message => 'FATAL: "list-archives" is only allowed with "archives" service and "debug" option.',
+    -exitval => 127
+) if $args{'list-archives'} and ( $args{'service'} ne 'archives' or ! $args{'debug'} );
+
 # Check "check_pgb_version" specific arg --target-version
 pod2usage(
     -message => 'FATAL: "target-version" is only allowed with "check_pgb_version" service.',
     -exitval => 127
-) if $args{'itarget-version'} and $args{'service'} ne 'check_pgb_version';
+) if $args{'target-version'} and $args{'service'} ne 'check_pgb_version';
 
 # Output format
 for ( $args{'output'} ) {
