@@ -1,7 +1,7 @@
-%global _tag REL1_7
+%global _tag REL1_9
 
 Name: nagios-plugins-pgbackrest
-Version: 1.7
+Version: 1.9
 Release: 1
 Summary: pgBackRest backup check plugin for Nagios 
 License: PostgreSQL
@@ -32,6 +32,8 @@ install -D -p -m 0755 check_pgbackrest %{buildroot}/%{_libdir}/nagios/plugins/ch
 %doc README LICENSE
 
 %changelog
+* Mon Mar 16 2020 Stefan Fercot <stefan.fercot@dalibo.com> 1.8-1
+- new major release 1.8
 * Tue Jan 14 2020 Stefan Fercot <stefan.fercot@dalibo.com> 1.7-1
 - new major release 1.7
 * Thu Nov 14 2019 Stefan Fercot <stefan.fercot@dalibo.com> 1.6-1
