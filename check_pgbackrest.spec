@@ -1,7 +1,7 @@
-%global _tag REL1_9
+%global _tag REL1_8
 
 Name: nagios-plugins-pgbackrest
-Version: 1.9
+Version: 1.8
 Release: 1
 Summary: pgBackRest backup check plugin for Nagios 
 License: PostgreSQL
