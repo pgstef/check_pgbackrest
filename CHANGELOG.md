@@ -3,7 +3,10 @@ Changelog
 
 2020-xx-xx v1.9:
 
-  - ...
+  - Remove refresh of pgBackRest info return after getting the archives list. 
+  That avoids CRITICAL alert if an archive is generated between those two steps. 
+  Instead, a WARNING message "max WAL is not the latest archive" will be 
+  displayed (suggested by blogh).
 
 2020-03-16 v1.8:
 

@@ -957,12 +957,6 @@ sub check_wal_archives {
             $filelist_simplified_hash{ $elem->[0] } = $elem;
         }
 
-        # Refresh after archives scan, assume pgBackRest info cmd returns very fast
-        $start_time = time();
-        $backups_info = pgbackrest_info();
-        $max_wal = $backups_info->{'archive'}[0]->{'max'};
-        dprint("!> Refresh pgBackRest info took ".(time() - $start_time)."s\n");
-
         # Change min_wal if some archived are ignored
         if ( $args{'ignore-archived-before'} && $min_wal ) {
             $min_wal = substr($filelist_sorted[0][0], 0, 24);
