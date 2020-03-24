@@ -3,6 +3,11 @@ Changelog
 
 2020-xx-xx v1.9:
 
+  - The archives service will now only look at the archives listed between 
+  the oldest backup start archive and the max WAL returned by the pgBackRest 
+  info command. This should avoid unnecessary alerts. 
+  To extend the check to all the archives found, the new --extended-check 
+  argument has been implemented (suggested by blogh).
   - Remove refresh of pgBackRest info return after getting the archives list. 
   That avoids CRITICAL alert if an archive is generated between those two steps. 
   Instead, a WARNING message "max WAL is not the latest archive" will be 

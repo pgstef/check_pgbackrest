@@ -129,6 +129,13 @@ All the missing archives are only shown in the `--debug` mode.
 Use `--list-archives` in addition with `--debug` to print the list of all the 
 archived WAL segments.
 
+By default, all the archives older than the oldest backup start archive 
+or newer than the max_wal returned by the pgBackRest info command 
+are ignored. 
+
+Use the C<--extended-check> argument to force a full check of the found 
+archives and raise warnings in case of inconsistencies.
+
 =item B<check_pgb_version>
 
 Check if this script is running a given version.

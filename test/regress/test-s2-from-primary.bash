@@ -56,6 +56,7 @@ $PLUGIN_PATH/check_pgbackrest --stanza=my_stanza --service=archives > $RESULTS_D
 echo "--service=archives --repo-path"
 sudo -iu postgres psql -c "SELECT pg_switch_xlog();" > /dev/null 2>&1
 sudo -iu postgres psql -c "SELECT pg_switch_wal();" > /dev/null 2>&1
+sudo -iu postgres psql -c "SELECT pg_sleep(1);" > /dev/null 2>&1
 $PLUGIN_PATH/check_pgbackrest --stanza=my_stanza --service=archives --repo-path=/var/lib/pgbackrest/archive --repo-host="backup-srv" --repo-host-user=postgres | cut -f1 -d"-" > $RESULTS_DIR/archives-ok.out
 
 # --service=archives --ignore-archived-before

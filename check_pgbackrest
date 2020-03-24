@@ -626,6 +626,13 @@ All the missing archives are only shown in the `--debug` mode.
 Use `--list-archives` in addition with `--debug` to print the list of all the 
 archived WAL segments.
 
+By default, all the archives older than the oldest backup start archive 
+or newer than the max_wal returned by the pgBackRest info command 
+are ignored. 
+
+Use the C<--extended-check> argument to force a full check of the found 
+archives and raise warnings in case of inconsistencies.
+
 =cut
 
 sub get_archived_wal_list {
@@ -655,6 +662,7 @@ sub get_archived_wal_list {
             next unless $list->{$key}->{'type'} eq 'file';
             my @split_tab = split('/', $key);
             my $filename = $split_tab[-1];
+            my $segname = substr($filename, 0, 24);
 
             if($filename =~ /$filename_re_full/){
                 # Get stats of the archived wals
@@ -670,6 +678,16 @@ sub get_archived_wal_list {
                         dprint ("ignored file ".$filename." as interval since epoch : ".to_interval($diff_epoch)."\n");
                         return;
                     }
+                }
+
+                if ( ! $args{'extended-check'} && $segname lt $min_wal ){
+                    dprint ("ignored file ".$segname." older than ".$min_wal."\n");
+                    return;
+                }
+
+                if ( ! $args{'extended-check'} && $segname gt $max_wal ){
+                    dprint ("ignored file ".$segname." newer than ".$max_wal."\n");
+                    return;
                 }
 
                 push @filelist, [substr($filename, 0, 24), $filename, $list->{$key}->{'time'}, $list->{$key}->{'size'}, "$archives_dir/$key"];
@@ -698,6 +716,7 @@ sub get_archived_wal_list {
                 my $file_fullpath = $_[1]->{filename};
                 my @split_tab = split('/', $file_fullpath);
                 my $filename = $split_tab[-1];
+                my $segname = substr($filename, 0, 24);
 
                 if($filename =~ /$filename_re/){
                     # Get stats of the archived wals
@@ -716,6 +735,16 @@ sub get_archived_wal_list {
                         	dprint ("ignored file ".$filename." as interval since epoch : ".to_interval($diff_epoch)."\n");
                         	return;
                         }
+                    }
+
+                    if ( ! $args{'extended-check'} && $segname lt $min_wal ){
+                        dprint ("ignored file ".$segname." older than ".$min_wal."\n");
+                        return;
+                    }
+
+                    if ( ! $args{'extended-check'} && $segname gt $max_wal ){
+                        dprint ("ignored file ".$segname." newer than ".$max_wal."\n");
+                        return;
                     }
 
                     push @filelist, [substr($filename, 0, 24), $filename, $attributes->mtime, $attributes->size, $file_fullpath];
@@ -781,6 +810,7 @@ sub get_archived_wal_list {
                 my $file_fullpath = $object->key;
                 my @split_tab = split('/', $file_fullpath);
                 my $filename = $split_tab[-1];
+                my $segname = substr($filename, 0, 24);
 
                 if($filename =~ /$filename_re/){
                     # Get stats of the archived wals
@@ -791,13 +821,23 @@ sub get_archived_wal_list {
 
                         if ( $args{'ignore-archived-after'} && $diff_epoch <= get_time($args{'ignore-archived-after'}) ){
                         	dprint ("ignored file ".$filename." as interval since epoch : ".to_interval($diff_epoch)."\n");
-                        	return;
+                        	next;
                         }
                         
                         if ( $args{'ignore-archived-before'} && $diff_epoch >= get_time($args{'ignore-archived-before'}) ){
                         	dprint ("ignored file ".$filename." as interval since epoch : ".to_interval($diff_epoch)."\n");
-                        	return;
+                        	next;
                         }
+                    }
+
+                    if ( ! $args{'extended-check'} && $segname lt $min_wal ){
+                        dprint ("ignored file ".$segname." older than ".$min_wal."\n");
+                        next;
+                    }
+
+                    if ( ! $args{'extended-check'} && $segname gt $max_wal ){
+                        dprint ("ignored file ".$segname." newer than ".$max_wal."\n");
+                        next;
                     }
 
                     push @filelist, [substr($filename, 0, 24), $filename, $dt->epoch(), $object->size, $file_fullpath];
@@ -825,6 +865,7 @@ sub get_archived_wal_list {
                 my $file_fullpath = $File::Find::name;
                 my @split_tab = split('/', $file_fullpath);
                 my $filename = $split_tab[-1];
+                my $segname = substr($filename, 0, 24);
 
                 if($filename =~ /$filename_re_full/){
                     # Get stats of the archived wals
@@ -842,7 +883,17 @@ sub get_archived_wal_list {
                         }
                     }
 
-                    push @filelist, [substr($filename, 0, 24), $filename, (stat($File::Find::name))[9,7], $file_fullpath];
+                    if ( ! $args{'extended-check'} && $segname lt $min_wal ){
+                    	dprint ("ignored file ".$segname." older than ".$min_wal."\n");
+                    	return;
+                    }
+
+                    if ( ! $args{'extended-check'} && $segname gt $max_wal ){
+                    	dprint ("ignored file ".$segname." newer than ".$max_wal."\n");
+                    	return;
+                    }
+
+                    push @filelist, [$segname, $filename, (stat($File::Find::name))[9,7], $file_fullpath];
                 
                 }elsif($filename =~ /$history_re_full/ && $start_tl ne $end_tl){
                     # Look for the last history file if needed
@@ -929,9 +980,18 @@ sub check_wal_archives {
         my $archives_dir = $args{'repo-path'}."/".$args{'stanza'}."/".$backups_info->{'archive'}[0]->{'id'};
         dprint("archives_dir: $archives_dir\n");
         $args{'archives_dir'} = $archives_dir;
-        push @human_only_longmsg, "archives_dir=$archives_dir";
         my $min_wal = $backups_info->{'archive'}[0]->{'min'};
         my $max_wal = $backups_info->{'archive'}[0]->{'max'};
+
+        # Get the oldest backup info
+        my $oldest_bck = @{$backups_info->{'backup'}}[0];
+        my $oldest_bck_archive_start = $oldest_bck->{'archive'}->{'start'};
+
+		# Change min_wal to oldest_bck_archive_start
+        if ( $min_wal lt $oldest_bck_archive_start ) {
+            $min_wal = $oldest_bck_archive_start;
+            dprint ("min_wal changed to ".$min_wal."\n");
+        }
 
         # Get all the WAL archives and history files
         $start_time = time();
@@ -962,22 +1022,18 @@ sub check_wal_archives {
             $min_wal = substr($filelist_sorted[0][0], 0, 24);
             dprint ("min_wal changed to ".$min_wal."\n");
         }
-        push @human_only_longmsg, "min_wal=$min_wal" if $min_wal;
 
         # Change max_wal if some archived are ignored
         if ( $args{'ignore-archived-after'} && $max_wal ) {
             $max_wal = substr($filelist_sorted[-1][0], 0, 24);
             dprint ("max_wal changed to ".$max_wal."\n");
         }
-        push @human_only_longmsg, "max_wal=$max_wal" if $max_wal;
 
         # Check min/max exists, start = min, last = max ?
         return critical $me, ['min WAL not found: '.$min_wal] if($min_wal && ! grep( /^$min_wal$/, @filelist_simplified ));
         return critical $me, ['max WAL not found: '.$max_wal] if($max_wal && ! grep( /^$max_wal$/, @filelist_simplified ));
-        push @warn_msg, "min WAL is not the oldest archive" if($min_wal && ! grep( /^$min_wal/, $filelist_sorted[0][0] ));
-        push @warn_msg, "max WAL is not the latest archive" if($max_wal && ! grep( /^$max_wal/, $filelist_sorted[-1][0] ));
-        push @human_only_longmsg, "oldest_archive=".$filelist_sorted[0][0];
-        push @human_only_longmsg, "latest_archive=".$filelist_sorted[-1][0];
+        push @warn_msg, "min WAL is not the oldest archive" if($min_wal && $filelist_sorted[0][0] lt $min_wal);
+        push @warn_msg, "max WAL is not the latest archive" if($max_wal && $filelist_sorted[-1][0] gt $max_wal);
 
         my $latest_archive_age = time() - $filelist_sorted[-1][2];
         my $num_archives = scalar(@filelist_sorted);
@@ -1005,8 +1061,17 @@ sub check_wal_archives {
         # Get the latest backup info
         my $latest_bck = @{$backups_info->{'backup'}}[-1];
         my $latest_bck_archive_start = $latest_bck->{'archive'}->{'start'};
+
+        # Print human_only_longmsg
+        push @human_only_longmsg, "archives_dir=$archives_dir";
+        push @human_only_longmsg, "min_wal=$min_wal" if $min_wal;
+        push @human_only_longmsg, "max_wal=$max_wal" if $max_wal;
+        push @human_only_longmsg, "latest_archive=".$filelist_sorted[-1][0];
         push @human_only_longmsg, "latest_bck_archive_start=".$latest_bck_archive_start;
         push @human_only_longmsg, "latest_bck_type=".$latest_bck->{'type'};
+        push @human_only_longmsg, "oldest_archive=".$filelist_sorted[0][0];
+        push @human_only_longmsg, "oldest_bck_archive_start=".$oldest_bck_archive_start;
+        push @human_only_longmsg, "oldest_bck_type=".$oldest_bck->{'type'};
 
         my @warn_missing_files;
         my @crit_missing_files;
@@ -1128,13 +1193,14 @@ GetOptions(
         'command|C=s',
         'config|c=s',
         'debug!',
-        'output|O=s',
+        'extended-check!',
         'help|?!',
         'ignore-archived-after=s',
         'ignore-archived-before=s',
         'latest-archive-age-alert=s',
         'list|l!',
         'list-archives|L!',
+        'output|O=s',
         'prefix|P=s',
         'repo-s3!',
         'repo-s3-over-http!',
@@ -1184,11 +1250,11 @@ pod2usage(
 ) if ( $args{'repo-path'} or $args{'repo-host'} or $args{'repo-host-user'} or $args{'repo-s3'}  or $args{'repo-s3-over-http'} )
     and $args{'service'} ne 'archives';
 
-# Check "archives" specific args --ignore-archived-after, --ignore-archived-before and --latest-archive-age-alert
+# Check "archives" specific args --extended-check, --ignore-archived-after, --ignore-archived-before and --latest-archive-age-alert
 pod2usage(
-    -message => 'FATAL: "ignore-archived-after", "ignore-archived-before" and "latest-archive-age-alert" are only allowed with "archives" service.',
+    -message => 'FATAL: "extended-check", "ignore-archived-after", "ignore-archived-before" and "latest-archive-age-alert" are only allowed with "archives" service.',
     -exitval => 127
-) if ( $args{'ignore-archived-after'} or $args{'ignore-archived-before'} or $args{'latest-archive-age-alert'} )
+) if ( $args{'extended-check'} or $args{'ignore-archived-after'} or $args{'ignore-archived-before'} or $args{'latest-archive-age-alert'} )
     and $args{'service'} ne 'archives';
 
 # Check "archives" specific arg --list-archives
