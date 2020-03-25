@@ -623,7 +623,7 @@ Eg. "1h 55m 6" = "1h55m6s".
 
 All the missing archives are only shown in the `--debug` mode.
 
-Use `--list-archives` in addition with `--debug` to print the list of all the 
+Use C<--list-archives> in addition with `--debug` to print the list of all the 
 archived WAL segments.
 
 By default, all the archives older than the oldest backup start archive 
@@ -658,7 +658,7 @@ sub get_archived_wal_list {
         # pgBackRest ls command
         my $list=pgbackrest_ls(\%args);
 
-        foreach my $key (keys $list) {
+        foreach my $key (keys %{$list}) {
             next unless $list->{$key}->{'type'} eq 'file';
             my @split_tab = split('/', $key);
             my $filename = $split_tab[-1];

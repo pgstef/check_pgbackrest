@@ -4,6 +4,7 @@ cd "$(dirname "$0")"
 PERL_VERSION="perl-5.30.1"
 
 if [ ! -d /$PERL_VERSION ]; then
+	yum install -y gcc
 	wget https://www.cpan.org/src/5.0/$PERL_VERSION.tar.gz --directory-prefix=/tmp
 	tar -xzf /tmp/$PERL_VERSION.tar.gz --directory=/tmp
 	cd /tmp/$PERL_VERSION
