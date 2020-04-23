@@ -12,6 +12,7 @@ Changelog
   That avoids CRITICAL alert if an archive is generated between those two steps. 
   Instead, a WARNING message "max WAL is not the latest archive" will be 
   displayed (suggested by blogh).
+  - Fix S3 archives detection (reported by khadijahvf).
 
 2020-03-16 v1.8:
 

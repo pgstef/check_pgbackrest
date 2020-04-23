@@ -804,7 +804,7 @@ sub get_archived_wal_list {
         my $client = Net::Amazon::S3::Client->new( s3 => $s3 );
         my $bucket = $client->bucket( name => $repo1_bucket );
 
-        my $stream = $bucket->list({ prefix => $archives_dir, delimiter => '/' });
+        my $stream = $bucket->list({ prefix => $archives_dir});
         until ( $stream->is_done ) {
             foreach my $object ( $stream->items ) {
                 my $file_fullpath = $object->key;
