@@ -420,7 +420,7 @@ sub get_size($;$) {
 sub pgbackrest_info {
     my $infocmd = $args{'command'}." info";
     $infocmd .= " --stanza=".$args{'stanza'};
-    $infocmd .= " --output=json";
+    $infocmd .= " --output=json --log-level-console=error";
 
     if(defined $args{'config'}) {
         $infocmd .= " --config=".$args{'config'};
@@ -431,7 +431,7 @@ sub pgbackrest_info {
     }
 
     dprint("pgBackRest info command was : '$infocmd'\n");
-    my $json_output = `$infocmd 2>&1 |grep -v WARN |grep -v ERROR`;
+    my $json_output = `$infocmd 2>&1 |grep -v ERROR`;
 
     die("Can't get pgBackRest info.\nCommand was '$infocmd'.\n") unless ($? eq 0);
     
@@ -447,9 +447,9 @@ sub pgbackrest_info {
 sub pgbackrest_ls {
 	my $args_ref = shift;
     my %args = %{ $args_ref };
-    my $lscmd = $args{'command'}." ls";
+    my $lscmd = $args{'command'}." repo-ls";
     $lscmd .= " ".$args{'archives_dir'};
-    $lscmd .= " --recurse --output=json";
+    $lscmd .= " --recurse --output=json --log-level-console=error";
 
     if(defined $args{'config'}) {
         $lscmd .= " --config=".$args{'config'};
@@ -460,7 +460,7 @@ sub pgbackrest_ls {
     }
 
     dprint("pgBackRest ls command was : '$lscmd'\n");
-    my $json_output = `$lscmd 2>&1 |grep -v WARN |grep -v ERROR`;
+    my $json_output = `$lscmd 2>&1 |grep -v ERROR`;
 
     die("Can't get pgBackRest list.\nCommand was '$lscmd'.\n") unless ($? eq 0);
     
@@ -654,7 +654,7 @@ sub get_archived_wal_list {
 
     my $pgbackrest_version=pgbackrest_version(\%args);
     my $activate_pgbackrest_ls_command=0;
-    if($pgbackrest_version >= '2.22' && $activate_pgbackrest_ls_command){
+    if($pgbackrest_version >= '2.26' && $activate_pgbackrest_ls_command){
         # pgBackRest ls command
         my $list=pgbackrest_ls(\%args);
 
