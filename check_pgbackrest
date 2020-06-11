@@ -654,7 +654,7 @@ sub get_archived_wal_list {
 
     my $pgbackrest_version=pgbackrest_version(\%args);
     my $activate_pgbackrest_ls_command=0;
-    if($pgbackrest_version >= '2.26' && $activate_pgbackrest_ls_command){
+    if($pgbackrest_version >= '2.28' && $activate_pgbackrest_ls_command){
         # pgBackRest ls command
         my $list=pgbackrest_ls(\%args);
 

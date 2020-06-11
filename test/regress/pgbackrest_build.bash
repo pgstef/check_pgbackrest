@@ -2,6 +2,11 @@
 
 cd "$(dirname "$0")"
 
+BRANCH="master"
+if [ ! -z "$1" ]; then
+    BRANCH="$1"
+fi
+
 if [ -e /usr/bin/pgbackrest ]; then
 	INITIAL_VERSION=`/usr/bin/pgbackrest version | sed -e s/pgBackRest\ //`
 	echo "Initial pgBackRest version is : $INITIAL_VERSION"
@@ -22,7 +27,8 @@ else
 fi
 
 yum install -y git
-git clone https://github.com/pgbackrest/pgbackrest.git /build/pgbackrest
+echo "Branch to clone is : $BRANCH"
+git clone --single-branch --branch $BRANCH https://github.com/pgbackrest/pgbackrest.git /build/pgbackrest
 cd /build/pgbackrest/src && ./configure
 make -s -C /build/pgbackrest/src
 

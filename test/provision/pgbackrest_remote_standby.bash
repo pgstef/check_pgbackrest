@@ -23,6 +23,8 @@ log-level-console=warn
 log-level-file=info
 start-fast=y
 delta=y
+repo1-cipher-type=aes-256-cbc
+repo1-cipher-pass=acbd
 
 [my_stanza]
 pg1-host=pgsql-srv
@@ -44,6 +46,8 @@ process-max=2
 log-level-console=warn
 log-level-file=info
 delta=y
+repo1-cipher-type=aes-256-cbc
+repo1-cipher-pass=acbd
 
 [my_stanza]
 pg1-path=${PGDATA}

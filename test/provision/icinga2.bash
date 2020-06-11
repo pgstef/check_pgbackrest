@@ -46,10 +46,10 @@ chmod 755 /var/www/html/index.html
 
 # install icingaweb2
 yum install --nogpgcheck --quiet -y -e 0 centos-release-scl
-yum install --nogpgcheck --quiet -y -e 0 icingaweb2 icingacli icingaweb2-selinux sclo-php71-php-pecl-imagick
-echo "date.timezone = Europe/Brussels">> /etc/opt/rh/rh-php71/php.ini
-systemctl start rh-php71-php-fpm.service
-systemctl enable rh-php71-php-fpm.service
+yum install --nogpgcheck --quiet -y -e 0 icingaweb2 icingacli icingaweb2-selinux php-pecl-imagick
+echo "date.timezone = Europe/Brussels">> /etc/opt/rh/rh-php73/php.ini
+systemctl start rh-php73-php-fpm.service
+systemctl enable rh-php73-php-fpm.service
 sudo -iu postgres psql -c "CREATE ROLE icingaweb WITH LOGIN;"
 sudo -iu postgres createdb -O icingaweb -E UTF8 icingaweb
 psql -U icingaweb -d icingaweb < /usr/share/doc/icingaweb2/schema/pgsql.schema.sql

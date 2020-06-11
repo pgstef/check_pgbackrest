@@ -18,10 +18,13 @@ fi
 ## Tests
 
 # Initiate backups (full, diff, incr)
-echo "Initiate backups (full, diff, incr)"
-sudo -iu postgres ssh backup-srv "pgbackrest --stanza=my_stanza backup --type=full --repo1-retention-full=1"
-sudo -iu postgres ssh backup-srv "pgbackrest --stanza=my_stanza backup --type=diff"
-sudo -iu postgres ssh backup-srv "pgbackrest --stanza=my_stanza backup --type=incr"
+SKIP_INIT=false
+if ! $SKIP_INIT; then
+	echo "Initiate backups (full, diff, incr)"
+	sudo -iu postgres ssh backup-srv "pgbackrest --stanza=my_stanza backup --type=full --repo1-retention-full=1"
+	sudo -iu postgres ssh backup-srv "pgbackrest --stanza=my_stanza backup --type=diff"
+	sudo -iu postgres ssh backup-srv "pgbackrest --stanza=my_stanza backup --type=incr"
+fi
 
 # --list
 echo "--list"

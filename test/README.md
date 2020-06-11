@@ -149,6 +149,13 @@ on each server where pgBackRest is installed :
 vagrant ssh pgsql-srv -c "sudo /check_pgbackrest/test/regress/pgbackrest_build.bash"
 ```
 
+### Extended activity
+
+```bash
+Usage: simulate-extended-activity.bash [-s <scale>] [-a <activity_time>] [-p <local|remote>]
+vagrant ssh pgsql-srv -c "sudo /check_pgbackrest/test/regress/simulate-extended-activity.bash -s 10 -a 10 -p local"
+```
+
 ## Tips
 
 Find all existing VM created by vagrant on your system:
