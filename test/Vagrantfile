@@ -22,6 +22,9 @@ Vagrant.configure(2) do |config|
 
     # mount check_pgbackrest path for testing
     config.vm.synced_folder "..", "/check_pgbackrest", nfs_udp: false
+    if File.directory?(File.expand_path("../../pgbackrest-dev"))
+        config.vm.synced_folder "../../pgbackrest-dev", "/pgbackrest-dev", nfs_udp: false
+    end
 
     # check_pgbackrest install on all the nodes
     config.vm.provision 'check_pgbackrest', type: 'shell', path: 'provision/check_pgbackrest.bash'

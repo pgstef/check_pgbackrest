@@ -23,15 +23,20 @@ yum install -y gcc make openssl-devel libxml2-devel bzip2-devel postgresql-devel
 if [ ! -d /build ]; then
 	mkdir /build
 else
-	rm -rf /build
+	rm -rf /build/pgbackrest
 fi
 
-yum install -y git
-echo "Branch to clone is : $BRANCH"
-git clone --single-branch --branch $BRANCH https://github.com/pgbackrest/pgbackrest.git /build/pgbackrest
+if [ "$BRANCH" == "local" ] && [ -e /pgbackrest-dev ]; then
+	echo "Build local pgbackrest-dev environment"
+	ln -s /pgbackrest-dev /build/pgbackrest
+else
+	yum install -y git
+	echo "Branch to clone is : $BRANCH"
+	git clone --single-branch --branch $BRANCH https://github.com/pgbackrest/pgbackrest.git /build/pgbackrest
+fi
+
 cd /build/pgbackrest/src && ./configure
 make -s -C /build/pgbackrest/src
-
 MAKE_VERSION=`/build/pgbackrest/src/pgbackrest version | sed -e s/pgBackRest\ //`
 echo "pgBackRest master version is : $MAKE_VERSION"
 mv /build/pgbackrest/src/pgbackrest /usr/bin/pgbackrest
