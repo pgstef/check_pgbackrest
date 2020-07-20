@@ -444,8 +444,32 @@ sub pgbackrest_info {
     return;
 }
 
+sub pgbackrest_get {
+    my $args_ref = shift;
+    my %args = %{ $args_ref };
+    my $filename = shift;
+    my $getcmd = $args{'command'}." repo-get";
+    $getcmd .= " ".$args{'archives_dir'}."/".$filename;
+    $getcmd .= " --log-level-console=error";
+
+    if(defined $args{'config'}) {
+        $getcmd .= " --config=".$args{'config'};
+    }
+
+    if(defined $args{'prefix'}) {
+        $getcmd = $args{'prefix'}." $getcmd";
+    }
+
+    dprint("pgBackRest get command was : '$getcmd'\n");
+    my $history_content = `$getcmd 2>&1 |grep -v ERROR`;
+
+    die("Can't get pgBackRest file content.\nCommand was '$getcmd'.\n") unless ($? eq 0);
+
+    return $history_content;
+}
+
 sub pgbackrest_ls {
-	my $args_ref = shift;
+    my $args_ref = shift;
     my %args = %{ $args_ref };
     my $lscmd = $args{'command'}." repo-ls";
     $lscmd .= " ".$args{'archives_dir'};
@@ -656,13 +680,12 @@ sub get_archived_wal_list {
     my $activate_pgbackrest_ls_command=0;
     if($pgbackrest_version >= '2.28' && $activate_pgbackrest_ls_command){
         # pgBackRest ls command
-        my $list=pgbackrest_ls(\%args);
+        my $list = pgbackrest_ls(\%args);
 
         foreach my $key (keys %{$list}) {
             next unless $list->{$key}->{'type'} eq 'file';
             my @split_tab = split('/', $key);
             my $filename = $split_tab[-1];
-            my $segname = substr($filename, 0, 24);
 
             if($filename =~ /$filename_re_full/){
                 # Get stats of the archived wals
@@ -680,6 +703,7 @@ sub get_archived_wal_list {
                     }
                 }
 
+                my $segname = substr($filename, 0, 24);
                 if ( ! $args{'extended-check'} && $segname lt $min_wal ){
                     dprint ("ignored file ".$segname." older than ".$min_wal."\n");
                     return;
@@ -694,9 +718,17 @@ sub get_archived_wal_list {
 
             }elsif($filename =~ /$history_re_full/ && $start_tl ne $end_tl){
                 # Look for the last history file if needed
-                dprint("history file to open : $filename\n");
+                dprint("history file to open : $archives_dir/$key - $key - $filename\n");
 
-                #FIXME - missing "get_content" of history files
+                my $history_content = pgbackrest_get(\%args, $filename);
+                my @history_lines = split /\n/, $history_content;
+                foreach my $line ( @history_lines ){
+
+                    my $line_re = qr/^\s*(\d)\t([0-9A-F]+)\/([0-9A-F]+)\t.*$/;
+                    $line =~ /$line_re/ || next;
+                    push @branch_wals =>
+                        sprintf("%08d%08s%08X", $1, $2, hex($3)>>24);
+                }
             }
         }
     
