@@ -18,7 +18,8 @@ if [ -e /usr/bin/pgbackrest ]; then
 	mv /usr/bin/pgbackrest /usr/bin/pgbackrest-$INITIAL_VERSION
 fi
 
-yum install -y gcc make openssl-devel libxml2-devel bzip2-devel postgresql-devel perl-ExtUtils-Embed
+yum install -y make gcc postgresql-devel openssl-devel libxml2-devel lz4-devel libzstd-devel bzip2-devel
+
 
 if [ ! -d /build ]; then
 	mkdir /build
