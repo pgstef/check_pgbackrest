@@ -48,3 +48,9 @@ only be found in the Open Fusion repositories. To install it on CentOS 7, use:
 yum install -y http://repo.openfusion.net/centos7-x86_64/\
 openfusion-release-0.7-1.of.el7.noarch.rpm
 ```
+
+## Unneeded Perl dependencies with pgBackRest >= 2.28
+
+Using the `--enable-internal-pgbr-cmds` argument will use pgBackRest internal
+commands. SFTP or Amazon S3 specific Perl dependencies are then not needed
+anymore.

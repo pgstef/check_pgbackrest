@@ -10,6 +10,10 @@ PGDATA="$2"
 # install required packages
 yum install --nogpgcheck --quiet -y -e 0 "https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm"
 
+if [ $PGVER -ge "13" ]; then
+    yum-config-manager --enable pgdg$PGVER-updates-testing
+fi
+
 PACKAGES=(
     "postgresql${PGVER}"
     "postgresql${PGVER}-server"

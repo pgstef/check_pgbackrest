@@ -6,6 +6,7 @@ set -o pipefail
 
 PGVER="$1"
 PGDATA="$2"
+ENCRYPTED="$3"
 
 PACKAGES=(
     pgbackrest
@@ -28,7 +29,13 @@ EOF
 chmod 755 /var/lib/pgbackrest
 mount /var/lib/pgbackrest
 
+CIPHER=
 # pgbackrest.conf setup
+if [ $ENCRYPTED = "true" ]; then
+    CIPHER='repo1-cipher-type=aes-256-cbc
+repo1-cipher-pass=acbd'
+fi
+
 cat<<EOC > "/etc/pgbackrest.conf"
 [global]
 repo1-type=cifs
@@ -39,8 +46,7 @@ log-level-console=warn
 log-level-file=info
 start-fast=y
 delta=y
-repo1-cipher-type=aes-256-cbc
-repo1-cipher-pass=acbd
+$CIPHER
 
 [my_stanza]
 pg1-path=${PGDATA}
@@ -55,7 +61,3 @@ SELECT pg_reload_conf();
 EOS
 
 sudo -iu postgres pgbackrest --stanza=my_stanza check
-
-
- 
-

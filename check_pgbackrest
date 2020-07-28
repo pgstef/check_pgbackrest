@@ -449,6 +449,7 @@ sub pgbackrest_get {
     my %args = %{ $args_ref };
     my $filename = shift;
     my $getcmd = $args{'command'}." repo-get";
+    $getcmd .= " --stanza=".$args{'stanza'};
     $getcmd .= " ".$args{'archives_dir'}."/".$filename;
     $getcmd .= " --log-level-console=error";
 
@@ -472,6 +473,7 @@ sub pgbackrest_ls {
     my $args_ref = shift;
     my %args = %{ $args_ref };
     my $lscmd = $args{'command'}." repo-ls";
+    $lscmd .= " --stanza=".$args{'stanza'};
     $lscmd .= " ".$args{'archives_dir'};
     $lscmd .= " --recurse --output=json --log-level-console=error";
 
@@ -645,9 +647,9 @@ s (second), m (minute), h (hour), d (day). You can use more than
 one unit per given value. If not set, the last unit is in seconds. 
 Eg. "1h 55m 6" = "1h55m6s".
 
-All the missing archives are only shown in the `--debug` mode.
+All the missing archives are only shown in the C<--debug> mode.
 
-Use C<--list-archives> in addition with `--debug` to print the list of all the 
+Use C<--list-archives> in addition with C<--debug> to print the list of all the
 archived WAL segments.
 
 By default, all the archives older than the oldest backup start archive 
@@ -656,6 +658,10 @@ are ignored.
 
 Use the C<--extended-check> argument to force a full check of the found 
 archives and raise warnings in case of inconsistencies.
+
+After pgBackRest 2.28, it is possible to use the C<repo-ls> and C<repo-get>
+internal commands with the C<--enable-internal-pgbr-cmds> argument to list and
+get the content of files in the repository.
 
 =cut
 
@@ -677,9 +683,7 @@ sub get_archived_wal_list {
     my $history_re_full = qr/$end_tl.history$/;
 
     my $pgbackrest_version=pgbackrest_version(\%args);
-    my $activate_pgbackrest_ls_command=0;
-    if($pgbackrest_version >= '2.28' && $activate_pgbackrest_ls_command){
-        # pgBackRest ls command
+    if($pgbackrest_version >= '2.28' && $args{'enable-internal-pgbr-cmds'}){
         my $list = pgbackrest_ls(\%args);
 
         foreach my $key (keys %{$list}) {
@@ -1225,6 +1229,7 @@ GetOptions(
         'command|C=s',
         'config|c=s',
         'debug!',
+        'enable-internal-pgbr-cmds!',
         'extended-check!',
         'help|?!',
         'ignore-archived-after=s',
@@ -1288,6 +1293,12 @@ pod2usage(
     -exitval => 127
 ) if ( $args{'extended-check'} or $args{'ignore-archived-after'} or $args{'ignore-archived-before'} or $args{'latest-archive-age-alert'} )
     and $args{'service'} ne 'archives';
+
+# Check "archives" specific arg --enable-internal-pgbr-cmds
+pod2usage(
+    -message => 'FATAL: "enable-internal-pgbr-cmds" is only allowed with "archives" service.',
+    -exitval => 127
+) if $args{'enable-internal-pgbr-cmds'} and $args{'service'} ne 'archives';
 
 # Check "archives" specific arg --list-archives
 pod2usage(

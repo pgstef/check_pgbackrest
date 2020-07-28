@@ -6,6 +6,7 @@ set -o pipefail
 
 PGVER="$1"
 PGDATA="$2"
+ENCRYPTED="$3"
 
 PACKAGES=(
     pgbackrest
@@ -13,7 +14,13 @@ PACKAGES=(
 
 yum install --nogpgcheck --quiet -y -e 0 "${PACKAGES[@]}"
 
+CIPHER=
 # pgbackrest.conf setup
+if [ $ENCRYPTED = "true" ]; then
+    CIPHER='repo1-cipher-type=aes-256-cbc
+repo1-cipher-pass=acbd'
+fi
+
 cat<<EOC > "/etc/pgbackrest.conf"
 [global]
 repo1-path=/repo1
@@ -31,8 +38,7 @@ log-level-console=warn
 log-level-file=info
 start-fast=y
 delta=y
-repo1-cipher-type=aes-256-cbc
-repo1-cipher-pass=acbd
+$CIPHER
 
 [my_stanza]
 pg1-path=${PGDATA}

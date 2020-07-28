@@ -1,11 +1,42 @@
 #!/usr/bin/env bash
-
 cd "$(dirname "$0")"
+
+# vars
 PLUGIN_PATH=/usr/lib64/nagios/plugins
 RESULTS_DIR=/tmp/results
-
-# Generate the expected results ?
+SKIP_INIT=false
 GENERATE_EXPECTED=false
+
+while getopts ":sgp:a:h" o; do
+    case "${o}" in
+        s)
+            SKIP_INIT=true
+            ;;
+        g)
+            GENERATE_EXPECTED=true
+            ;;
+        p)
+            PLUGIN_PATH=${OPTARG}
+            ;;
+        a)
+            ARCHIVE_OPTION=${OPTARG}
+            ;;
+        h )
+            echo "Usage:"
+            echo "    -s                          Skip backups initialization step."
+            echo "    -g                          Generate expected results."
+            echo "    -p                          Change check_pgbackrest plugin path."
+            echo "    -a                          Add extra option to the archives service."
+            echo "    -h                          Display this help message."
+            exit 0
+            ;;
+        \? )
+            echo "Invalid Option: -$OPTARG" 1>&2
+            exit 1
+            ;;
+    esac
+done
+shift $((OPTIND-1))
 
 if $GENERATE_EXPECTED; then
 	RESULTS_DIR=expected
@@ -16,9 +47,7 @@ if [ ! -d $RESULTS_DIR ]; then
 fi
 
 ## Tests
-
 # Initiate backups (full, diff, incr)
-SKIP_INIT=false
 if ! $SKIP_INIT; then
 	echo "Initiate backups (full, diff, incr)"
 	sudo -iu postgres ssh backup-srv "pgbackrest --stanza=my_stanza backup --type=full --repo1-retention-full=1"
@@ -56,26 +85,26 @@ echo "--service=archives missing arg"
 $PLUGIN_PATH/check_pgbackrest --stanza=my_stanza --service=archives > $RESULTS_DIR/archives-missing-arg.out 2>&1
 
 # --service=archives --repo-path
-echo "--service=archives --repo-path"
+echo "--service=archives --repo-path $ARCHIVE_OPTION"
 sudo -iu postgres psql -c "SELECT pg_switch_xlog();" > /dev/null 2>&1
 sudo -iu postgres psql -c "SELECT pg_switch_wal();" > /dev/null 2>&1
 sudo -iu postgres psql -c "SELECT pg_sleep(1);" > /dev/null 2>&1
-$PLUGIN_PATH/check_pgbackrest --stanza=my_stanza --service=archives --repo-path=/var/lib/pgbackrest/archive --repo-host="backup-srv" --repo-host-user=postgres | cut -f1 -d"-" > $RESULTS_DIR/archives-ok.out
+$PLUGIN_PATH/check_pgbackrest --stanza=my_stanza --service=archives --repo-path=/var/lib/pgbackrest/archive --repo-host="backup-srv" --repo-host-user=postgres $ARCHIVE_OPTION | cut -f1 -d"-" > $RESULTS_DIR/archives-ok.out
 
 # --service=archives --ignore-archived-before
-echo "--service=archives --ignore-archived-before"
+echo "--service=archives --ignore-archived-before $ARCHIVE_OPTION"
 sudo -iu postgres psql -c "SELECT pg_sleep(2);" > /dev/null 2>&1
-$PLUGIN_PATH/check_pgbackrest --stanza=my_stanza --service=archives --repo-path=/var/lib/pgbackrest/archive --repo-host="backup-srv" --repo-host-user=postgres --ignore-archived-before=1s > $RESULTS_DIR/archives-ignore-before.out
+$PLUGIN_PATH/check_pgbackrest --stanza=my_stanza --service=archives --repo-path=/var/lib/pgbackrest/archive --repo-host="backup-srv" --repo-host-user=postgres --ignore-archived-before=1s $ARCHIVE_OPTION > $RESULTS_DIR/archives-ignore-before.out
 
 # --service=archives --ignore-archived-after
-echo "--service=archives --ignore-archived-after"
-$PLUGIN_PATH/check_pgbackrest --stanza=my_stanza --service=archives --repo-path=/var/lib/pgbackrest/archive  --repo-host="backup-srv" --repo-host-user=postgres --ignore-archived-after=1h > $RESULTS_DIR/archives-ignore-after.out
+echo "--service=archives --ignore-archived-after $ARCHIVE_OPTION"
+$PLUGIN_PATH/check_pgbackrest --stanza=my_stanza --service=archives --repo-path=/var/lib/pgbackrest/archive  --repo-host="backup-srv" --repo-host-user=postgres --ignore-archived-after=1h $ARCHIVE_OPTION > $RESULTS_DIR/archives-ignore-after.out
 
 # --service=archives --latest-archive-age-alert
-echo "--service=archives --latest-archive-age-alert"
+echo "--service=archives --latest-archive-age-alert $ARCHIVE_OPTION"
 sudo -iu postgres psql -c "SELECT pg_sleep(2);" > /dev/null 2>&1
-$PLUGIN_PATH/check_pgbackrest --stanza=my_stanza --service=archives --repo-path=/var/lib/pgbackrest/archive  --repo-host="backup-srv" --repo-host-user=postgres --latest-archive-age-alert=1h | cut -f1 -d"-" > $RESULTS_DIR/archives-age-alert-ok.out
-$PLUGIN_PATH/check_pgbackrest --stanza=my_stanza --service=archives --repo-path=/var/lib/pgbackrest/archive  --repo-host="backup-srv" --repo-host-user=postgres --latest-archive-age-alert=1s | cut -f1 -d"-" > $RESULTS_DIR/archives-age-alert-ko.out
+$PLUGIN_PATH/check_pgbackrest --stanza=my_stanza --service=archives --repo-path=/var/lib/pgbackrest/archive  --repo-host="backup-srv" --repo-host-user=postgres --latest-archive-age-alert=1h $ARCHIVE_OPTION | cut -f1 -d"-" > $RESULTS_DIR/archives-age-alert-ok.out
+$PLUGIN_PATH/check_pgbackrest --stanza=my_stanza --service=archives --repo-path=/var/lib/pgbackrest/archive  --repo-host="backup-srv" --repo-host-user=postgres --latest-archive-age-alert=1s $ARCHIVE_OPTION | cut -f1 -d"-" > $RESULTS_DIR/archives-age-alert-ko.out
 
 ## Results
 diff -abB expected/ $RESULTS_DIR/ > /tmp/regression.diffs

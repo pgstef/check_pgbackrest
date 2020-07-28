@@ -13,6 +13,11 @@ Changelog
   Instead, a WARNING message "max WAL is not the latest archive" will be 
   displayed (suggested by blogh).
   - Fix S3 archives detection (reported by khadijahvf).
+  - New enable-internal-pgbr-cmds argument, for pgBackRest >= 2.28. Internal
+  pgBackRest commands will then be used to list and get the content of files
+  in the repository instead of Perl specific drivers. This is, for instance,
+  needed to access encrypted repositories. This should become the default and
+  only access method in the next release, removing some Perl dependencies.
 
 2020-03-16 v1.8:
 
