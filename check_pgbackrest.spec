@@ -32,6 +32,8 @@ install -D -p -m 0755 check_pgbackrest %{buildroot}/%{_libdir}/nagios/plugins/ch
 %doc README LICENSE
 
 %changelog
+* Tue Jul 28 2020 Stefan Fercot <stefan.fercot@dalibo.com> 1.9-1
+- new major release 1.9
 * Mon Mar 16 2020 Stefan Fercot <stefan.fercot@dalibo.com> 1.8-1
 - new major release 1.8
 * Tue Jan 14 2020 Stefan Fercot <stefan.fercot@dalibo.com> 1.7-1

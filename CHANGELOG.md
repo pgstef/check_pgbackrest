@@ -1,7 +1,7 @@
 Changelog
 =========
 
-2020-xx-xx v1.9:
+2020-07-28 v1.9:
 
   - The archives service will now only look at the archives listed between 
   the oldest backup start archive and the max WAL returned by the pgBackRest 
