@@ -37,7 +37,7 @@ git archive --prefix=check_pgbackrest-$TAG/ -o /tmp/check_pgbackrest-1.9.tar.gz 
 
 ## Release on github
 
-  - Go to https://github.com/dalibo/check_pgbackrest/releases
+  - Go to https://github.com/pgstef/check_pgbackrest/releases
   - Edit the release notes for the new tag
   - Set "check_pgbackrest $VERSION" as title, eg. "check_pgbackrest 1.9"
   - Here is the format of the release node itself:
@@ -50,7 +50,7 @@ git archive --prefix=check_pgbackrest-$TAG/ -o /tmp/check_pgbackrest-1.9.tar.gz 
       
   - Upload the tar file
   - Save
-  - Check or update https://github.com/dalibo/check_pgbackrest/releases
+  - Check or update https://github.com/pgstef/check_pgbackrest/releases
 
 ## Building the RPM file
 
@@ -67,7 +67,7 @@ useradd makerpm
 ```bash
 su - makerpm
 rpmdev-setuptree
-git clone https://github.com/dalibo/check_pgbackrest.git
+git clone https://github.com/pgstef/check_pgbackrest.git
 spectool -R -g check_pgbackrest/check_pgbackrest.spec
 rpmbuild -ba check_pgbackrest/check_pgbackrest.spec
 ```
@@ -110,13 +110,13 @@ check_pgbackrest is an open project, licensed under the PostgreSQL license.
 Any contribution to improve it is welcome.
 
 Links:
-  - Download: https://github.com/dalibo/check_pgbackrest/releases
-  - Support: https://github.com/dalibo/check_pgbackrest/issues
+  - Download: https://github.com/pgstef/check_pgbackrest/releases
+  - Support: https://github.com/pgstef/check_pgbackrest/issues
 ```
 
 ### Submit a news on postgresql.org
 
-* organisation: Dalibo
+* organisation: ---------
 * Title: "check_pgbackrest 1.9 has been released"
 * Content:
   
@@ -138,21 +138,13 @@ Changes in check_pgbackrest 1.9
 
 Links & Credits
 --------------------------------------------------------------------------------
-
-`check_pgbackrest` is part of the [Dalibo Labs] initiative. It is mainly 
-developed by [Stefan Fercot].
 This is an open project, licensed under the PostgreSQL license. 
 Any contribution to improve it is welcome.
 
 Links:
 
-  * [Download]: https://github.com/dalibo/check_pgbackrest/releases
-  * [Support]: https://github.com/dalibo/check_pgbackrest/issues
-
-Note: RPM package is available on the GitHub Release page. 
-
-[Dalibo Labs]: https://labs.dalibo.com
-[Stefan Fercot]: https://www.dalibo.com/en/equipe#stefan
+  * [Download]: https://github.com/pgstef/check_pgbackrest/releases
+  * [Support]: https://github.com/pgstef/check_pgbackrest/issues
 ```
   
 * check "Related Open Source"
