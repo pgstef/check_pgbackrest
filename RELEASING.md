@@ -54,36 +54,7 @@ git archive --prefix=check_pgbackrest-$TAG/ -o /tmp/check_pgbackrest-1.9.tar.gz 
 
 ## Building the RPM file
 
-### Installation
-
-```bash
-yum group install "Development Tools"
-yum install rpmdevtools
-useradd makerpm
-```
-
-### Building the package
-
-```bash
-su - makerpm
-rpmdev-setuptree
-git clone https://github.com/pgstef/check_pgbackrest.git
-spectool -R -g check_pgbackrest/check_pgbackrest.spec
-rpmbuild -ba check_pgbackrest/check_pgbackrest.spec
-```
-
-The RPM is generated into `rpmbuild/RPMS/noarch`.
-
-Don't forget to upload the package on GitHub release page.
-
-### Vagrant
-
-A specific Vagrant script has been created in the `packaging` directory to 
-build the rpm. To launch it, go the the `packaging` directory and execute:
-
-```bash
-make all
-```
+The RPM file is provided by the PGDG community.
 
 ## Community
 

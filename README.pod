@@ -167,6 +167,5 @@ Author: Stefan Fercot.
 
 Logo: Damien Cazeils (www.damiencazeils.com).
 
-Copyright: (c) 2018-2020, Dalibo.
-Copyright: (c) 2020-2021, Stefan Fercot.
+Copyright: (c) 2018-2020, Dalibo / 2020-2021, Stefan Fercot.
 
