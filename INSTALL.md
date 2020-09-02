@@ -1,20 +1,3 @@
-## RPM
-
-To install check_pgbackrest with the provided rpm file:
-
-```
-yum install -y epel-release
-yum install -y nagios-plugins-pgbackrest-*.noarch.rpm
-```
-
-The rpm will also require nagios-plugins to be installed and put the 
-`check_pgbackrest` script there. 
-That's why the epel-release package is needed too.
-
-The provided rpm doesn't install the modules needed for Amazon S3 compatibility. 
-See below which modules to install manually.
-
-
 ## Manual installation
 
 To handle the json output format of the pgBackRest info command, you need to
@@ -23,16 +6,50 @@ install the following module:
 - on RedHat-like: `perl-JSON`
 - on Debian-like: `libjson-perl` 
 
-To list archived WALs using SFTP, you need to install the following module:
-
-- On RedHat-like: `perl-Net-SFTP-Foreign`
-- On Debian-like: `libnet-sftp-foreign-perl`
-
 The Data::Dump perl module is also needed:
 
 - On RedHat-like: `perl-Data-Dumper`
 - On Debian-like: `libdata-dump-perl`
 
+-----
+
+## PGDG packages
+
+### RPM
+
+To install check_pgbackrest using the PGDG repositories:
+
+```
+yum install -y epel-release
+yum install -y nagios-plugins-pgbackrest
+```
+
+The rpm will also require nagios-plugins to be installed and put the 
+`check_pgbackrest` script there. 
+That's why the epel-release package is needed too.
+
+### DEB
+
+To install check_pgbackrest using the PGDG repositories (located in `/usr/bin`):
+
+```
+apt-get -y install check-pgbackrest
+```
+
+The packages provided in the PGDG repositories (RPM or DEB) don't install 
+specific modules for SFTP or Amazon S3 compatibility. See below which modules 
+to install manually.
+
+-----
+
+## Remote check using SFTP
+
+To list archived WALs using SFTP, you need to install the following module:
+
+- On RedHat-like: `perl-Net-SFTP-Foreign`
+- On Debian-like: `libnet-sftp-foreign-perl`
+
+-----
 
 ## Amazon S3 compatibility
 
@@ -48,6 +65,8 @@ only be found in the Open Fusion repositories. To install it on CentOS 7, use:
 yum install -y http://repo.openfusion.net/centos7-x86_64/\
 openfusion-release-0.7-1.of.el7.noarch.rpm
 ```
+
+-----
 
 ## Unneeded Perl dependencies with pgBackRest >= 2.28
 

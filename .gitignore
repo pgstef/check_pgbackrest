@@ -1,5 +1,5 @@
 pgbackrest.conf
 /test/.vagrant/
-/packaging/.vagrant/
+/test_debian/.vagrant/
 /test/perf/nytprof*
 *.rpm
