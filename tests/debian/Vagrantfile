@@ -1,0 +1,52 @@
+pgver = '12' # pg version to use
+vm_prefix = 'c_pgbr_d10'
+
+Vagrant.configure(2) do |config|
+
+	pgdata = "/var/lib/postgresql/#{pgver}/main"
+
+    config.vm.box = "debian/buster64"
+
+    # hardware and host settings
+    config.vm.provider 'libvirt' do |lv|
+        lv.cpus = 1
+        lv.memory = 2048
+        lv.default_prefix = vm_prefix
+	end
+
+    # don't mind about insecure ssh key
+    config.ssh.insert_key = false
+
+    # don't share the default vagrant folder
+    config.vm.synced_folder ".", "/vagrant", disabled: true
+
+    # mount check_pgbackrest path for testing
+    config.vm.synced_folder "../..", "/check_pgbackrest", nfs_udp: false
+    if File.directory?(File.expand_path("../../../pgbackrest-dev"))
+        config.vm.synced_folder "../../../pgbackrest-dev", "/pgbackrest-dev", nfs_udp: false
+    end
+    
+    # install PostgreSQL on all the nodes
+    config.vm.provision 'pgsql', type: 'shell', 
+        path: 'provision/pgsql.bash', 
+        args: [ pgver, pgdata ]
+
+    # ssh configuration
+    config.vm.synced_folder '../common/ssh', '/root/.ssh', type: 'rsync',
+        owner: 'root', group: 'root',
+        rsync__args: [ "--verbose", "--archive", "--delete", "--copy-links", "--no-perms" ]
+
+    config.vm.define "pgsql-srv" do |pgsql|
+        pgsql.vm.hostname = "pgsql-srv"
+
+        # pgbackrest local setup
+        pgsql.vm.provision 'pgbackrest_local', type: 'shell',
+          path: 'provision/pgbackrest_local.bash',
+            args: [ pgver, pgdata ],
+            run: 'never'
+
+        # install check_pgbackrest from PGDG repo
+        pgsql.vm.provision 'check_pgbackrest', type: 'shell',
+          path: 'provision/check_pgbackrest.bash', run: 'never'
+    end
+end
