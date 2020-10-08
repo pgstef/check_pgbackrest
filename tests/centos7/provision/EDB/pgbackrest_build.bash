@@ -20,9 +20,9 @@ else
 	rm -rf /build/pgbackrest
 fi
 
-if [ "$PGBR_BRANCH" == "local" ] && [ -e /pgbackrest-dev ]; then
-	echo "Build local pgbackrest-dev environment"
-	ln -s /pgbackrest-dev /build/pgbackrest
+if [ "$PGBR_BRANCH" == "local" ] && [ -e /pgbackrest ]; then
+	echo "Build local pgbackrest environment"
+	ln -s /pgbackrest /build/pgbackrest
 else
 	yum install --nogpgcheck --quiet -y -e 0 git
 	echo "Branch to clone is : $PGBR_BRANCH"

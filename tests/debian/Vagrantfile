@@ -22,8 +22,8 @@ Vagrant.configure(2) do |config|
 
     # mount check_pgbackrest path for testing
     config.vm.synced_folder "../..", "/check_pgbackrest", nfs_udp: false
-    if File.directory?(File.expand_path("../../../pgbackrest-dev"))
-        config.vm.synced_folder "../../../pgbackrest-dev", "/pgbackrest-dev", nfs_udp: false
+    if File.directory?(File.expand_path("../../../pgbackrest"))
+        config.vm.synced_folder "../../../pgbackrest", "/pgbackrest", nfs_udp: false
     end
     
     # install PostgreSQL on all the nodes

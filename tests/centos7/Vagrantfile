@@ -16,14 +16,14 @@ if File.file?('vagrant.yml') and ( custom = YAML.load_file('vagrant.yml') )
     edb_repository_password = custom['edb_repository_password'] if custom.has_key?('edb_repository_password')
 end
 
-edb_as = 'false'
-if defined?(ENV['EDB_AS']) and ENV['EDB_AS'] == 'true'
-    edb_as = 'true'
+epas = 'false'
+if defined?(ENV['EPAS']) and ENV['EPAS'] == 'true'
+    epas = 'true'
 end
 
 Vagrant.configure(2) do |config|
 
-    if edb_as == 'true'
+    if epas == 'true'
         pgdata = "/var/lib/edb/as#{pgver}/data"
         pguser = "enterprisedb"
         pgport = 5444
@@ -52,8 +52,8 @@ Vagrant.configure(2) do |config|
 
     # mount check_pgbackrest path for testing
     config.vm.synced_folder "../..", "/check_pgbackrest", nfs_udp: false
-    if File.directory?(File.expand_path("../../../pgbackrest-dev"))
-        config.vm.synced_folder "../../../pgbackrest-dev", "/pgbackrest-dev", nfs_udp: false
+    if File.directory?(File.expand_path("../../../pgbackrest"))
+        config.vm.synced_folder "../../../pgbackrest", "/pgbackrest", nfs_udp: false
     end
 
     # ssh configuration
@@ -98,7 +98,7 @@ Vagrant.configure(2) do |config|
     config.vm.define "pgsql-srv" do |pgsql|
         pgsql.vm.hostname = "pgsql-srv"
         
-        if edb_as == 'true'
+        if epas == 'true'
             # install EDB Postgres Advanced Server
             pgsql.vm.provision 'epas', type: 'shell', 
               path: 'provision/EDB/epas.bash', 
@@ -162,7 +162,7 @@ Vagrant.configure(2) do |config|
         backup.vm.provision 'cifs', type: 'shell',
           path: 'provision/cifs.bash', run: 'never'
         
-        if edb_as == 'true'
+        if epas == 'true'
             # install EDB Postgres Advanced Server
             backup.vm.provision 'epas', type: 'shell', 
               path: 'provision/EDB/epas.bash', 

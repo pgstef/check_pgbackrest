@@ -35,16 +35,18 @@ as standby server.
 
 The easiest way to start testing is with the included `Makefile`.
 
+  * `s*`: build pgBackRest from sources;
+  * `s*_full`: build pgBackRest from sources, Icinga 2 configured;
+  * `s*_light`: pgBackRest installed from PGDG repository.
+
 ### Test case 1
 
 _Build_:
 
 ```bash
 cd test
-make s1
+make s1_full
 ```
-
-Expected make time: 7 min.
 
 _Check the results of a manual execution of check_pgbackrest_:
 
@@ -52,18 +54,14 @@ _Check the results of a manual execution of check_pgbackrest_:
 vagrant ssh pgsql-srv -c "sudo /check_pgbackrest/test/regress/test-s1.bash"
 ```
 
-Expected run time: 30 sec.
-
 ### Test case 2
 
 _Build_:
 
 ```bash
 cd test
-make s2
+make s2_full
 ```
-
-Expected make time: 6 min.
 
 _Check the results of a manual execution of check_pgbackrest_:
 
@@ -71,26 +69,20 @@ _Check the results of a manual execution of check_pgbackrest_:
 vagrant ssh pgsql-srv -c "sudo /check_pgbackrest/test/regress/test-s2-from-primary.bash"
 ```
 
-Expected run time: 50 sec.
-
 ### Test case 3
 
 _Build_:
 
 ```bash
 cd test
-make s3
+make s3_full
 ```
-
-Expected make time: 8 min. (depends on MinIO download time)
 
 _Check the results of a manual execution of check_pgbackrest_:
 
 ```bash
 vagrant ssh pgsql-srv -c "sudo /check_pgbackrest/test/regress/test-s3.bash"
 ```
-
-Expected run time: 40 sec.
 
 ### Simulate some activity:
 
