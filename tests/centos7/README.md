@@ -35,9 +35,9 @@ as standby server.
 
 The easiest way to start testing is with the included `Makefile`.
 
-  * `s*`: build pgBackRest from sources;
+  * `s*`: pgBackRest installed from PGDG repository, Icinga 2 configured;
   * `s*_full`: build pgBackRest from sources, Icinga 2 configured;
-  * `s*_light`: pgBackRest installed from PGDG repository.
+  * `s*_light`: pgBackRest installed from PGDG repository, Icinga 2 not installed.
 
 ### Test case 1
 
@@ -45,7 +45,7 @@ _Build_:
 
 ```bash
 cd test
-make s1_full
+make s1
 ```
 
 _Check the results of a manual execution of check_pgbackrest_:
@@ -60,7 +60,7 @@ _Build_:
 
 ```bash
 cd test
-make s2_full
+make s2
 ```
 
 _Check the results of a manual execution of check_pgbackrest_:
@@ -75,7 +75,7 @@ _Build_:
 
 ```bash
 cd test
-make s3_full
+make s3
 ```
 
 _Check the results of a manual execution of check_pgbackrest_:

@@ -8,6 +8,12 @@ PGVER="$1"
 PGBR_BRANCH="$2"
 EDB_PATH="/usr/edb/as${PGVER}"
 
+if [[ -e "/usr/bin/pgbackrest" && ! -L "/usr/bin/pgbackrest" ]]; then
+	mv /usr/bin/pgbackrest /usr/bin/pgbackrest.origin
+	ORIG_VERSION=`/usr/bin/pgbackrest.origin version | sed -e s/pgBackRest\ //`
+	alternatives --install /usr/bin/pgbackrest pgbackrest /usr/bin/pgbackrest.origin `echo $ORIG_VERSION | tr -d . | tr -d dev`
+fi
+
 if [ -e $EDB_PATH/bin/pgbackrest ]; then
 	rm -f  $EDB_PATH/bin/pgbackrest
 fi
@@ -37,4 +43,4 @@ make -s -C /build/pgbackrest/src
 MAKE_VERSION=`/build/pgbackrest/src/pgbackrest version | sed -e s/pgBackRest\ //`
 echo "pgBackRest $PGBR_BRANCH version is : $MAKE_VERSION"
 mv /build/pgbackrest/src/pgbackrest $EDB_PATH/bin/pgbackrest
-alternatives --install /usr/bin/pgbackrest pgbackrest /usr/edb/as12/bin/pgbackrest `echo $MAKE_VERSION | tr -d .`
+alternatives --install /usr/bin/pgbackrest pgbackrest /usr/edb/as12/bin/pgbackrest `echo $MAKE_VERSION | tr -d . | tr -d dev`

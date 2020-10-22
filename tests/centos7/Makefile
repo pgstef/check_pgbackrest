@@ -2,15 +2,15 @@
 EPAS='false'
 
 ### Make scenario
-s1: clean create_vm cifs pgbackrest_build pgbackrest_local generate_config_file_local
+s1: clean create_vm cifs pgbackrest_local icinga2_local generate_config_file_local
 s1_full: clean create_vm cifs pgbackrest_build pgbackrest_local icinga2_local generate_config_file_local
 s1_light: clean create_vm cifs pgbackrest_local generate_config_file_local
 
-s2: clean create_vm pgbackrest_build pgbackrest_remote generate_config_file_remote
+s2: clean create_vm pgbackrest_remote icinga2_remote generate_config_file_remote
 s2_full: clean create_vm pgbackrest_build pgbackrest_remote icinga2_remote generate_config_file_remote
 s2_light: clean create_vm pgbackrest_remote generate_config_file_remote
 
-s3: clean create_vm pgbackrest_build pgbackrest_minio generate_config_file_local
+s3: clean create_vm pgbackrest_minio icinga2_minio generate_config_file_local
 s3_full: clean create_vm pgbackrest_build pgbackrest_minio icinga2_minio generate_config_file_local
 s3_light: clean create_vm pgbackrest_minio generate_config_file_local
 
@@ -19,7 +19,7 @@ clean:
 	vagrant destroy -f
 
 clean_git:
-	git clean -dX --dry-run
+	git clean -f -dX --dry-run
 
 create_vm:
 	EPAS=$(EPAS) vagrant up

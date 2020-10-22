@@ -34,7 +34,7 @@ firewall-cmd --quiet --reload
 systemctl stop "postgresql-${PGVER}"
 systemctl disable "postgresql-${PGVER}"
 rm -rf "${PGDATA}"
-export PGSETUP_INITDB_OPTIONS="--data-checksums"
+export PGSETUP_INITDB_OPTIONS="-E UTF-8 --data-checksums"
 "/usr/pgsql-${PGVER}/bin/postgresql-${PGVER}-setup" initdb
 
 # pg_hba setup

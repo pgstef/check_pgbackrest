@@ -120,7 +120,7 @@ if [ "$SPROFILE" = "remote" ]; then
 
     echo "----Restore it on standby server"
     ssh backup-srv "systemctl stop $PGSVC"
-    sudo -iu $PGUSER ssh backup-srv "pgbackrest --stanza=my_stanza --config=/etc/pgbackrest-restore.conf --type=standby restore"
+    sudo -iu $PGUSER ssh backup-srv "pgbackrest --stanza=my_stanza --reset-pg1-host --type=standby restore"
     ssh backup-srv "systemctl start $PGSVC"
 
     echo "----Wait until standby is replicated"

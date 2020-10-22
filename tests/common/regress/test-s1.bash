@@ -67,7 +67,7 @@ $PLUGIN_PATH/check_pgbackrest --list > $RESULTS_DIR/list.out
 
 # --version
 echo "--version"
-$PLUGIN_PATH/check_pgbackrest --version > $RESULTS_DIR/version.out
+$PLUGIN_PATH/check_pgbackrest --version | cut -f1 -d"," > $RESULTS_DIR/version.out
 
 # --service=retention --retention-full
 echo "--service=retention --retention-full"

@@ -74,13 +74,9 @@ chown -R ${PGUSER}: /var/lib/edb/.ssh
 restorecon -R /var/lib/edb/.ssh
 usermod -aG ${PGUSER} accessed_by_ssh
 
-# create pgBackRest directories
-mkdir -p /var/lib/pgbackrest
-mkdir -p /var/log/pgbackrest
-mkdir -p /var/spool/pgbackrest
+# install pgBackRest
+yum install --nogpgcheck --quiet -y -e 0 "https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm"
+yum install --nogpgcheck --quiet -y -e 0 pgbackrest
 chown -R ${PGUSER}: /var/lib/pgbackrest
 chown -R ${PGUSER}: /var/log/pgbackrest
 chown -R ${PGUSER}: /var/spool/pgbackrest
-chmod -R 700 /var/lib/pgbackrest
-chmod -R 700 /var/log/pgbackrest
-chmod -R 700 /var/spool/pgbackrest

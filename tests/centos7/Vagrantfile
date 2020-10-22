@@ -10,6 +10,7 @@ edb_repository_password = 'password'
 
 if File.file?('vagrant.yml') and ( custom = YAML.load_file('vagrant.yml') )
     pgver                   = custom['pgver']                   if custom.has_key?('pgver')
+    pgbr_branch             = custom['pgbr_branch']             if custom.has_key?('pgbr_branch')
     vm_prefix               = custom['vm_prefix']               if custom.has_key?('vm_prefix')
     encrypted_repo          = custom['encrypted_repo']          if custom.has_key?('encrypted_repo')
     edb_repository_username = custom['edb_repository_username'] if custom.has_key?('edb_repository_username')
@@ -51,9 +52,9 @@ Vagrant.configure(2) do |config|
     config.vm.synced_folder ".", "/vagrant", disabled: true
 
     # mount check_pgbackrest path for testing
-    config.vm.synced_folder "../..", "/check_pgbackrest", nfs_udp: false
+    config.vm.synced_folder "../..", "/check_pgbackrest", type: "nfs"
     if File.directory?(File.expand_path("../../../pgbackrest"))
-        config.vm.synced_folder "../../../pgbackrest", "/pgbackrest", nfs_udp: false
+        config.vm.synced_folder "../../../pgbackrest", "/pgbackrest", type: "nfs"
     end
 
     # ssh configuration
