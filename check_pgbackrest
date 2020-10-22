@@ -61,7 +61,7 @@ undef @path;
 # Reference to the output sub
 my $output_fmt;
 
-$VERSION = '1.9';
+$VERSION = '2.0dev';
 $PROGRAM = 'check_pgbackrest';
 
 # Available services and descriptions.

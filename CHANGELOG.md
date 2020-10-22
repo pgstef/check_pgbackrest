@@ -1,6 +1,10 @@
 Changelog
 =========
 
+2020-xx-xx v2.0:
+
+  - ...
+
 2020-07-28 v1.9:
 
   - The archives service will now only look at the archives listed between 
