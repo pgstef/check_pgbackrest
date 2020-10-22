@@ -621,7 +621,7 @@ The C<--repo-s3> enables remote archived WALs stored in Amazon S3.
 
 The C<--repo-s3-over-http> switch to HTTP connection instead of HTTPS.
 
-Archives must be compressed (.gz). If needed, use "compress-level=0"
+Archives must be compressed. If needed, use "compress-level=0"
 instead of "compress=n".
 
 Use the C<--wal-segsize> argument to set the WAL segment size.
@@ -671,7 +671,7 @@ sub get_archived_wal_list {
     my $max_wal = shift;
     my $args_ref = shift;
     my %args = %{ $args_ref };
-    my $suffix = ".gz";
+    my $suffix = "\.(gz|lz4|zst|xz|bz2)";
     my $archives_dir = $args{'archives_dir'};
 
     my @filelist;
