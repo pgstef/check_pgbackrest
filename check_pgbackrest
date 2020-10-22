@@ -699,24 +699,24 @@ sub get_archived_wal_list {
 
                     if ( $args{'ignore-archived-after'} && $diff_epoch <= get_time($args{'ignore-archived-after'}) ){
                         dprint ("ignored file ".$filename." as interval since epoch : ".to_interval($diff_epoch)."\n");
-                        return;
+                        next;
                     }
                     
                     if ( $args{'ignore-archived-before'} && $diff_epoch >= get_time($args{'ignore-archived-before'}) ){
                         dprint ("ignored file ".$filename." as interval since epoch : ".to_interval($diff_epoch)."\n");
-                        return;
+                        next;
                     }
                 }
 
                 my $segname = substr($filename, 0, 24);
                 if ( ! $args{'extended-check'} && $segname lt $min_wal ){
                     dprint ("ignored file ".$segname." older than ".$min_wal."\n");
-                    return;
+                    next;
                 }
 
                 if ( ! $args{'extended-check'} && $segname gt $max_wal ){
                     dprint ("ignored file ".$segname." newer than ".$max_wal."\n");
-                    return;
+                    next;
                 }
 
                 push @filelist, [substr($filename, 0, 24), $filename, $list->{$key}->{'time'}, $list->{$key}->{'size'}, "$archives_dir/$key"];
