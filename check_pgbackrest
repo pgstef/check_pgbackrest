@@ -61,7 +61,7 @@ undef @path;
 # Reference to the output sub
 my $output_fmt;
 
-$VERSION = '1.9';
+$VERSION = '2.0dev';
 $PROGRAM = 'check_pgbackrest';
 
 # Available services and descriptions.
@@ -621,7 +621,7 @@ The C<--repo-s3> enables remote archived WALs stored in Amazon S3.
 
 The C<--repo-s3-over-http> switch to HTTP connection instead of HTTPS.
 
-Archives must be compressed (.gz). If needed, use "compress-level=0"
+Archives must be compressed. If needed, use "compress-level=0"
 instead of "compress=n".
 
 Use the C<--wal-segsize> argument to set the WAL segment size.
@@ -671,7 +671,7 @@ sub get_archived_wal_list {
     my $max_wal = shift;
     my $args_ref = shift;
     my %args = %{ $args_ref };
-    my $suffix = ".gz";
+    my $suffix = "\.(gz|lz4|zst|xz|bz2)";
     my $archives_dir = $args{'archives_dir'};
 
     my @filelist;
@@ -699,24 +699,24 @@ sub get_archived_wal_list {
 
                     if ( $args{'ignore-archived-after'} && $diff_epoch <= get_time($args{'ignore-archived-after'}) ){
                         dprint ("ignored file ".$filename." as interval since epoch : ".to_interval($diff_epoch)."\n");
-                        return;
+                        next;
                     }
                     
                     if ( $args{'ignore-archived-before'} && $diff_epoch >= get_time($args{'ignore-archived-before'}) ){
                         dprint ("ignored file ".$filename." as interval since epoch : ".to_interval($diff_epoch)."\n");
-                        return;
+                        next;
                     }
                 }
 
                 my $segname = substr($filename, 0, 24);
                 if ( ! $args{'extended-check'} && $segname lt $min_wal ){
                     dprint ("ignored file ".$segname." older than ".$min_wal."\n");
-                    return;
+                    next;
                 }
 
                 if ( ! $args{'extended-check'} && $segname gt $max_wal ){
                     dprint ("ignored file ".$segname." newer than ".$max_wal."\n");
-                    return;
+                    next;
                 }
 
                 push @filelist, [substr($filename, 0, 24), $filename, $list->{$key}->{'time'}, $list->{$key}->{'size'}, "$archives_dir/$key"];

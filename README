@@ -77,7 +77,7 @@ DESCRIPTION
         The "--repo-s3-over-http" switch to HTTP connection instead of
         HTTPS.
 
-        Archives must be compressed (.gz). If needed, use "compress-level=0"
+        Archives must be compressed. If needed, use "compress-level=0"
         instead of "compress=n".
 
         Use the "--wal-segsize" argument to set the WAL segment size.

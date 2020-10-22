@@ -1,6 +1,13 @@
 Changelog
 =========
 
+2020-xx-xx v2.0:
+
+  - Support non-gz compressed files in the archives check (Magnus Hagander).
+  - Fix the `ignore-archived-*` features when using pgBackRest internal commands 
+  (Magnus Hagander).
+  - ...
+
 2020-07-28 v1.9:
 
   - The archives service will now only look at the archives listed between 
