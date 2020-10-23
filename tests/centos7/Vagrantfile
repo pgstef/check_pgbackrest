@@ -94,6 +94,12 @@ Vagrant.configure(2) do |config|
           path: 'provision/icinga2_minio.bash',
           args: [ pguser ],
           run: 'never'
+
+        # pgbackrest azurite setup
+        icinga.vm.provision 'icinga2_azurite', type: 'shell',
+          path: 'provision/icinga2_azurite.bash',
+          args: [ pguser ],
+          run: 'never'
     end
 
     config.vm.define "pgsql-srv" do |pgsql|
@@ -138,6 +144,12 @@ Vagrant.configure(2) do |config|
         # pgbackrest minio setup
         pgsql.vm.provision 'pgbackrest_minio', type: 'shell',
           path: 'provision/pgbackrest_minio.bash',
+          args: [ pgver, pgdata, pguser, pgport, encrypted_repo ],
+          run: 'never'
+ 
+        # pgbackrest azurite setup
+        pgsql.vm.provision 'pgbackrest_azurite_primary', type: 'shell',
+          path: 'provision/pgbackrest_azurite_primary.bash',
           args: [ pgver, pgdata, pguser, pgport, encrypted_repo ],
           run: 'never'
 
@@ -192,6 +204,12 @@ Vagrant.configure(2) do |config|
           path: 'provision/pgbackrest_remote_standby.bash',
           args: [ pgver, pgdata, pguser, pgport, pgsvc, encrypted_repo ],
           run: 'never'
+ 
+        # pgbackrest azurite setup
+        backup.vm.provision 'pgbackrest_azurite_standby', type: 'shell',
+          path: 'provision/pgbackrest_azurite_standby.bash',
+          args: [ pgver, pgdata, pguser, pgport, pgsvc, encrypted_repo ],
+          run: 'never'
 
         # minio local setup
         backup.vm.provision 'minio', type: 'shell', 
@@ -200,6 +218,10 @@ Vagrant.configure(2) do |config|
         # minio http setup
         backup.vm.provision 'minio_http', type: 'shell', 
           path: 'provision/minio_http.bash', run: 'never'
+
+        # azurite local setup
+        backup.vm.provision 'azurite', type: 'shell', 
+          path: 'provision/azurite.bash', run: 'never'
     end
 
     # build a specific Perl version on all the nodes

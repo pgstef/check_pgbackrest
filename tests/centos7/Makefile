@@ -14,6 +14,10 @@ s3: clean create_vm pgbackrest_minio icinga2_minio generate_config_file_local
 s3_full: clean create_vm pgbackrest_build pgbackrest_minio icinga2_minio generate_config_file_local
 s3_light: clean create_vm pgbackrest_minio generate_config_file_local
 
+s4: clean create_vm pgbackrest_azurite icinga2_azurite generate_config_file_local
+s4_full: clean create_vm pgbackrest_build pgbackrest_azurite icinga2_azurite generate_config_file_local
+s4_light: clean create_vm pgbackrest_azurite generate_config_file_local
+
 ### Setup
 clean:
 	vagrant destroy -f
@@ -40,6 +44,11 @@ pgbackrest_minio:
 	vagrant up --provision-with=minio_http
 	EPAS=$(EPAS) vagrant up --provision-with=pgbackrest_minio
 
+pgbackrest_azurite:
+	vagrant up --provision-with=azurite
+	EPAS=$(EPAS) vagrant up --provision-with=pgbackrest_azurite_primary
+	EPAS=$(EPAS) vagrant up --provision-with=pgbackrest_azurite_standby
+
 icinga2_local:
 	EPAS=false vagrant up --provision-with=icinga2 # use PostgreSQL to install icinga2
 	EPAS=$(EPAS) vagrant up --provision-with=icinga2_local
@@ -51,6 +60,10 @@ icinga2_remote:
 icinga2_minio:
 	EPAS=false vagrant up --provision-with=icinga2 # use PostgreSQL to install icinga2
 	EPAS=$(EPAS) vagrant up --provision-with=icinga2_minio
+
+icinga2_azurite:
+	EPAS=false vagrant up --provision-with=icinga2 # use PostgreSQL to install icinga2
+	EPAS=$(EPAS) vagrant up --provision-with=icinga2_azurite
 
 ### Specific operations
 pgbackrest_build:
