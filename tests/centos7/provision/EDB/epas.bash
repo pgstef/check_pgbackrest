@@ -48,6 +48,7 @@ cat<<EOC > "${PGDATA}/pg_hba.conf"
 local all         all                      trust
 host  all         all      0.0.0.0/0       trust
 host  all         all      ::/0            trust
+local replication all                      trust
 host  replication all      0.0.0.0/0       trust
 host  replication all      ::/0            trust
 EOC
@@ -76,7 +77,15 @@ usermod -aG ${PGUSER} accessed_by_ssh
 
 # install pgBackRest
 yum install --nogpgcheck --quiet -y -e 0 "https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm"
-yum install --nogpgcheck --quiet -y -e 0 pgbackrest
+
+if ls /vagrant/rpms/pgbackrest-*.rhel7.x86_64.rpm &> /dev/null; then
+	echo "-----Install the following provided rpm"
+	ls /vagrant/rpms/pgbackrest-*.rhel7.x86_64.rpm
+	yum install --nogpgcheck --quiet -y -e 0 /vagrant/rpms/pgbackrest-*.rhel7.x86_64.rpm
+else
+	yum install --nogpgcheck --quiet -y -e 0 pgbackrest
+fi
+
 chown -R ${PGUSER}: /var/lib/pgbackrest
 chown -R ${PGUSER}: /var/log/pgbackrest
 chown -R ${PGUSER}: /var/spool/pgbackrest

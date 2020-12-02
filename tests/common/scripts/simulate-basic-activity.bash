@@ -6,7 +6,7 @@ usage() {
     exit 1; 
 }
 
-while getopts ":s:a:p:" o; do
+while getopts "s:a:p:" o; do
     case "${o}" in
         s)
             s=${OPTARG}
@@ -32,7 +32,7 @@ fi
 SCALE=${s}
 ACTIVITY_TIME=${a}
 SPROFILE=${p}
-PGVER=12
+PGVER=13
 PGUSER=postgres
 PGSVC="postgresql-$PGVER"
 
