@@ -77,27 +77,9 @@ Vagrant.configure(2) do |config|
         icinga.vm.provision 'icinga2', type: 'shell',
           path: 'provision/icinga2.bash', run: 'never'
 
-        # pgbackrest local setup
-        icinga.vm.provision 'icinga2_local', type: 'shell',
-          path: 'provision/icinga2_local.bash',
-          args: [ pguser ],
-          run: 'never'
-
-        # pgbackrest remote setup
-        icinga.vm.provision 'icinga2_remote', type: 'shell',
-          path: 'provision/icinga2_remote.bash',
-          args: [ pguser ],
-          run: 'never'
-
-        # pgbackrest minio setup
-        icinga.vm.provision 'icinga2_minio', type: 'shell',
-          path: 'provision/icinga2_minio.bash',
-          args: [ pguser ],
-          run: 'never'
-
-        # pgbackrest azurite setup
-        icinga.vm.provision 'icinga2_azurite', type: 'shell',
-          path: 'provision/icinga2_azurite.bash',
+        # pgbackrest setup
+        icinga.vm.provision 'icinga2_multi', type: 'shell',
+          path: 'provision/icinga2_multi.bash',
           args: [ pguser ],
           run: 'never'
     end
@@ -130,8 +112,8 @@ Vagrant.configure(2) do |config|
         end
 
         # pgbackrest local setup
-        pgsql.vm.provision 'pgbackrest_local', type: 'shell',
-          path: 'provision/pgbackrest_local.bash',
+        pgsql.vm.provision 'pgbackrest_local_primary', type: 'shell',
+          path: 'provision/pgbackrest_local_primary.bash',
           args: [ pgver, pgdata, pguser, pgport, encrypted_repo ],
           run: 'never'
  
@@ -142,8 +124,8 @@ Vagrant.configure(2) do |config|
           run: 'never'
  
         # pgbackrest minio setup
-        pgsql.vm.provision 'pgbackrest_minio', type: 'shell',
-          path: 'provision/pgbackrest_minio.bash',
+        pgsql.vm.provision 'pgbackrest_minio_primary', type: 'shell',
+          path: 'provision/pgbackrest_minio_primary.bash',
           args: [ pgver, pgdata, pguser, pgport, encrypted_repo ],
           run: 'never'
  
@@ -199,9 +181,21 @@ Vagrant.configure(2) do |config|
               run: 'never'
         end
 
+        # pgbackrest local setup
+        backup.vm.provision 'pgbackrest_local_standby', type: 'shell',
+          path: 'provision/pgbackrest_local_standby.bash',
+          args: [ pgver, pgdata, pguser, pgport, pgsvc, encrypted_repo ],
+          run: 'never'
+
         # pgbackrest remote setup
         backup.vm.provision 'pgbackrest_remote_standby', type: 'shell',
           path: 'provision/pgbackrest_remote_standby.bash',
+          args: [ pgver, pgdata, pguser, pgport, pgsvc, encrypted_repo ],
+          run: 'never'
+
+        # pgbackrest minio setup
+        backup.vm.provision 'pgbackrest_minio_standby', type: 'shell',
+          path: 'provision/pgbackrest_minio_standby.bash',
           args: [ pgver, pgdata, pguser, pgport, pgsvc, encrypted_repo ],
           run: 'never'
  

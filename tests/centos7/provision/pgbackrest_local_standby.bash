@@ -8,25 +8,12 @@ PGVER="$1"
 PGDATA="$2"
 PGUSER="$3"
 PGPORT="$4"
-ENCRYPTED="$5"
-
-PACKAGES=(
-    samba
-    samba-client
-    cifs-utils
-)
-
-yum install --nogpgcheck --quiet -y -e 0 "${PACKAGES[@]}"
-
-# cifs mount
-groupadd --gid 2000 sambagroup
-usermod -aG sambagroup ${PGUSER}
+PGSVC="$5"
+ENCRYPTED="$6"
 
 cat<<EOF >>"/etc/fstab"
 //backup-srv/bckp_storage/pgbackrest /var/lib/pgbackrest cifs  username=samba_user1,password=samba,uid=${PGUSER},gid=${PGUSER},dir_mode=0750,file_mode=0740  0 0
 EOF
-
-chmod 755 /var/lib/pgbackrest
 mount /var/lib/pgbackrest
 
 CIPHER=
@@ -46,20 +33,24 @@ log-level-console=warn
 log-level-file=info
 start-fast=y
 delta=y
+backup-standby=y
 $CIPHER
 
 [my_stanza]
+pg1-host=pgsql-srv
+pg1-host-user=${PGUSER}
 pg1-path=${PGDATA}
-pg1-user=${PGUSER}
-pg1-port=${PGPORT}
+pg2-path=${PGDATA}
+pg2-user=${PGUSER}
+pg2-port=${PGPORT}
+recovery-option=primary_conninfo=host=pgsql-srv user=${PGUSER} port=${PGPORT}
 EOC
 
-sudo -iu ${PGUSER} pgbackrest --stanza=my_stanza stanza-create
+# build streaming replication
+systemctl stop ${PGSVC}
+sudo -iu ${PGUSER} pgbackrest --stanza=my_stanza --type=standby --target-timeline=latest --reset-pg1-host restore
+systemctl start ${PGSVC}
 
-# archive_command setup
-cat <<'EOS' | "/usr/bin/psql" -U ${PGUSER} -d postgres
-ALTER SYSTEM SET "archive_command" TO 'pgbackrest --stanza=my_stanza archive-push %p';
-SELECT pg_reload_conf();
-EOS
-
-sudo -iu ${PGUSER} pgbackrest --stanza=my_stanza check
+# test the backup-standby option
+sudo -iu ${PGUSER} pgbackrest --stanza=my_stanza --type=incr backup
+sudo -iu ${PGUSER} pgbackrest --stanza=my_stanza info

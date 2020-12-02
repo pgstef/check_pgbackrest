@@ -25,13 +25,14 @@ HOST_AZURE_CONTAINER="pgbackrest-container"
 
 cat<<EOC > "/etc/pgbackrest.conf"
 [global]
-repo1-type=azure
-repo1-azure-host=$HOST_AZURE
-repo1-azure-verify-tls=n
-repo1-azure-account=$HOST_AZURE_ACCOUNT
-repo1-azure-key=$HOST_AZURE_KEY
-repo1-azure-container=$HOST_AZURE_CONTAINER
 repo1-path=/repo1
+repo1-type=s3
+repo1-s3-endpoint=minio.local
+repo1-s3-bucket=pgbackrest
+repo1-s3-verify-tls=n
+repo1-s3-key=accessKey
+repo1-s3-key-secret=superSECRETkey
+repo1-s3-region=eu-west-3
 repo1-retention-full=1
 process-max=2
 log-level-console=warn

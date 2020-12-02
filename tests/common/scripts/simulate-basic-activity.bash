@@ -113,24 +113,26 @@ do
 done
 sudo -iu $PGUSER psql -d bench -c 'SELECT max(mtime) FROM pgbench_history;'
 
-if [ "$SPROFILE" = "remote" ]; then
-    echo "--Resync standby server"
-    echo "----Take incremental backup"
+echo "--Resync standby server"
+echo "----Take incremental backup"
+if [ "$SPROFILE" = "local" ]; then
+    sudo -iu $PGUSER pgbackrest --stanza=my_stanza --type=incr backup
+else
     sudo -iu $PGUSER ssh backup-srv "pgbackrest --stanza=my_stanza --type=incr backup"
-
-    echo "----Restore it on standby server"
-    ssh backup-srv "systemctl stop $PGSVC"
-    sudo -iu $PGUSER ssh backup-srv "pgbackrest --stanza=my_stanza --reset-pg1-host --type=standby restore"
-    ssh backup-srv "systemctl start $PGSVC"
-
-    echo "----Wait until standby is replicated"
-    while [ `sudo -iu $PGUSER psql -d postgres -At -c "SELECT count(*) FROM pg_stat_replication;"` -lt 1 ]
-    do
-        echo "wait..."
-        sleep 5
-    done
-    sudo -iu $PGUSER psql -d postgres -x -c "SELECT * FROM pg_stat_replication;"
 fi
+
+echo "----Restore it on standby server"
+ssh backup-srv "systemctl stop $PGSVC"
+sudo -iu $PGUSER ssh backup-srv "pgbackrest --stanza=my_stanza --reset-pg1-host --type=standby restore"
+ssh backup-srv "systemctl start $PGSVC"
+
+echo "----Wait until standby is replicated"
+while [ `sudo -iu $PGUSER psql -d postgres -At -c "SELECT count(*) FROM pg_stat_replication;"` -lt 1 ]
+do
+    echo "wait..."
+    sleep 5
+done
+sudo -iu $PGUSER psql -d postgres -x -c "SELECT * FROM pg_stat_replication;"
 
 echo "--Simulate $ACTIVITY_TIME sec activity to get archives on different time-lines"
 sudo -iu $PGUSER pgbench -T $ACTIVITY_TIME bench

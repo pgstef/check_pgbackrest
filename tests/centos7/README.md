@@ -7,29 +7,36 @@ This `Vagrantfile` is bootstrapping 3 possible test cases:
 ### 1. pgBackRest configured to backup and archive on a CIFS mount
 
   * `icinga-srv` executes check_pgbackrest by ssh with Icinga 2;
-  * `pgsql-srv` hosting a pgsql cluster with pgBackRest installed;
-  * `backup-srv` hosting the CIFS share.
+  * `pgsql-srv` hosting a primary pgsql cluster with pgBackRest installed;
+  * `backup-srv` hosting the CIFS share;
+  * pgBackRest backups are use to build a Streaming Replication with `backup-srv` as standby server.
 
 Backups and archiving are done locally on `pgsql-srv` on the CIFS mount point.
+
 
 ### 2. pgBackRest configured to backup and archive remotely
 
   * `icinga-srv` executes check_pgbackrest by ssh with Icinga 2;
-  * `pgsql-srv` hosting a pgsql cluster with pgBackRest installed;
-  * `backup-srv` hosting the pgBackRest backups and archives.
+  * `pgsql-srv` hosting a primary pgsql cluster with pgBackRest installed;
+  * `backup-srv` acting as pgBackRest repository host;
+  * pgBackRest backups are use to build a Streaming Replication with `backup-srv` as standby server.
 
-Backups of `pgsql-srv` are taken from `backup-srv`. 
+Backups of `pgsql-srv` are taken from `backup-srv`.
 Archives are pushed from `pgsql-srv` to `backup-srv`.
-Checks (retention and archives) are done both locally (on `backup-srv`) and 
-remotely (on `pgsql-srv`). Checks are performed from `icinga-srv` by ssh.
-pgBackRest backups are use to build a Streaming Replication with `backup-srv` 
-as standby server.
 
 ### 3. pgBackRest configured to backup and archive to a MinIO S3 bucket
 
   * `icinga-srv` executes check_pgbackrest by ssh with Icinga 2;
-  * `pgsql-srv` hosting a pgsql cluster with pgBackRest installed;
-  * `backup-srv` hosting the MinIO server.
+  * `pgsql-srv` hosting a primary pgsql cluster with pgBackRest installed;
+  * `backup-srv` hosting the MinIO server;
+  * pgBackRest backups are use to build a Streaming Replication with `backup-srv` as standby server.
+
+### 4. pgBackRest configured to backup and archive to an Azurite container
+
+  * `icinga-srv` executes check_pgbackrest by ssh with Icinga 2;
+  * `pgsql-srv` hosting a primary pgsql cluster with pgBackRest installed;
+  * `backup-srv` hosting an Azurite docker container;
+  * pgBackRest backups are use to build a Streaming Replication with `backup-srv` as standby server.
 
 ## Testing
 
@@ -39,57 +46,54 @@ The easiest way to start testing is with the included `Makefile`.
   * `s*_full`: build pgBackRest from sources, Icinga 2 configured;
   * `s*_light`: pgBackRest installed from PGDG repository, Icinga 2 not installed.
 
-### Test case 1
+### Build
 
-_Build_:
+_Test case 1_:
 
 ```bash
-cd test
 make s1
 ```
 
-_Check the results of a manual execution of check_pgbackrest_:
+_Test case 2_:
 
 ```bash
-vagrant ssh pgsql-srv -c "sudo /check_pgbackrest/test/regress/test-s1.bash"
-```
-
-### Test case 2
-
-_Build_:
-
-```bash
-cd test
 make s2
 ```
 
-_Check the results of a manual execution of check_pgbackrest_:
+_Test case 3_:
 
 ```bash
-vagrant ssh pgsql-srv -c "sudo /check_pgbackrest/test/regress/test-s2-from-primary.bash"
-```
-
-### Test case 3
-
-_Build_:
-
-```bash
-cd test
 make s3
 ```
 
-_Check the results of a manual execution of check_pgbackrest_:
+_Test case 4_:
 
 ```bash
-vagrant ssh pgsql-srv -c "sudo /check_pgbackrest/test/regress/test-s3.bash"
+make s4
 ```
 
-### Simulate some activity:
+After each build, a `configuration.profile` file is generated.
+This allows the various regress and activity scripts to adjust their settings
+according to the test case built.
 
-Use the following script:
+### Check the results of a manual execution
+
+```bash
+vagrant ssh pgsql-srv -c "sudo /check_pgbackrest/test/regress/test-01.bash"
+```
+
+### Simulate some activity
+
+- pgbench activity, backup and local and remote restore:
 
 ```bash
 vagrant ssh pgsql-srv -c "sudo /check_pgbackrest/tests/common/scripts/simulate-basic-activity.bash -s <scale> -a <activity_time>"
+```
+
+- corrupt some data pages and setup asynchronous archiving:
+
+```bash
+vagrant ssh pgsql-srv -c "sudo /check_pgbackrest/tests/common/scripts/simulate-extended-activity.bash"
 ```
 
 ### Icinga 2 connectivity

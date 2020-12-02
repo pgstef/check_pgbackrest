@@ -6,7 +6,6 @@ set -o pipefail
 
 # global config
 CERTS_PATH="/opt/azurite/certs"
-# HOST_AZURE="blob.core.windows.net"
 HOST_AZURE="127.0.0.1"
 HOST_AZURE_ACCOUNT="pgbackrest"
 HOST_AZURE_KEY="YXpLZXk="
@@ -25,7 +24,6 @@ cp /opt/azurite/certs/server.key /opt/azurite/certs/private.key
 chmod 644 /opt/azurite/certs/*
 firewall-cmd --quiet --permanent --add-service=https
 firewall-cmd --quiet --reload
-# echo "127.0.0.1 $HOST_AZURE" | tee -a /etc/hosts
 
 # run azurite
 mkdir -p -m 755 /opt/azurite/data
@@ -39,7 +37,7 @@ docker run --privileged -d -p 443:443 \
 mcr.microsoft.com/azure-storage/azurite \
 azurite-blob --blobPort 443 --blobHost 0.0.0.0 --cert=/root/public.crt --key=/root/private.key -l /workspace -d /workspace/debug.log
 
-# configure pgbackrest
+# create pgbackrest repo
 cat<<EOC > /etc/pgbackrest.conf 
 [global]
 repo1-type=azure
