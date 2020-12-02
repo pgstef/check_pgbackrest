@@ -3,3 +3,4 @@ tests/common/perf/nytprof*
 vagrant.yml
 tests/common/configuration.profile
 _old.*
+*.rpm

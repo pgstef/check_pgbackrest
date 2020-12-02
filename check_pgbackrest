@@ -24,7 +24,7 @@ check_pgbackrest is designed to monitor pgBackRest backups from Nagios.
 
 =cut
 
-use vars qw($VERSION $PROGRAM);
+use vars qw($VERSION $PROGRAM $PGBR_SUPPORT);
 use strict;
 use warnings;
 use POSIX;
@@ -63,6 +63,7 @@ my $output_fmt;
 
 $VERSION = '2.0dev';
 $PROGRAM = 'check_pgbackrest';
+$PGBR_SUPPORT = '2.28';
 
 # Available services and descriptions.
 #-----------------------------------------------------------------------------
@@ -611,16 +612,6 @@ sub check_retention {
 Check if all archived WALs exist between the oldest and the latest 
 WAL needed for the recovery.
 
-This service requires the C<--repo-path> argument to specify where 
-the archived WALs are stored.
-
-The C<--repo-host> and C<--repo-host-user> arguments allow to list
-remote archived WALs using SFTP.
-
-The C<--repo-s3> enables remote archived WALs stored in Amazon S3.
-
-The C<--repo-s3-over-http> switch to HTTP connection instead of HTTPS.
-
 Archives must be compressed. If needed, use "compress-level=0"
 instead of "compress=n".
 
@@ -660,9 +651,7 @@ are ignored.
 Use the C<--extended-check> argument to force a full check of the found 
 archives and raise warnings in case of inconsistencies.
 
-After pgBackRest 2.28, it is possible to use the C<repo-ls> and C<repo-get>
-internal commands with the C<--enable-internal-pgbr-cmds> argument to list and
-get the content of files in the repository.
+This service only support pgBackRest 2.28 and above.
 
 =cut
 
@@ -676,278 +665,60 @@ sub get_archived_wal_list {
 
     my @filelist;
     my @branch_wals;
-    my $filename_re = qr/^[0-9A-F]{24}.*$suffix$/;
     my $filename_re_full = qr/[0-9A-F]{24}.*$suffix$/;
     my $start_tl = substr($min_wal, 0, 8);
     my $end_tl   = substr($max_wal, 0, 8);
-    my $history_re = qr/$end_tl.history$/;
     my $history_re_full = qr/$end_tl.history$/;
 
-    my $pgbackrest_version=pgbackrest_version(\%args);
-    if($pgbackrest_version >= '2.28' && $args{'enable-internal-pgbr-cmds'}){
-        my $list = pgbackrest_ls(\%args);
+    my $list = pgbackrest_ls(\%args);
+    foreach my $key (keys %{$list}) {
+        next unless $list->{$key}->{'type'} eq 'file';
+        my @split_tab = split('/', $key);
+        my $filename = $split_tab[-1];
 
-        foreach my $key (keys %{$list}) {
-            next unless $list->{$key}->{'type'} eq 'file';
-            my @split_tab = split('/', $key);
-            my $filename = $split_tab[-1];
+        if($filename =~ /$filename_re_full/){
+            # Get stats of the archived wals
+            if ( $args{'ignore-archived-after'} or $args{'ignore-archived-before'} ) {
+                my $diff_epoch = time() - $list->{$key}->{'time'};
 
-            if($filename =~ /$filename_re_full/){
-                # Get stats of the archived wals
-                if ( $args{'ignore-archived-after'} or $args{'ignore-archived-before'} ) {
-                    my $diff_epoch = time() - $list->{$key}->{'time'};
-
-                    if ( $args{'ignore-archived-after'} && $diff_epoch <= get_time($args{'ignore-archived-after'}) ){
-                        dprint ("ignored file ".$filename." as interval since epoch : ".to_interval($diff_epoch)."\n");
-                        next;
-                    }
-                    
-                    if ( $args{'ignore-archived-before'} && $diff_epoch >= get_time($args{'ignore-archived-before'}) ){
-                        dprint ("ignored file ".$filename." as interval since epoch : ".to_interval($diff_epoch)."\n");
-                        next;
-                    }
-                }
-
-                my $segname = substr($filename, 0, 24);
-                if ( ! $args{'extended-check'} && $segname lt $min_wal ){
-                    dprint ("ignored file ".$segname." older than ".$min_wal."\n");
+                if ( $args{'ignore-archived-after'} && $diff_epoch <= get_time($args{'ignore-archived-after'}) ){
+                    dprint ("ignored file ".$filename." as interval since epoch : ".to_interval($diff_epoch)."\n");
                     next;
                 }
 
-                if ( ! $args{'extended-check'} && $segname gt $max_wal ){
-                    dprint ("ignored file ".$segname." newer than ".$max_wal."\n");
+                if ( $args{'ignore-archived-before'} && $diff_epoch >= get_time($args{'ignore-archived-before'}) ){
+                    dprint ("ignored file ".$filename." as interval since epoch : ".to_interval($diff_epoch)."\n");
                     next;
                 }
+            }
 
-                push @filelist, [substr($filename, 0, 24), $filename, $list->{$key}->{'time'}, $list->{$key}->{'size'}, "$archives_dir/$key"];
+            my $segname = substr($filename, 0, 24);
+            if ( ! $args{'extended-check'} && $segname lt $min_wal ){
+                dprint ("ignored file ".$segname." older than ".$min_wal."\n");
+                next;
+            }
 
-            }elsif($filename =~ /$history_re_full/ && $start_tl ne $end_tl){
-                # Look for the last history file if needed
-                dprint("history file to open : $archives_dir/$key - $key - $filename\n");
+            if ( ! $args{'extended-check'} && $segname gt $max_wal ){
+                dprint ("ignored file ".$segname." newer than ".$max_wal."\n");
+                next;
+            }
 
-                my $history_content = pgbackrest_get(\%args, $filename);
-                my @history_lines = split /\n/, $history_content;
-                foreach my $line ( @history_lines ){
+            push @filelist, [substr($filename, 0, 24), $filename, $list->{$key}->{'time'}, $list->{$key}->{'size'}, "$archives_dir/$key"];
 
-                    my $line_re = qr/^\s*(\d)\t([0-9A-F]+)\/([0-9A-F]+)\t.*$/;
-                    $line =~ /$line_re/ || next;
-                    push @branch_wals =>
-                        sprintf("%08d%08s%08X", $1, $2, hex($3)>>24);
-                }
+        }elsif($filename =~ /$history_re_full/ && $start_tl ne $end_tl){
+            # Look for the last history file if needed
+            dprint("history file to open : $archives_dir/$key - $key - $filename\n");
+
+            my $history_content = pgbackrest_get(\%args, $filename);
+            my @history_lines = split /\n/, $history_content;
+            foreach my $line ( @history_lines ){
+
+                my $line_re = qr/^\s*(\d)\t([0-9A-F]+)\/([0-9A-F]+)\t.*$/;
+                $line =~ /$line_re/ || next;
+                push @branch_wals =>
+                    sprintf("%08d%08s%08X", $1, $2, hex($3)>>24);
             }
         }
-    
-    }elsif($args{'repo-host'}){
-        # SFTP connection
-        require Net::SFTP::Foreign;
-        my $sftp;
-        if($args{'repo-host-user'}){
-            $sftp = Net::SFTP::Foreign->new($args{'repo-host'}, user => $args{'repo-host-user'});
-        }else{
-            $sftp = Net::SFTP::Foreign->new($args{'repo-host'});
-        }
-        $sftp->die_on_error("Unable to establish SFTP connection");
-
-        $sftp->find($archives_dir,
-            wanted => sub {
-                my $file_fullpath = $_[1]->{filename};
-                my @split_tab = split('/', $file_fullpath);
-                my $filename = $split_tab[-1];
-                my $segname = substr($filename, 0, 24);
-
-                if($filename =~ /$filename_re/){
-                    # Get stats of the archived wals
-                    my $attributes = $sftp->stat($_[1]->{filename})
-                        or die "remote stat command failed : ".$sftp->status;
-
-                    if ( $args{'ignore-archived-after'} or $args{'ignore-archived-before'} ) {
-                        my $diff_epoch = time() - $attributes->mtime;
-                        
-                        if ( $args{'ignore-archived-after'} && $diff_epoch <= get_time($args{'ignore-archived-after'}) ){
-                        	dprint ("ignored file ".$filename." as interval since epoch : ".to_interval($diff_epoch)."\n");
-                        	return;
-                        }
-                        
-                        if ( $args{'ignore-archived-before'} && $diff_epoch >= get_time($args{'ignore-archived-before'}) ){
-                        	dprint ("ignored file ".$filename." as interval since epoch : ".to_interval($diff_epoch)."\n");
-                        	return;
-                        }
-                    }
-
-                    if ( ! $args{'extended-check'} && $segname lt $min_wal ){
-                        dprint ("ignored file ".$segname." older than ".$min_wal."\n");
-                        return;
-                    }
-
-                    if ( ! $args{'extended-check'} && $segname gt $max_wal ){
-                        dprint ("ignored file ".$segname." newer than ".$max_wal."\n");
-                        return;
-                    }
-
-                    push @filelist, [substr($filename, 0, 24), $filename, $attributes->mtime, $attributes->size, $file_fullpath];
-
-                }elsif($filename =~ /$history_re/ && $start_tl ne $end_tl){
-                    # Look for the last history file if needed
-                    dprint("history file to open : $filename\n");
-                    
-                    my $history_content = $sftp->get_content($file_fullpath)
-                        or die "remote get_content command failed : ".$sftp->status;
-
-                    my @history_lines = split /\n/, $history_content;
-                    foreach my $line ( @history_lines ){ 
-
-                        my $line_re = qr/^\s*(\d)\t([0-9A-F]+)\/([0-9A-F]+)\t.*$/;
-                        $line =~ /$line_re/ || next;
-                        push @branch_wals =>
-                            sprintf("%08d%08s%08X", $1, $2, hex($3)>>24);
-                    }
-                }             
-            }
-        );
-
-    }elsif($args{'repo-s3'}){
-        require Net::Amazon::S3;
-        require Config::IniFiles;
-
-        my $cfg_file=$args{'default-pgbackrest-config-file'};
-        if(defined $args{'config'}) {
-            $cfg_file=$args{'config'};
-        }
-        dprint("cfg_file: $cfg_file\n");
-
-        my $cfg = Config::IniFiles->new( -file => $cfg_file );
-        my $aws_key = $cfg->val( 'global', 'repo1-s3-key' );
-        my $aws_secret = $cfg->val( 'global', 'repo1-s3-key-secret' );
-        my $repo1_bucket = $cfg->val( 'global', 'repo1-s3-bucket' );
-        my $repo1_endpoint = $cfg->val( 'global', 'repo1-s3-endpoint' );
-        dprint("repo1-s3-bucket: $repo1_bucket\n");
-        dprint("repo1-s3-endpoint: $repo1_endpoint\n");
-
-        my $secure = defined $args{'repo-s3-over-http'} ? 0 : 1;
-
-        pod2usage(
-            -message => 'FATAL: be sure to set repo1-s3-endpoint, repo1-s3-key, repo1-s3-key-secret, and repo1-s3-bucket in the pgBackRest configuration file.',
-            -exitval => 127
-        ) unless ( defined $aws_key and defined $aws_secret and defined $repo1_bucket and defined $repo1_endpoint );
-
-        my $s3 = Net::Amazon::S3->new(
-            aws_access_key_id     => $aws_key,
-            aws_secret_access_key => $aws_secret,
-            host                  => $repo1_endpoint,
-            retry                 => 1,
-            secure                => $secure,
-        );
-
-        my $client = Net::Amazon::S3::Client->new( s3 => $s3 );
-        my $bucket = $client->bucket( name => $repo1_bucket );
-
-        my $stream = $bucket->list({ prefix => $archives_dir});
-        until ( $stream->is_done ) {
-            foreach my $object ( $stream->items ) {
-                my $file_fullpath = $object->key;
-                my @split_tab = split('/', $file_fullpath);
-                my $filename = $split_tab[-1];
-                my $segname = substr($filename, 0, 24);
-
-                if($filename =~ /$filename_re/){
-                    # Get stats of the archived wals
-                    my $dt = $object->last_modified;
-
-                    if ( $args{'ignore-archived-after'} or $args{'ignore-archived-before'} ) {
-                        my $diff_epoch = time() - $dt->epoch();
-
-                        if ( $args{'ignore-archived-after'} && $diff_epoch <= get_time($args{'ignore-archived-after'}) ){
-                        	dprint ("ignored file ".$filename." as interval since epoch : ".to_interval($diff_epoch)."\n");
-                        	next;
-                        }
-                        
-                        if ( $args{'ignore-archived-before'} && $diff_epoch >= get_time($args{'ignore-archived-before'}) ){
-                        	dprint ("ignored file ".$filename." as interval since epoch : ".to_interval($diff_epoch)."\n");
-                        	next;
-                        }
-                    }
-
-                    if ( ! $args{'extended-check'} && $segname lt $min_wal ){
-                        dprint ("ignored file ".$segname." older than ".$min_wal."\n");
-                        next;
-                    }
-
-                    if ( ! $args{'extended-check'} && $segname gt $max_wal ){
-                        dprint ("ignored file ".$segname." newer than ".$max_wal."\n");
-                        next;
-                    }
-
-                    push @filelist, [substr($filename, 0, 24), $filename, $dt->epoch(), $object->size, $file_fullpath];
-
-                }elsif($filename =~ /$history_re/ && $start_tl ne $end_tl){
-                    # Look for the last history file if needed
-                    dprint("history file to open : $filename\n");
-                    
-                    my $history_content = $object->get;
-                    my @history_lines = split /\n/, $history_content;
-                    foreach my $line ( @history_lines ){ 
-
-                        my $line_re = qr/^\s*(\d)\t([0-9A-F]+)\/([0-9A-F]+)\t.*$/;
-                        $line =~ /$line_re/ || next;
-                        push @branch_wals =>
-                            sprintf("%08d%08s%08X", $1, $2, hex($3)>>24);
-                    }
-                }
-            }
-        }
-
-    }else{
-        find ({ wanted => sub {
-                return unless -f;
-                my $file_fullpath = $File::Find::name;
-                my @split_tab = split('/', $file_fullpath);
-                my $filename = $split_tab[-1];
-                my $segname = substr($filename, 0, 24);
-
-                if($filename =~ /$filename_re_full/){
-                    # Get stats of the archived wals
-                    if ( $args{'ignore-archived-after'} or $args{'ignore-archived-before'} ) {
-                        my $diff_epoch = time() - (stat($file_fullpath))[9];
-
-                        if ( $args{'ignore-archived-after'} && $diff_epoch <= get_time($args{'ignore-archived-after'}) ){
-                        	dprint ("ignored file ".$filename." as interval since epoch : ".to_interval($diff_epoch)."\n");
-                        	return;
-                        }
-                        
-                        if ( $args{'ignore-archived-before'} && $diff_epoch >= get_time($args{'ignore-archived-before'}) ){
-                        	dprint ("ignored file ".$filename." as interval since epoch : ".to_interval($diff_epoch)."\n");
-                        	return;
-                        }
-                    }
-
-                    if ( ! $args{'extended-check'} && $segname lt $min_wal ){
-                    	dprint ("ignored file ".$segname." older than ".$min_wal."\n");
-                    	return;
-                    }
-
-                    if ( ! $args{'extended-check'} && $segname gt $max_wal ){
-                    	dprint ("ignored file ".$segname." newer than ".$max_wal."\n");
-                    	return;
-                    }
-
-                    push @filelist, [$segname, $filename, (stat($File::Find::name))[9,7], $file_fullpath];
-                
-                }elsif($filename =~ /$history_re_full/ && $start_tl ne $end_tl){
-                    # Look for the last history file if needed
-                    dprint("history file to open : $filename\n");
-
-                    open my $fd, "<", "$file_fullpath"
-                        or die "Can't open < $file_fullpath : $!";
-
-                    while ( <$fd> ) {
-                        next unless m{^\s*(\d)\t([0-9A-F]+)/([0-9A-F]+)\t.*$};
-                        push @branch_wals =>
-                            sprintf("%08d%08s%08X", $1, $2, hex($3)>>24);
-                    }
-                    close $fd; 
-                }
-            }, no_chdir => 1, follow => 1
-        }, $archives_dir );
     }
 
     my @unique_branch_wals = do { my %seen; grep { !$seen{$_}++ } @branch_wals };
@@ -1004,9 +775,9 @@ sub check_wal_archives {
     my @human_only_longmsg;
 
     pod2usage(
-        -message => 'FATAL: you must provide --repo-path.',
+        -message => 'FATAL: Unsupported pgBackRest version.',
         -exitval => 127
-    ) if ( not defined $args{'repo-path'} );
+    ) if ( pgbackrest_version(\%args) < $PGBR_SUPPORT );
 
     my $start_time = time();
     my $backups_info = pgbackrest_info();
@@ -1014,7 +785,7 @@ sub check_wal_archives {
     dprint("!> pgBackRest info took ".(time() - $start_time)."s\n");
 
     if($backups_info->{'status'}->{'code'} == 0) {
-        my $archives_dir = $args{'repo-path'}."/".$args{'stanza'}."/".$backups_info->{'archive'}[0]->{'id'};
+        my $archives_dir = "archive/".$args{'stanza'}."/".$backups_info->{'archive'}[0]->{'id'}; # relative path inside repository
         dprint("archives_dir: $archives_dir\n");
         $args{'archives_dir'} = $archives_dir;
         my $min_wal = $backups_info->{'archive'}[0]->{'min'};
@@ -1230,7 +1001,6 @@ GetOptions(
         'command|C=s',
         'config|c=s',
         'debug!',
-        'enable-internal-pgbr-cmds!',
         'extended-check!',
         'help|?!',
         'ignore-archived-after=s',
@@ -1240,11 +1010,6 @@ GetOptions(
         'list-archives|L!',
         'output|O=s',
         'prefix|P=s',
-        'repo-s3!',
-        'repo-s3-over-http!',
-        'repo-host=s',
-        'repo-host-user=s',
-        'repo-path=s',
         'retention-age=s',
         'retention-age-to-full=s',
         'retention-full=i',
@@ -1281,25 +1046,12 @@ pod2usage(
 ) if ( $args{'retention-age'} or $args{'retention-age-to-full'} or $args{'retention-full'} )
     and $args{'service'} ne 'retention';
 
-# Check "archives" specific args --repo-path, --repo-host, --repo-host-user, --repo-s3 and --repo-s3-over-http
-pod2usage(
-    -message => 'FATAL: "repo-path", "repo-host", "repo-host-user", "repo-s3" and "repo-s3-over-http" are only allowed with "archives" service.',
-    -exitval => 127
-) if ( $args{'repo-path'} or $args{'repo-host'} or $args{'repo-host-user'} or $args{'repo-s3'}  or $args{'repo-s3-over-http'} )
-    and $args{'service'} ne 'archives';
-
 # Check "archives" specific args --extended-check, --ignore-archived-after, --ignore-archived-before and --latest-archive-age-alert
 pod2usage(
     -message => 'FATAL: "extended-check", "ignore-archived-after", "ignore-archived-before" and "latest-archive-age-alert" are only allowed with "archives" service.',
     -exitval => 127
 ) if ( $args{'extended-check'} or $args{'ignore-archived-after'} or $args{'ignore-archived-before'} or $args{'latest-archive-age-alert'} )
     and $args{'service'} ne 'archives';
-
-# Check "archives" specific arg --enable-internal-pgbr-cmds
-pod2usage(
-    -message => 'FATAL: "enable-internal-pgbr-cmds" is only allowed with "archives" service.',
-    -exitval => 127
-) if $args{'enable-internal-pgbr-cmds'} and $args{'service'} ne 'archives';
 
 # Check "archives" specific arg --list-archives
 pod2usage(

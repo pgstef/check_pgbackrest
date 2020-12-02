@@ -66,17 +66,6 @@ DESCRIPTION
         Check if all archived WALs exist between the oldest and the latest
         WAL needed for the recovery.
 
-        This service requires the "--repo-path" argument to specify where
-        the archived WALs are stored.
-
-        The "--repo-host" and "--repo-host-user" arguments allow to list
-        remote archived WALs using SFTP.
-
-        The "--repo-s3" enables remote archived WALs stored in Amazon S3.
-
-        The "--repo-s3-over-http" switch to HTTP connection instead of
-        HTTPS.
-
         Archives must be compressed. If needed, use "compress-level=0"
         instead of "compress=n".
 
@@ -116,9 +105,7 @@ DESCRIPTION
         Use the "--extended-check" argument to force a full check of the
         found archives and raise warnings in case of inconsistencies.
 
-        After pgBackRest 2.28, it is possible to use the "repo-ls" and
-        "repo-get" internal commands with the "--enable-internal-pgbr-cmds"
-        argument to list and get the content of files in the repository.
+        This service only support pgBackRest 2.28 and above.
 
     check_pgb_version
         Check if this script is running a given version.
