@@ -1,5 +1,5 @@
 # pgver: "13"                           # PostgreSQL version to use
-# pgbr_branch: "release/2.30"           # pgBackRest git branch to use for builds
+# pgbr_branch: "release/2.31"           # pgBackRest git branch to use for builds
 # vm_prefix: "check_pgbr_c7"            # VM prefix
 # encrypted_repo: "false"               # Use aes-256-cbc cipher type to encrypt the pgBackRest repository
 # edb_repository_username: "username"   # EDB Repository Username

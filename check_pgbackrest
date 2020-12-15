@@ -24,7 +24,7 @@ check_pgbackrest is designed to monitor pgBackRest backups from Nagios.
 
 =cut
 
-use vars qw($VERSION $PROGRAM $PGBR_SUPPORT);
+use vars qw($VERSION $PROGRAM $PGBR_SUPPORT $INIT_TIME);
 use strict;
 use warnings;
 use POSIX;
@@ -64,6 +64,7 @@ my $output_fmt;
 $VERSION = '2.0dev';
 $PROGRAM = 'check_pgbackrest';
 $PGBR_SUPPORT = '2.28';
+$INIT_TIME = time();
 
 # Available services and descriptions.
 #-----------------------------------------------------------------------------
@@ -679,7 +680,7 @@ sub get_archived_wal_list {
         if($filename =~ /$filename_re_full/){
             # Get stats of the archived wals
             if ( $args{'ignore-archived-after'} or $args{'ignore-archived-before'} ) {
-                my $diff_epoch = time() - $list->{$key}->{'time'};
+                my $diff_epoch = $INIT_TIME - $list->{$key}->{'time'};
 
                 if ( $args{'ignore-archived-after'} && $diff_epoch <= get_time($args{'ignore-archived-after'}) ){
                     dprint ("ignored file ".$filename." as interval since epoch : ".to_interval($diff_epoch)."\n");
@@ -707,7 +708,7 @@ sub get_archived_wal_list {
 
         }elsif($filename =~ /$history_re_full/ && $start_tl ne $end_tl){
             # Look for the last history file if needed
-            dprint("history file to open : $archives_dir/$key - $key - $filename\n");
+            dprint("history file to open : $archives_dir/$key\n");
 
             my $history_content = pgbackrest_get(\%args, $filename);
             my @history_lines = split /\n/, $history_content;
@@ -740,7 +741,6 @@ sub generate_needed_wal_archives_list {
     # Generate list
     my $curr = $min_wal;
     my @needed_wal_archives_list;
-    # dprint("$min_wal WAL needed\n");
     push @needed_wal_archives_list, $min_wal;
 
     for ( my $i=0, my $j=1; $curr lt $max_wal ; $i++, $j++ ) {
@@ -750,14 +750,15 @@ sub generate_needed_wal_archives_list {
             ($seg + $j)%$seg_per_wal
         );
 
-        # dprint("$curr WAL needed\n");
-        push @needed_wal_archives_list, $curr;
-
         if ( grep /$curr/, @branch_wals ) {
             dprint("found a boundary @ '$curr' !\n");
             $timeline++;
             $j--;
             next;
+
+        }else{
+            # dprint("$curr WAL needed\n");
+            push @needed_wal_archives_list, $curr;
         }
     }
 
@@ -825,13 +826,13 @@ sub check_wal_archives {
             $filelist_simplified_hash{ $elem->[0] } = $elem;
         }
 
-        # Change min_wal if some archived are ignored
+        # Change min_wal if some archives are ignored
         if ( $args{'ignore-archived-before'} && $min_wal ) {
             $min_wal = substr($filelist_sorted[0][0], 0, 24);
             dprint ("min_wal changed to ".$min_wal."\n");
         }
 
-        # Change max_wal if some archived are ignored
+        # Change max_wal if some archives are ignored
         if ( $args{'ignore-archived-after'} && $max_wal ) {
             $max_wal = substr($filelist_sorted[-1][0], 0, 24);
             dprint ("max_wal changed to ".$max_wal."\n");
@@ -900,6 +901,20 @@ sub check_wal_archives {
         $start_time = time();
         foreach my $line (@{$backups_info->{'backup'}}){
             dprint("Get all the needed wal archives for ".$line->{'label'}."...\n");
+
+            # Ignore backups if archives are ignored
+            my $diff_epoch_stop = $INIT_TIME - $line->{'timestamp'}->{'stop'};
+            if ( $args{'ignore-archived-after'} && $diff_epoch_stop <= get_time($args{'ignore-archived-after'}) ){
+                dprint ("ignored backup ".$line->{'label'}." as interval since epoch : ".to_interval($diff_epoch_stop)."\n");
+                next;
+            }
+
+            my $diff_epoch_start = $INIT_TIME - $line->{'timestamp'}->{'start'};
+            if ( $args{'ignore-archived-before'} && $diff_epoch_start >= get_time($args{'ignore-archived-before'}) ){
+                dprint ("ignored backup ".$line->{'label'}." as interval since epoch : ".to_interval($diff_epoch_start)."\n");
+                next;
+            }
+
             foreach my $needed_wal (&generate_needed_wal_archives_list($line->{'archive'}->{'start'}, $line->{'archive'}->{'stop'}, \@branch_wals, $seg_per_wal)) {
                 unless ( $filelist_simplified_hash{ $needed_wal } ) {
                     push @crit_missing_files => $needed_wal;
