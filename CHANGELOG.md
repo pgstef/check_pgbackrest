@@ -13,6 +13,8 @@ Changelog
   - Improve `ignore-archived-*` features to skip WAL consistency check for backups
   involving ignored archives.
   - Skip unneeded boundary WAL check on TL switch (reported by sebastienruiz). 
+  - The retention service will now check that at least the backup directory exists,
+  not only trusting the pgBackRest info command output (suggested by Michael Banck).
 
 2020-07-28 v1.9:
 
