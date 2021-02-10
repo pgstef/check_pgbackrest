@@ -1,12 +1,18 @@
 Changelog
 =========
 
+2021-xx-xx v2.1:
+
+  - ...
+
+  
 2021-02-10 v2.0:
 
-  - Only support pgBackRest **2.28** and above in order to only use its internal
+  - Only support pgBackRest **2.32** and above in order to only use its internal
   commands. This remove Perl dependencies no-longer needed to reach repository 
   hosts or S3 compatible object stores.
   This also brings Azure compatible object stores support.
+  The `repo-*` arguments have then been deprecated.
   - Support non-gz compressed files in the archives check (Magnus Hagander).
   - Fix the `ignore-archived-*` features when using pgBackRest internal commands 
   (Magnus Hagander).

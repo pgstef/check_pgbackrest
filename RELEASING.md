@@ -9,7 +9,7 @@ Use date format `LC_TIME=C date +"%a %b %d %Y"`.
 
 Update the `CHANGELOG.md` file too.
 
-Update the tests results `test/regress/expected/version.out`.
+Update the tests results `tests/common/regress/expected/version.out`.
 
 ## Documentation
 
@@ -23,18 +23,18 @@ podselect check_pgbackrest > README.pod
 ## Tagging and building tar file
 
 ```bash
-TAG=REL2_0
+TAG=REL2_1
 git tag -a $TAG -m "Release $TAG"
 git tag
 git push --tags
-git archive --prefix=check_pgbackrest-$TAG/ -o /tmp/check_pgbackrest-2.0.tar.gz $TAG
+git archive --prefix=check_pgbackrest-$TAG/ -o /tmp/check_pgbackrest-2.1.tar.gz $TAG
 ```
 
 ## Release on github
 
   - Go to https://github.com/pgstef/check_pgbackrest/releases
   - Edit the release notes for the new tag
-  - Set "check_pgbackrest $VERSION" as title, eg. "check_pgbackrest 2.0"
+  - Set "check_pgbackrest $VERSION" as title, eg. "check_pgbackrest 2.1"
   - Here is the format of the release node itself:
     YYYY-MM-DD - Version X.Y
     
@@ -58,7 +58,7 @@ The RPM file is provided by the PGDG community.
 Send a mail to the pgsql-announce mailing list. Eg.:
 
 ```
-check_pgbackrest 2.0 has been released
+check_pgbackrest 2.1 has been released
 
 check_pgbackrest is designed to monitor pgBackRest backups from Nagios, 
 relying on the status information given by the "info" command.
@@ -66,7 +66,7 @@ relying on the status information given by the "info" command.
 It allows to monitor the backups retention and the consistency of the 
 archived WAL segments.
 
-Changes in check_pgbackrest 2.0:
+Changes in check_pgbackrest 2.1:
   - ...
   - ...
 
@@ -83,11 +83,11 @@ Links:
 ### Submit a news on postgresql.org
 
 * organisation: ---------
-* Title: "check_pgbackrest 2.0 has been released"
+* Title: "check_pgbackrest 2.1 has been released"
 * Content:
   
 ```
-_Town, Country, Month xx, 2020_
+_Town, Country, Month xx, 2021_
 
 `check_pgbackrest` is designed to monitor [pgBackRest](https://pgbackrest.org) 
 backups from Nagios, relying on the status information given by the 
@@ -96,7 +96,7 @@ backups from Nagios, relying on the status information given by the
 It allows to monitor the backups retention and the consistency of the archived 
 WAL segments.
 
-Changes in check_pgbackrest 2.0
+Changes in check_pgbackrest 2.1
 ------------------------------------------------------------------------------
 
   * ...
