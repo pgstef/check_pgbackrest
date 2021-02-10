@@ -2,9 +2,9 @@ require 'yaml'
 
 # default variable values
 pgver = '13'
-pgbr_branch = 'release/2.31'
+pgbr_branch = 'release/2.32'
 vm_prefix = 'check_pgbr_c7'
-encrypted_repo = 'false'
+encrypted_repo = 'true'
 edb_repository_username = 'username'
 edb_repository_password = 'password'
 
