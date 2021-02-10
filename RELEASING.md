@@ -53,36 +53,8 @@ The RPM file is provided by the PGDG community.
 
 ## Community
 
-### pgsql-announce
-
-Send a mail to the pgsql-announce mailing list. Eg.:
-
-```
-check_pgbackrest 2.1 has been released
-
-check_pgbackrest is designed to monitor pgBackRest backups from Nagios, 
-relying on the status information given by the "info" command.
-
-It allows to monitor the backups retention and the consistency of the 
-archived WAL segments.
-
-Changes in check_pgbackrest 2.1:
-  - ...
-  - ...
-
-===== Links & Credits =====
-
-check_pgbackrest is an open project, licensed under the PostgreSQL license.
-Any contribution to improve it is welcome.
-
-Links:
-  - Download: https://github.com/pgstef/check_pgbackrest/releases
-  - Support: https://github.com/pgstef/check_pgbackrest/issues
-```
-
 ### Submit a news on postgresql.org
 
-* organisation: ---------
 * Title: "check_pgbackrest 2.1 has been released"
 * Content:
   
