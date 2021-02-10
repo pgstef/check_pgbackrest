@@ -7,11 +7,6 @@ at the end of the in-line documentation in this script.
 
 Use date format `LC_TIME=C date +"%a %b %d %Y"`.
 
-In `check_pgbackrest.spec`:
-  * update the tag in the `_tag` variable (first line)
-  * update the version in `Version:`
-  * edit the changelog
-
 Update the `CHANGELOG.md` file too.
 
 Update the tests results `test/regress/expected/version.out`.

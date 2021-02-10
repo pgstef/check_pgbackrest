@@ -7,7 +7,8 @@ SYNOPSIS
       check_pgbackrest [--help]
 
 DESCRIPTION
-    check_pgbackrest is designed to monitor pgBackRest backups from Nagios.
+    check_pgbackrest is designed to monitor pgBackRest (2.32 and above)
+    backups from Nagios.
 
     -s, --service SERVICE
         The Nagios service to run. See section SERVICES for a description of
@@ -105,8 +106,6 @@ DESCRIPTION
         Use the "--extended-check" argument to force a full check of the
         found archives and raise warnings in case of inconsistencies.
 
-        This service only support pgBackRest 2.28 and above.
-
     check_pgb_version
         Check if this script is running a given version.
 
@@ -117,7 +116,7 @@ CONTRIBUTING
     welcome.
 
 VERSION
-    check_pgbackrest version 1.9, released on Tue Jul 28 2020.
+    check_pgbackrest version 2.0, released on Wed Feb 10 2021.
 
 LICENSING
     This program is open source, licensed under the PostgreSQL license. For

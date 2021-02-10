@@ -1,7 +1,7 @@
 Changelog
 =========
 
-2020-xx-xx v2.0:
+2021-02-10 v2.0:
 
   - Only support pgBackRest **2.28** and above in order to only use its internal
   commands. This remove Perl dependencies no-longer needed to reach repository 
