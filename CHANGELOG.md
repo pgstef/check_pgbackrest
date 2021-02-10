@@ -3,10 +3,18 @@ Changelog
 
 2020-xx-xx v2.0:
 
+  - Only support pgBackRest **2.28** and above in order to only use its internal
+  commands. This remove Perl dependencies no-longer needed to reach repository 
+  hosts or S3 compatible object stores.
+  This also brings Azure compatible object stores support.
   - Support non-gz compressed files in the archives check (Magnus Hagander).
   - Fix the `ignore-archived-*` features when using pgBackRest internal commands 
   (Magnus Hagander).
-  - ...
+  - Improve `ignore-archived-*` features to skip WAL consistency check for backups
+  involving ignored archives.
+  - Skip unneeded boundary WAL check on TL switch (reported by sebastienruiz). 
+  - The retention service will now check that at least the backup directory exists,
+  not only trusting the pgBackRest info command output (suggested by Michael Banck).
 
 2020-07-28 v1.9:
 

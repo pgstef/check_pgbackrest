@@ -6,7 +6,7 @@ usage() {
     exit 1; 
 }
 
-while getopts ":p:" o; do
+while getopts "p:" o; do
     case "${o}" in
         p)
             p=${OPTARG}

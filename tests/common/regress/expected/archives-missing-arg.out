@@ -1,6 +1,0 @@
-FATAL: you must provide --repo-path.
-Usage:
-      check_pgbackrest [-s|--service SERVICE] [-S|--stanza NAME]
-      check_pgbackrest [-l|--list]
-      check_pgbackrest [--help]
-

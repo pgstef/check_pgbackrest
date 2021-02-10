@@ -27,7 +27,6 @@ repo1-s3-verify-tls=n
 repo1-s3-key=accessKey
 repo1-s3-key-secret=superSECRETkey
 repo1-s3-region=eu-west-3
-
 repo1-retention-full=1
 process-max=2
 log-level-console=warn
@@ -48,7 +47,7 @@ cat<<EOF >>"/etc/hosts"
 $MINIO_IP pgbackrest.minio.local minio.local s3.eu-west-3.amazonaws.com
 EOF
 
-# archive_command setup
+# create stanza
 sudo -iu ${PGUSER} pgbackrest --stanza=my_stanza stanza-create
 
 # archive_command setup
@@ -58,7 +57,5 @@ SELECT pg_reload_conf();
 EOS
 
 sudo -iu ${PGUSER} pgbackrest --stanza=my_stanza check
-
-# install perl modules needed for check_pgbackrest S3 compatibility
-yum install --nogpgcheck --quiet -y -e 0 http://repo.openfusion.net/centos7-x86_64/openfusion-release-0.7-1.of.el7.noarch.rpm
-yum install  --nogpgcheck --quiet -y -e 0 perl-Config-IniFiles perl-Net-Amazon-S3
+sudo -iu ${PGUSER} pgbackrest --stanza=my_stanza backup --type=full --repo1-retention-full=1
+sudo -iu ${PGUSER} pgbackrest --stanza=my_stanza info

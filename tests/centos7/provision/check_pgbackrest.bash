@@ -12,7 +12,6 @@ PACKAGES=(
     nagios-plugins
     nagios-plugins-all
     perl-JSON
-    perl-Net-SFTP-Foreign
     perl-Data-Dumper
     wget
     perl-Devel-NYTProf
