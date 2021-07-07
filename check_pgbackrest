@@ -291,20 +291,22 @@ sub prtg_output ($$;$$) {
     $text .= $service . " CRITICAL" if $rc == 2;
     $text .= $service . " UNKNOWN"  if $rc == 3;
 
-    $results = "<result><channel>status</channel><value>$rc</value></result>";
+    $results = "<result><channel>status</channel><value>$rc</value>";
+    $results .= "<LimitMaxWarning>0</LimitMaxWarning>";
+    $results .= "<LimitMaxError>1</LimitMaxError>";
+    $results .= "<LimitMode>1</LimitMode></result>";
     
     @msg      = @{ $_[0] } if defined $_[0];
     @longmsg  = @{ $_[1] } if defined $_[1];
     foreach my $msg_to_split (@longmsg) {
         my ($key, $value) = split(/=/, $msg_to_split);
-        my $val;
         if ($key eq "latest") { # is string, goes into <Text> element
             $text .= "\nLatest backup: ". $value;
         } elsif ($key =~ m/^latest.*age$/) {
             chop($value);
             $results .= "<result><channel>$key</channel><value>$value</value>";
             $results .= "<Unit>TimeSeconds</Unit></result>"
-        } elsif ($key eq "latest_full") { # ist string, goes into <Text> element
+        } elsif ($key eq "latest_full") { # is string, goes into <Text> element
             $text .= "\nLatest full backup: ". $value;
         } else {
             $results .= "<result><channel>$key</channel><value>$value</value>";
