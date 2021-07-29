@@ -2,7 +2,7 @@ require 'yaml'
 
 # default variable values
 pgver = '13'
-pgbr_branch = 'release/2.32'
+pgbr_branch = 'release/2.34'
 vm_prefix = 'check_pgbr_c7'
 encrypted_repo = 'true'
 edb_repository_username = 'username'
@@ -134,6 +134,12 @@ Vagrant.configure(2) do |config|
           path: 'provision/pgbackrest_azurite_primary.bash',
           args: [ pgver, pgdata, pguser, pgport, encrypted_repo ],
           run: 'never'
+ 
+        # pgbackrest gcs setup
+        pgsql.vm.provision 'pgbackrest_gcs_primary', type: 'shell',
+          path: 'provision/pgbackrest_gcs_primary.bash',
+          args: [ pgver, pgdata, pguser, pgport, encrypted_repo ],
+          run: 'never'
 
         # generate configuration file for common scripts
         $script = <<-SCRIPT
@@ -204,6 +210,12 @@ Vagrant.configure(2) do |config|
           path: 'provision/pgbackrest_azurite_standby.bash',
           args: [ pgver, pgdata, pguser, pgport, pgsvc, encrypted_repo ],
           run: 'never'
+ 
+        # pgbackrest gcs setup
+        backup.vm.provision 'pgbackrest_gcs_standby', type: 'shell',
+          path: 'provision/pgbackrest_gcs_standby.bash',
+          args: [ pgver, pgdata, pguser, pgport, pgsvc, encrypted_repo ],
+          run: 'never'
 
         # minio local setup
         backup.vm.provision 'minio', type: 'shell', 
@@ -216,6 +228,10 @@ Vagrant.configure(2) do |config|
         # azurite local setup
         backup.vm.provision 'azurite', type: 'shell', 
           path: 'provision/azurite.bash', run: 'never'
+
+        # fake-gcs-server local setup
+        backup.vm.provision 'gcs', type: 'shell', 
+          path: 'provision/gcs.bash', run: 'never'
     end
 
     # build a specific Perl version on all the nodes

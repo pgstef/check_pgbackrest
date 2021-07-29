@@ -18,6 +18,10 @@ s4: clean create_vm pgbackrest_azurite icinga2_multi generate_config_file_local
 s4_full: clean create_vm pgbackrest_build pgbackrest_azurite icinga2_multi generate_config_file_local
 s4_light: clean create_vm pgbackrest_azurite generate_config_file_local
 
+s5: clean create_vm pgbackrest_gcs icinga2_multi generate_config_file_local
+s5_full: clean create_vm pgbackrest_build pgbackrest_gcs icinga2_multi generate_config_file_local
+s5_light: clean create_vm pgbackrest_gcs generate_config_file_local
+
 ### Setup
 clean:
 	vagrant destroy -f
@@ -51,13 +55,18 @@ pgbackrest_azurite:
 	EPAS=$(EPAS) vagrant up --provision-with=pgbackrest_azurite_primary
 	EPAS=$(EPAS) vagrant up --provision-with=pgbackrest_azurite_standby
 
+pgbackrest_gcs:
+	vagrant up --provision-with=gcs
+	EPAS=$(EPAS) vagrant up --provision-with=pgbackrest_gcs_primary
+	EPAS=$(EPAS) vagrant up --provision-with=pgbackrest_gcs_standby
+
 icinga2_multi:
 	EPAS=false vagrant up --provision-with=icinga2 # use PostgreSQL to install icinga2
 	EPAS=$(EPAS) vagrant up --provision-with=icinga2_multi
 
 ### Specific operations
 pgbackrest_build:
-	EPAS=$(EPAS) vagrant up --provision-with=pgbackrest_build
+	EPAS=$(EPAS) vagrant up --no-parallel --provision-with=pgbackrest_build
 
 perl_build:
 	vagrant up --provision-with=perl_build

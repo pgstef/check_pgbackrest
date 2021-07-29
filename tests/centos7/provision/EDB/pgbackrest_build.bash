@@ -18,7 +18,7 @@ if [ -e $EDB_PATH/bin/pgbackrest ]; then
 	rm -f  $EDB_PATH/bin/pgbackrest
 fi
 
-yum install --nogpgcheck --quiet -y -e 0 make gcc openssl-devel libxml2-devel lz4-devel libzstd-devel bzip2-devel
+yum install --nogpgcheck --quiet -y -e 0 make gcc openssl-devel libxml2-devel lz4-devel libzstd-devel bzip2-devel libyaml-devel
 
 if [ ! -d /build ]; then
 	mkdir /build
@@ -43,4 +43,4 @@ make -s -C /build/pgbackrest/src
 MAKE_VERSION=`/build/pgbackrest/src/pgbackrest version | sed -e s/pgBackRest\ //`
 echo "pgBackRest $PGBR_BRANCH version is : $MAKE_VERSION"
 mv /build/pgbackrest/src/pgbackrest $EDB_PATH/bin/pgbackrest
-alternatives --install /usr/bin/pgbackrest pgbackrest /usr/edb/as12/bin/pgbackrest `echo $MAKE_VERSION | tr -d . | tr -d dev`
+alternatives --install /usr/bin/pgbackrest pgbackrest $EDB_PATH/bin/pgbackrest `echo $MAKE_VERSION | tr -d . | tr -d dev`

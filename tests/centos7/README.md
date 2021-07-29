@@ -9,7 +9,7 @@ This `Vagrantfile` is bootstrapping 3 possible test cases:
   * `icinga-srv` executes check_pgbackrest by ssh with Icinga 2;
   * `pgsql-srv` hosting a primary pgsql cluster with pgBackRest installed;
   * `backup-srv` hosting the CIFS share;
-  * pgBackRest backups are use to build a Streaming Replication with `backup-srv` as standby server.
+  * pgBackRest backups are used to build a Streaming Replication with `backup-srv` as standby server.
 
 Backups and archiving are done locally on `pgsql-srv` on the CIFS mount point.
 
@@ -19,7 +19,7 @@ Backups and archiving are done locally on `pgsql-srv` on the CIFS mount point.
   * `icinga-srv` executes check_pgbackrest by ssh with Icinga 2;
   * `pgsql-srv` hosting a primary pgsql cluster with pgBackRest installed;
   * `backup-srv` acting as pgBackRest repository host;
-  * pgBackRest backups are use to build a Streaming Replication with `backup-srv` as standby server.
+  * pgBackRest backups are used to build a Streaming Replication with `backup-srv` as standby server.
 
 Backups of `pgsql-srv` are taken from `backup-srv`.
 Archives are pushed from `pgsql-srv` to `backup-srv`.
@@ -29,14 +29,21 @@ Archives are pushed from `pgsql-srv` to `backup-srv`.
   * `icinga-srv` executes check_pgbackrest by ssh with Icinga 2;
   * `pgsql-srv` hosting a primary pgsql cluster with pgBackRest installed;
   * `backup-srv` hosting the MinIO server;
-  * pgBackRest backups are use to build a Streaming Replication with `backup-srv` as standby server.
+  * pgBackRest backups are used to build a Streaming Replication with `backup-srv` as standby server.
 
 ### 4. pgBackRest configured to backup and archive to an Azurite container
 
   * `icinga-srv` executes check_pgbackrest by ssh with Icinga 2;
   * `pgsql-srv` hosting a primary pgsql cluster with pgBackRest installed;
   * `backup-srv` hosting an Azurite docker container;
-  * pgBackRest backups are use to build a Streaming Replication with `backup-srv` as standby server.
+  * pgBackRest backups are used to build a Streaming Replication with `backup-srv` as standby server.
+
+### 5. pgBackRest configured to backup and archive to a fake-gcs-server container
+
+  * `icinga-srv` executes check_pgbackrest by ssh with Icinga 2;
+  * `pgsql-srv` hosting a primary pgsql cluster with pgBackRest installed;
+  * `backup-srv` hosting a fake-gcs-server docker container;
+  * pgBackRest backups are used to build a Streaming Replication with `backup-srv` as standby server.
 
 ## Testing
 
@@ -70,6 +77,12 @@ _Test case 4_:
 
 ```bash
 make s4
+```
+
+_Test case 5_:
+
+```bash
+make s5
 ```
 
 After each build, a `configuration.profile` file is generated.

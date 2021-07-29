@@ -10,7 +10,7 @@ if [ -e /usr/bin/pgbackrest ]; then
 	rm -f  /usr/bin/pgbackrest
 fi
 
-yum install --nogpgcheck --quiet -y -e 0 make gcc openssl-devel libxml2-devel lz4-devel libzstd-devel bzip2-devel
+yum install --nogpgcheck --quiet -y -e 0 make gcc openssl-devel libxml2-devel lz4-devel libzstd-devel bzip2-devel libyaml-devel
 yum install --nogpgcheck --quiet -y -e 0 postgresql-devel
 
 if [ ! -d /build ]; then
