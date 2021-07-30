@@ -1,0 +1,21 @@
+---
+- name: Build all systemd images
+  hosts: localhost
+  tasks:
+    - docker_image:
+        name: "systemd/{{ item.base }}:{{ item.tag }}"
+        state: present
+        source: build
+        build:
+          path: systemd
+          dockerfile: "{{ item.base }}.Dockerfile"
+          pull: no
+          args:
+            BASE_IMAGE: "{{ item.base }}:{{ item.tag }}"
+      loop:
+        - { base: 'debian', tag: '9'     }
+        - { base: 'debian', tag: '10'    }
+        - { base: 'ubuntu', tag: '18.04' }
+        - { base: 'ubuntu', tag: '20.04' }
+        - { base: 'centos', tag: '7'     }
+        - { base: 'centos', tag: '8'     }

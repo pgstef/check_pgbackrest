@@ -1,0 +1,75 @@
+---
+- name: Set the os variable
+  set_fact:
+    os: "{{ ansible_distribution }}{{ ansible_distribution_major_version }}"
+
+- name: Check support for Operating System
+  fail:
+    msg: "Operating System = {{ os }} not supported."
+  when: os not in supported_os
+
+- name: Check supported versions for Database engine
+  fail:
+    msg: "Database Engine Version = {{ pg_version }} not supported.
+          Supported versions are {{ supported_pg_version }}"
+  when: pg_version|int not in supported_pg_version
+
+- name: Reference pg_type variables
+  include_vars: "{{ pg_type }}_{{ ansible_os_family }}.yml"
+
+- name: Reference ssl variables
+  include_vars: edb-ssl.yml
+  when: pg_ssl
+
+- name: Gather service facts
+  service_facts:
+
+- name: Open Postgres TCP port {{ pg_port }}
+  ansible.posix.firewalld:
+    port: "{{ pg_port }}/tcp"
+    permanent: yes
+    state: enabled
+    immediate: true
+  when:
+    - ansible_facts.services['firewalld.service'] is defined
+    - ansible_facts.services['firewalld.service'].state == 'running'
+    - ansible_facts.services['firewalld.service'].status == 'enabled'
+  become: yes
+
+- name: Force cleanup based on force_initdb
+  block:
+    - include_tasks: rm_initdb.yml
+  when:
+    - force_initdb is defined
+    - force_initdb
+  become: yes
+
+- name: Gather the host and information for /etc/hosts
+  set_fact:
+    etc_hosts_lists: "{{ etc_hosts_lists + [node.private_ip + ' ' + node.hostname] }}"
+  loop: "{{ lookup('edb_devops.edb_postgres.pg_sr_cluster_nodes', wantlist=True) }}"
+  loop_control:
+    loop_var: node
+  run_once: true
+  when: use_hostname
+
+- name: Update etc_hosts based on use_hostname
+  block:
+    - import_tasks: linux_update_etc_hosts.yml
+  become: yes
+  when: use_hostname
+
+- name: Check and configure the node as primary or pemserver
+  block:
+    - import_tasks: create_directories.yml
+    - import_tasks: pg_initdb.yml
+    - import_tasks: pg_set_superuser_password.yml
+  become: yes
+
+- name: Configure ssl based on pg_ssl parameter
+  block:
+    - import_tasks: pg_ssl_check.yml
+    - import_tasks: pg_ssl_config.yml
+  become: yes
+  when:
+     - pg_ssl

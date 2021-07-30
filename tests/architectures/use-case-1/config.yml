@@ -1,0 +1,32 @@
+---
+cluster_name: use-case-1
+platform: docker
+docker:
+  image_name: centos:7
+  exposed_ports:
+    - '22'
+    - '5432'
+    - '5444'
+
+cluster_vars:
+  pg_version: 13
+  pg_type: PG
+  disable_logging: false
+  pgbackrest_repo_type: s3
+
+instances:
+- name: pg1
+  ansible_group: primary
+  pgbackrest: true
+
+- name: pg2
+  ansible_group: standby
+  upstream: pg1
+  replication_type: asynchronous
+  pgbackrest: true
+
+- name: pg3
+  ansible_group: standby
+  upstream: pg1
+  replication_type: asynchronous
+  pgbackrest: true

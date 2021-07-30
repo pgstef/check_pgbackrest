@@ -1,0 +1,69 @@
+[global]
+{% if pgbackrest_repo_type == "s3" %}
+repo1-type=s3
+repo1-path=/repo1
+repo1-s3-endpoint={{ pgbackrest_repo_s3_endpoint }}
+repo1-s3-region=eu-west-2
+repo1-s3-bucket=bucket
+repo1-s3-key=accessKey
+repo1-s3-key-secret=superSECRETkey
+repo1-s3-uri-style=path
+repo1-storage-verify-tls=n
+repo1-retention-full={{ pgbackrest_repo_retention_full }}
+repo1-cipher-type=aes-256-cbc
+repo1-cipher-pass={{ pgbackrest_repo_cipher_pass }}
+{% elif pgbackrest_repo_type == "azure" %}
+repo1-type=azure
+repo1-path=/repo1
+repo1-azure-host={{ pgbackrest_repo_azure_host }}
+repo1-azure-account=pgbackrest
+repo1-azure-key=aF49wnZP
+repo1-azure-container=container
+repo1-storage-verify-tls=n
+repo1-retention-full={{ pgbackrest_repo_retention_full }}
+repo1-cipher-type=aes-256-cbc
+repo1-cipher-pass={{ pgbackrest_repo_cipher_pass }}
+{% elif pgbackrest_repo_type == "multi" %}
+repo1-type=s3
+repo1-path=/repo1
+repo1-s3-endpoint={{ pgbackrest_repo_s3_endpoint }}
+repo1-s3-region=eu-west-2
+repo1-s3-bucket=bucket
+repo1-s3-key=accessKey
+repo1-s3-key-secret=superSECRETkey
+repo1-s3-uri-style=path
+repo1-storage-verify-tls=n
+repo1-retention-full={{ pgbackrest_repo_retention_full }}
+repo1-cipher-type=aes-256-cbc
+repo1-cipher-pass={{ pgbackrest_repo_cipher_pass }}
+repo2-type=azure
+repo2-path=/repo2
+repo2-azure-host={{ pgbackrest_repo_azure_host }}
+repo2-azure-account=pgbackrest
+repo2-azure-key=aF49wnZP
+repo2-azure-container=container
+repo2-storage-verify-tls=n
+repo2-retention-full={{ pgbackrest_repo_retention_full }}
+repo2-cipher-type=aes-256-cbc
+repo2-cipher-pass={{ pgbackrest_repo_cipher_pass }}
+{% else %}
+repo1-type=posix
+repo1-path={{ pgbackrest_repo_path }}
+repo1-retention-full={{ pgbackrest_repo_retention_full }}
+repo1-cipher-type=aes-256-cbc
+repo1-cipher-pass={{ pgbackrest_repo_cipher_pass }}
+{% endif %}
+log-level-console=warn
+log-level-file=info
+start-fast=y
+delta=y
+process-max=2
+
+[{{ cluster_name }}]
+{% for server in pgbackrest_servers %}
+{% set v = hostvars[server] %}
+pg{{ loop.index }}-host={{ v.private_ip }}
+pg{{ loop.index }}-host-user={{ v.pg_owner }}
+pg{{ loop.index }}-path={{ v.pg_data }}
+pg{{ loop.index }}-socket-path={{ v.pg_unix_socket_directories[0] }}
+{% endfor %}

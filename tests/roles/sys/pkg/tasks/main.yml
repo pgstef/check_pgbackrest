@@ -1,0 +1,10 @@
+---
+- name: Install required packages
+  package:
+    name: >
+      {{ query('flattened', package_lists) }}
+    state: latest
+  vars:
+    package_lists:
+      - "{{ default_packages['common'] }}"
+      - "{{ default_packages[ansible_os_family] }}"

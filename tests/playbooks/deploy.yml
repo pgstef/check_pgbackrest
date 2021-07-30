@@ -1,0 +1,63 @@
+---
+- name: Deploy cluster
+  hosts: all
+  any_errors_fatal: true
+  tasks:
+    - name: Require cluster directory to be specified
+      assert:
+        msg: "No cluster directory specified"
+        that:
+          - cluster_dir is defined and cluster_dir != ''
+
+    - name: Check EDB repository credentials
+      assert:
+        msg: "Missing credentials"
+        that:
+          - lookup('env', 'EDB_REPO_USERNAME') != ''
+          - lookup('env', 'EDB_REPO_PASSWORD') != ''
+
+    # Install PGDG and EDB repositories
+    - include_role:
+        name: edb_devops.edb_postgres.setup_repo
+      vars:
+        pg_type: "PG"
+        repo_username: "{{ lookup('env', 'EDB_REPO_USERNAME') }}"
+        repo_password: "{{ lookup('env', 'EDB_REPO_PASSWORD') }}"
+
+    - include_role:
+        name: edb_devops.edb_postgres.setup_repo
+      vars:
+        pg_type: "EPAS"
+        repo_username: "{{ lookup('env', 'EDB_REPO_USERNAME') }}"
+        repo_password: "{{ lookup('env', 'EDB_REPO_PASSWORD') }}"
+
+    - include_role:
+        name: edb_devops.edb_postgres.install_dbserver
+      when: "'primary' in group_names or 'standby' in group_names"
+    
+    # Use modified roles to avoid replication slots
+    - include_role:
+        name: init_dbserver
+      when: "'primary' in group_names"
+
+    - include_role:
+        name: setup_replication
+      when: "'standby' in group_names"
+
+    - include_role:
+        name: setup_pgbackrest
+      when: >
+        'pgbackrest_repo_host' in group_names or
+        (hostvars[inventory_hostname].pgbackrest is defined and hostvars[inventory_hostname].pgbackrest == true)
+
+    # Save facts locally for other playbooks
+    - name: Ensure local facts directory exists
+      file: state=directory path="/etc/ansible/facts.d"
+
+    - name: Save local facts
+      template:
+        src: "profile.fact.j2"
+        dest: "/etc/ansible/facts.d/profile.fact"
+      when: >
+        'primary' in group_names and
+        (hostvars[inventory_hostname].pgbackrest is defined and hostvars[inventory_hostname].pgbackrest == true)

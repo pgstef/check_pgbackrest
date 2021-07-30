@@ -1,0 +1,12 @@
+---
+all:
+  children:
+{% for g in instances_groups %}
+    {{ g }}:
+      hosts:
+{% for h in instances %}
+{% if h.ansible_group == g %}
+        {{ h.name }}:
+{% endif%}
+{% endfor %}
+{% endfor %}

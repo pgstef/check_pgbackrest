@@ -1,0 +1,42 @@
+---
+- name: Provision docker container "{{ item.name }}"
+  docker_container:
+    name: "{{ item.name }}"
+    hostname: "{{ item.name }}"
+    image: "systemd/{{ docker.image_name }}"
+    state: started
+    pull: no
+    detach: yes
+    exposed_ports: "{{ _exposed_ports }}"
+    published_ports: "{{ _exposed_ports }}"
+    networks: 
+      - name: "network_{{ cluster_name }}"
+    networks_cli_compatible: yes
+    volumes:
+      - "/sys/fs/cgroup:/sys/fs/cgroup:ro"
+      - "{{ cluster_dir }}/shared:/shared:z"
+    tmpfs:
+      - "/tmp"
+      - "/run"
+      - "/run/lock"
+    container_default_behavior: compatibility
+    network_mode: default
+  vars:
+    _exposed_ports: "{{ docker.exposed_ports|default(['22','5432', '5444']) }}"
+  register: docker_container_register
+
+- set_fact:
+    docker_container_results: "{{
+      docker_container_results|default([])|union([
+        dc|combine({
+          'item': item|combine({
+            'private_ip': nw.Networks[nw_name].IPAddress,
+            'ansible_host': nw.Networks[nw_name].IPAddress,
+          })
+        })
+      ])
+    }}"
+  vars:
+    dc: "{{ docker_container_register.container }}"
+    nw: "{{ dc.NetworkSettings }}"
+    nw_name: "network_{{ cluster_name }}"

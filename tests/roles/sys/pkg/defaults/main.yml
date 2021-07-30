@@ -1,0 +1,16 @@
+---
+default_packages:
+  common:
+    - openssh-server
+    - openssl
+    - sudo
+    - wget
+  Debian:
+    - openssh-client
+    - iproute2
+    - gnupg
+    - xxd
+  RedHat:
+    - openssh-clients
+    - iproute
+    - vim-common

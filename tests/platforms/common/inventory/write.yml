@@ -1,0 +1,89 @@
+---
+- name: Ensure that the cluster's inventory directories exist
+  file:
+    path: "{{ cluster_dir }}/{{ item }}"
+    state: directory
+  loop:
+    - inventory
+    - inventory/host_vars
+    - inventory/group_vars
+    
+- name: Create host_vars subdirectories
+  file:
+    path: "{{ cluster_dir }}/inventory/host_vars/{{ item.name }}"
+    state: directory
+  loop: "{{ instances | flatten(levels=1) }}"
+  loop_control:
+    label: >-
+      {{ item.name }}
+
+- name: Get ansible groups
+  set_fact:
+    instances_groups: "{{ instances_groups | default([]) | union([ item.ansible_group ]) }}"
+  loop: "{{ instances | flatten(levels=1) }}"
+  loop_control:
+    label: >-
+      {{ item.ansible_group }}
+
+- name: Write docker static inventory file
+  template:
+    src: docker.j2
+    dest: "{{ cluster_dir }}/inventory.docker.yml"
+    mode: 0644
+  when: platform == 'docker'
+
+- name: Write inventory file
+  template:
+    src: inventory.j2
+    dest: "{{ cluster_dir }}/inventory/inventory.yml"
+    mode: 0644
+
+- name: Write group_vars
+  copy:
+    content: |
+      {{ group_vars|to_nice_yaml(indent=2) }}
+    dest: "{{ group_dir }}/{{ file_name }}"
+    mode: 0644
+    force: yes
+  vars:
+    ansible_ssh_private_key_file: "{{ cluster_dir }}/{{ ssh_key_file }}"
+    file_name: "all.yml"
+    group_dir: "{{ cluster_dir }}/inventory/group_vars"
+    group_vars: >
+      {{
+        cluster_vars|combine({
+          'cluster_name': cluster_name,
+          'ansible_ssh_private_key_file': ansible_ssh_private_key_file,
+        })
+      }}
+
+- name: Write instance variables for hosts
+  copy:
+    content: |
+      {{ host_vars|to_nice_yaml(indent=2) }}
+    dest: "{{ host_dir }}/{{ file_name }}"
+    mode: 0644
+    force: yes
+  vars:
+    file_name: "instance_vars.yml"
+    host_dir: "{{ cluster_dir }}/inventory/host_vars/{{ item.name }}"
+    host_vars: "{{ item.vars }}"
+  loop: "{{ instance_vars|flatten(levels=1) }}"
+  loop_control:
+    label: >-
+      {{ item.name }}
+  when: item.vars | length > 0
+
+- name: Transform upstream property to upstream_node_private_ip
+  ansible.builtin.lineinfile:
+    path: "{{ host_dir }}/{{ file_name }}"
+    regexp: '^upstream: '
+    line: "upstream_node_private_ip: {{ private_ip_list[item.vars.upstream] }}"
+  vars:
+    file_name: "instance_vars.yml"
+    host_dir: "{{ cluster_dir }}/inventory/host_vars/{{ item.name }}"
+  when: item.vars.upstream is defined
+  loop: "{{ instance_vars|flatten(levels=1) }}"
+  loop_control:
+    label: >-
+      {{ item.name }}

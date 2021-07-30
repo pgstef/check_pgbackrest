@@ -1,0 +1,74 @@
+require 'yaml'
+
+if File.file?('vagrant.yml') and ( custom = YAML.load_file('vagrant.yml') )
+    edb_repository_username = custom['edb_repository_username'] if custom.has_key?('edb_repository_username')
+    edb_repository_password = custom['edb_repository_password'] if custom.has_key?('edb_repository_password')
+    pgbackrest_git_url      = custom['pgbackrest_git_url']      if custom.has_key?('pgbackrest_git_url')
+    pgbackrest_git_branch   = custom['pgbackrest_git_branch']   if custom.has_key?('pgbackrest_git_branch')
+end
+
+Vagrant.configure(2) do |config|
+    config.vm.provider :virtualbox do |vb|
+        vb.memory = 4096
+        vb.cpus = 4
+    end
+    
+    config.vm.define "default" do |default|
+        default.vm.box = "ubuntu/focal64"
+
+        default.vm.provider :virtualbox do |vb|
+            vb.name = "check_pgbackrest-docker-host"
+        end
+
+        default.vm.provision "shell", inline: <<-SHELL
+            #-----------------------------------------------------------------------------------------------------------------------
+            echo 'Install Docker' && date
+            curl -fsSL https://get.docker.com | sh
+            usermod -aG docker vagrant
+            #-----------------------------------------------------------------------------------------------------------------------
+            echo 'Install Perl modules' && date
+            apt-get install -y libyaml-libyaml-perl
+        SHELL
+
+        default.vm.provision "shell", privileged: false, inline: <<-SHELL
+            #-----------------------------------------------------------------------------------------------------------------------
+            echo 'Install Ansible' && date
+            sudo apt-get install -y python3-pip python3-venv
+            python3 -m pip install --user pipx
+            python3 -m pipx ensurepath
+            python3 -m pipx install ansible-base
+        SHELL
+
+        # Execute CI script in Vagrant environment
+        default.vm.provision "exec-ci", privileged: false, type: "shell",
+            path: 'vagrant.sh',
+            env: {
+                "ACTIVITY" => ENV['ACTIVITY'],
+                "ARCH" => ENV['ARCH'],
+                "PGBR_BUILD" => ENV['PGBR_BUILD'],
+                "PGBR_REPO_TYPE" => ENV['PGBR_REPO_TYPE'],
+                "PROFILE" => ENV['PROFILE'],
+                "edb_repository_username" => edb_repository_username,
+                "edb_repository_password" => edb_repository_password,
+                "pgbackrest_git_url" => pgbackrest_git_url,
+                "pgbackrest_git_branch" => pgbackrest_git_branch
+            },
+            run: 'never'
+
+        # Clean a specific cluster in Vagrant environment
+        $clean_script = <<-SCRIPT
+            cd /vagrant
+            echo "PROFILE = '$PROFILE'"
+            source profile.d/$PROFILE.profile
+            source profile.d/vagrant.profile
+            sh run.sh -C -c "$CLPATH/$CLNAME"
+        SCRIPT
+
+        default.vm.provision "clean-ci", privileged: false, type: 'shell',
+            inline: $clean_script,
+            env: {
+                "PROFILE" => ENV['PROFILE']
+            },
+            run: 'never'
+    end
+end

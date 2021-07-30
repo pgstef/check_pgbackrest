@@ -1,0 +1,66 @@
+---
+- name: Take full backup on repository server
+  command: >
+    pgbackrest backup --type=full --stanza="{{ cluster_name }}"
+  become_user: "{{ pgbackrest_user }}"
+  become: yes
+  when: inventory_hostname in repository_server and pgbackrest_force_backup
+
+- name: Take diff backup on repository server
+  command: >
+    pgbackrest backup --type=diff --stanza="{{ cluster_name }}"
+  become_user: "{{ pgbackrest_user }}"
+  become: yes
+  when: inventory_hostname in repository_server and pgbackrest_force_backup
+
+- name: Take incr backup on repository server
+  command: >
+    pgbackrest backup --type=incr --stanza="{{ cluster_name }}"
+  become_user: "{{ pgbackrest_user }}"
+  become: yes
+  when: inventory_hostname in repository_server and pgbackrest_force_backup
+
+- name: Take incr backup from standby on repository server
+  command: >
+    pgbackrest backup --type=incr --backup-standby --stanza="{{ cluster_name }}"
+  become_user: "{{ pgbackrest_user }}"
+  become: yes
+  when: inventory_hostname in repository_server and pgbackrest_force_backup and (pgbackrest_servers|length > 1)
+
+- name: Take full backup on primary server
+  command: >
+    pgbackrest backup --type=full --stanza="{{ cluster_name }}"
+  become_user: "{{ postgres_user }}"
+  become: yes
+  when: pgbackrest_force_backup and (not repository_server|length > 0) and 
+        (inventory_hostname in pgbackrest_servers) and 
+        ('primary' in group_names)  
+
+- name: Take diff backup on primary server
+  command: >
+    pgbackrest backup --type=diff --stanza="{{ cluster_name }}"
+  become_user: "{{ postgres_user }}"
+  become: yes
+  when: pgbackrest_force_backup and (not repository_server|length > 0) and 
+        (inventory_hostname in pgbackrest_servers) and 
+        ('primary' in group_names)  
+
+- name: Take incr backup on primary server
+  command: >
+    pgbackrest backup --type=incr --stanza="{{ cluster_name }}"
+  become_user: "{{ postgres_user }}"
+  become: yes
+  when: pgbackrest_force_backup and (not repository_server|length > 0) and 
+        (inventory_hostname in pgbackrest_servers) and 
+        ('primary' in group_names)
+
+- name: Take backup on standby from primary server using ssh
+  command: "/usr/bin/ssh {{ host }} pgbackrest backup --type=incr --backup-standby --stanza={{ cluster_name }}"
+  vars:
+    host: "{{ hostvars[item].private_ip }}"
+  loop: "{{ pgbackrest_standbies }}"
+  become_user: "{{ postgres_user }}"
+  become: yes
+  when: pgbackrest_force_backup and (not repository_server|length > 0) and 
+        (inventory_hostname in pgbackrest_servers) and 
+        ('primary' in group_names)

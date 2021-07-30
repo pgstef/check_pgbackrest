@@ -1,0 +1,72 @@
+---
+- include_role:
+    name: sys/pkg
+
+- name: Start ssh server
+  service:
+    name: "{{ ssh_service_name }}"
+    state: started
+  vars:
+    ssh_service_name: "{{
+      (ansible_os_family == 'RedHat')|ternary('sshd', 'ssh')
+    }}"
+
+- name: Ensure authorized_keys allows admin access
+  authorized_key:
+    user: root
+    state: present
+    key: "{{ lookup('file', ssh_key_file_pub) }}"
+  vars:
+    ssh_key_file_pub: "{{ cluster_dir }}/{{ ssh_key_file }}.pub"
+
+- name: Ensure that .ssh exists on all hosts
+  file:
+    path: "~/.ssh"
+    state: directory
+    mode: '0700'
+
+- name: Install keypair on all hosts
+  copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    mode: "{{ item.mode }}"
+  with_items:
+    - src: "{{ cluster_dir }}/{{ ssh_key_file }}"
+      dest: "~/.ssh/id_rsa"
+      mode: '0600'
+    - src: "{{ cluster_dir }}/{{ ssh_key_file }}.pub"
+      dest: "~/.ssh/id_rsa.pub"
+      mode: '0640'
+
+- name: Update network facts
+  ansible.builtin.setup:
+    gather_subset:
+      - network
+
+- name: Set main /etc/hosts entry
+  set_fact:
+    my_hosts_lines: "{{ [main_hosts_line] }}"
+  vars:
+    main_hosts_line: >-
+      {{ ansible_default_ipv4.address|default(ansible_all_ipv4_addresses[0]) }}
+      {{ [inventory_hostname, inventory_hostname_short]|unique|join(' ') }}
+
+- name: Aggregate /etc/hosts lines across hosts
+  set_fact:
+    etc_hosts_lines: "{{
+      etc_hosts_lines|default([])|union(hostvars[item].my_hosts_lines)
+    }}"
+  with_items: "{{ groups['all'] }}"
+
+- name: Add entries to /etc/hosts
+  lineinfile:
+    path: /etc/hosts
+    line: "{{ item }}"
+  loop: "{{ etc_hosts_lines }}"
+  when: platform != 'docker'
+
+- name: Ensure /run/nologin does not exist
+  file:
+    path: /run/nologin
+    state: absent
+  when: platform in ['docker']

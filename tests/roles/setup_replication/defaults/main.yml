@@ -1,0 +1,51 @@
+---
+# default empty rpm repo
+# port constants
+
+os: ""
+pg_version: "13"
+dsable_logging: yes
+
+force_replication: false
+use_replication_slots: false
+use_hostname: false
+
+# EFM service information
+efm_version: 4.1
+efm_cluster_name: "efm"
+efm_service: "edb-{{ efm_cluster_name }}-{{ efm_version }}"
+
+synchronous_standby_names: ""
+synchronous_standbys: []
+standby_quorum_type: "any"
+
+pass_dir: "~/.edb"
+
+primary_private_ip: ""
+primary_public_ip: ""
+primary_host_name: ""
+standby_names: []
+pg_allow_ip_addresses: []
+standby_physical_slots: []
+etc_hosts_lists: []
+upstream_public_ip: ""
+upstream_hostname: ""
+
+supported_os:
+  - CentOS7
+  - CentOS8
+  - RedHat7
+  - RedHat8
+  - Ubuntu20
+  - Debian9
+  - Debian10
+
+supported_pg_type:
+  - EPAS
+  - PG
+
+supported_pg_version:
+  - 10
+  - 11
+  - 12
+  - 13

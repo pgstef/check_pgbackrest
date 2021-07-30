@@ -1,0 +1,25 @@
+---
+- name: Ensure pgbackrest group exists
+  group:
+    name: "{{ pgbackrest_user }}"
+    state: present
+  become: yes
+
+- name: Ensure pgbackrest system user {{ pgbackrest_user }} exists
+  user:
+    name: "{{ pgbackrest_user }}"
+    group: "{{ pgbackrest_user }}"
+    state: present
+  become: yes
+
+- name: Ensure pgbackrest directories exist with the right ownership and permissions
+  file:
+    name: "{{ item }}"
+    state: directory
+    owner: "{{ pgbackrest_user }}"
+    group: "{{ pgbackrest_user }}"
+    mode: 0770
+  loop:
+    - /var/log/pgbackrest
+    - "{{ pgbackrest_repo_path }}"
+  become: yes
