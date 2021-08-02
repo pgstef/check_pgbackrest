@@ -1,0 +1,43 @@
+---
+- name: Install build requirements
+  package:
+    name: >
+      {{ query('flattened', package_lists) }}
+    state: latest
+  vars:
+    package_lists:
+      - "{{ build_packages['common'] }}"
+      - "{{ build_packages[ansible_os_family] }}"
+
+- name: Check if development file exists on controller
+  local_action: stat path="/check_pgbackrest/check_pgbackrest"
+  register: dev_file
+
+- name: Ensure src directory exists
+  file: state=directory path="{{ check_pgbackrest_src_dir }}"
+  when: not dev_file.stat.exists | bool
+
+- name: Fetch check_pgbackrest from Github
+  git:
+    repo: "https://github.com/pgstef/check_pgbackrest"
+    dest: "{{ check_pgbackrest_src_dir }}"
+    version: "master"
+    depth: 1
+    accept_hostkey: yes
+  when: not dev_file.stat.exists | bool
+
+- name: Install check_pgbackrest
+  copy:
+    src: "{{ check_pgbackrest_src_dir }}/check_pgbackrest"
+    remote_src: yes
+    dest: /usr/bin/check_pgbackrest
+    mode: '0755'
+  when: not dev_file.stat.exists | bool
+
+- name: Install development check_pgbackrest
+  copy:
+    src: "/check_pgbackrest/check_pgbackrest"
+    remote_src: no
+    dest: /usr/bin/check_pgbackrest
+    mode: '0755'
+  when: dev_file.stat.exists | bool

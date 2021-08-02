@@ -35,15 +35,15 @@ First of all, initialize the virtual machine: `make init`.
 * Deploy Use-Case 1 and run the activity script: `make ACTIVITY=true uc1`
 * Deploy Use-Case 2 and run the activity script: `make ACTIVITY=true uc2`
 
-To build pgBackRest from sources, use `uc1_full` of `uc2_full` make target.
+To build pgBackRest from sources, use `uc1_full` or `uc2_full` make targets.
+
+To install pgBackRest and **check_pgbackrest** using PGDG packages, use `uc1_light` or `uc2_light` make targets.
 
 ### Change the test profile
 
 Add `PROFILE=xxx` to the make command.
 
 Available profiles: `c7epas`, `c7pg`, `d10epas`, `d10pg`, `u20epas`, `u20pg`.
-
-Thanks to the usage of docker containers, multiple profiles can run at the same time.
 
 ### Change the pgBackRest repository type
 

@@ -15,7 +15,7 @@ repo1-cipher-pass={{ pgbackrest_repo_cipher_pass }}
 {% elif pgbackrest_repo_type == "azure" %}
 repo1-type=azure
 repo1-path=/repo1
-repo1-azure-host={{ pgbackrest_repo_azure_host }}
+repo1-storage-host={{ pgbackrest_repo_azure_host }}
 repo1-azure-account=pgbackrest
 repo1-azure-key=aF49wnZP
 repo1-azure-container=container
@@ -38,7 +38,7 @@ repo1-cipher-type=aes-256-cbc
 repo1-cipher-pass={{ pgbackrest_repo_cipher_pass }}
 repo2-type=azure
 repo2-path=/repo2
-repo2-azure-host={{ pgbackrest_repo_azure_host }}
+repo2-storage-host={{ pgbackrest_repo_azure_host }}
 repo2-azure-account=pgbackrest
 repo2-azure-key=aF49wnZP
 repo2-azure-container=container

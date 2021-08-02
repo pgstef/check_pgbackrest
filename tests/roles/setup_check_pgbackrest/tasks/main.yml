@@ -1,0 +1,33 @@
+---
+- name: Install check_pgbackrest package
+  package:
+    name:
+      - check-pgbackrest
+    state: latest
+  when: not check_pgbackrest_build | bool and ansible_os_family == 'Debian'
+
+- name: Install check_pgbackrest package
+  package:
+    name:
+      - nagios-plugins-pgbackrest
+    state: latest
+  when: not check_pgbackrest_build | bool and ansible_os_family == 'RedHat'
+
+- name: Create a symbolic link
+  file:
+    src: /usr/lib64/nagios/plugins/check_pgbackrest
+    dest: /usr/bin/check_pgbackrest
+    state: link
+  when: not check_pgbackrest_build | bool and ansible_os_family == 'RedHat'
+
+- name: Build check_pgbackrest from sources
+  include_tasks: build.yml
+  vars:
+    check_pgbackrest_src_dir: /opt/check_pgbackrest/src
+  when: check_pgbackrest_build | bool
+
+- shell: check_pgbackrest --version | cut -f1 -d"," | awk '{print $3}'
+  register: version
+
+- name: check_pgbackrest installed version
+  debug: var=version.stdout

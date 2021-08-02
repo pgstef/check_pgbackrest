@@ -53,6 +53,7 @@ echo "PGUNIXSOCKET = $PGUNIXSOCKET"
 echo "PGUSER = $PGUSER"
 echo "STANZA = $STANZA"
 if [ ! -z "$PGBR_HOST" ]; then
+    echo "PGBR_USER = $PGBR_USER"
     echo "PGBR_HOST = $PGBR_HOST"
     PGBR_HOST=(`$PYTHON -c "print(' '.join($PGBR_HOST))"`)
 fi

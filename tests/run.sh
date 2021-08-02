@@ -94,7 +94,7 @@ echo '-------------------- Deploy --------------------' && date
 : "${EDB_REPO_PASSWORD:?Variable not set or empty}"
 export ANSIBLE_HOST_KEY_CHECKING=False
 export ANSIBLE_REMOTE_USER="root"
-ansible-playbook playbooks/deploy.yml -i "$CLUSTER_DIR/inventory" -e cluster_dir=$CLUSTER_DIR --extra-vars "pgbackrest_force_backup=true"
+ansible-playbook playbooks/deploy.yml -i "$CLUSTER_DIR/inventory" -e cluster_dir=$CLUSTER_DIR
 
 if $ACTIVITY; then
 #-----------------------------------------------------------------------------------------------------------------------

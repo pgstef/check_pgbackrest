@@ -50,6 +50,12 @@
         'pgbackrest_repo_host' in group_names or
         (hostvars[inventory_hostname].pgbackrest is defined and hostvars[inventory_hostname].pgbackrest == true)
 
+    - include_role:
+        name: setup_check_pgbackrest
+      when: >
+        'pgbackrest_repo_host' in group_names or
+        (hostvars[inventory_hostname].pgbackrest is defined and hostvars[inventory_hostname].pgbackrest == true)
+
     # Save facts locally for other playbooks
     - name: Ensure local facts directory exists
       file: state=directory path="/etc/ansible/facts.d"

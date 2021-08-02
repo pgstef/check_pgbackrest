@@ -11,6 +11,10 @@ echo "PROFILE = '$PROFILE'"
 source profile.d/$PROFILE.profile
 source profile.d/vagrant.profile
 
+if [ ! -z "$EXTRA" ]; then
+    export EXTRA_VARS="$EXTRA_VARS $EXTRA"
+fi
+
 if $PGBR_BUILD; then
     export EXTRA_VARS="$EXTRA_VARS pgbackrest_build=true"
 fi

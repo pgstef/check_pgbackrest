@@ -1,0 +1,13 @@
+---
+check_pgbackrest_build: false
+
+build_packages:
+  common:
+    - git
+  Debian:
+    - libjson-perl
+    - libdata-dump-perl
+  RedHat:
+    - nagios-plugins
+    - perl-JSON
+    - perl-Data-Dumper

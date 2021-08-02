@@ -4,7 +4,7 @@ name: main
 on:
   push:
     branches:
-      - main
+      - master
   workflow_dispatch:
   schedule:
     - cron: '30 5 * * 1'
@@ -21,7 +21,7 @@ jobs:
             DBTYPE: PG
             DBVERSION: 13
             CLNAME: c7pg
-            EXTRA_VARS: "pgbackrest_excpected_release=2.34"
+            EXTRA_VARS: "pgbackrest_excpected_release=2.34 check_pgbackrest_build=true"
 
     steps:
       - uses: actions/checkout@v2
@@ -54,7 +54,7 @@ jobs:
             DBTYPE: PG
             DBVERSION: 13
             CLNAME: u20pg
-            EXTRA_VARS: "pgbackrest_excpected_release=2.34"
+            EXTRA_VARS: "pgbackrest_excpected_release=2.34 check_pgbackrest_build=true"
 
     steps:
       - uses: actions/checkout@v2

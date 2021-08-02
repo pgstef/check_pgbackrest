@@ -13,6 +13,9 @@ Vagrant.configure(2) do |config|
         vb.cpus = 4
     end
     
+    # mount check_pgbackrest path for development testing
+    config.vm.synced_folder "..", "/check_pgbackrest"
+
     config.vm.define "default" do |default|
         default.vm.box = "ubuntu/focal64"
 
@@ -45,6 +48,7 @@ Vagrant.configure(2) do |config|
             env: {
                 "ACTIVITY" => ENV['ACTIVITY'],
                 "ARCH" => ENV['ARCH'],
+                "EXTRA" => ENV['EXTRA'],
                 "PGBR_BUILD" => ENV['PGBR_BUILD'],
                 "PGBR_REPO_TYPE" => ENV['PGBR_REPO_TYPE'],
                 "PROFILE" => ENV['PROFILE'],
