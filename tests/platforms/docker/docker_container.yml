@@ -1,6 +1,6 @@
 ---
 - name: Provision docker container "{{ item.name }}"
-  docker_container:
+  community.docker.docker_container:
     name: "{{ item.name }}"
     hostname: "{{ item.name }}"
     image: "systemd/{{ docker.image_name }}"
@@ -21,6 +21,7 @@
       - "/run/lock"
     container_default_behavior: compatibility
     network_mode: default
+    restart_policy: unless-stopped
   vars:
     _exposed_ports: "{{ docker.exposed_ports|default(['22','5432', '5444']) }}"
   register: docker_container_register

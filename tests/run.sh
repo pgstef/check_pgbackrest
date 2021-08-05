@@ -57,6 +57,7 @@ if $INIT_ONLY; then
     pipx inject ansible-base docker-py
     ansible-galaxy collection install community.docker
     ansible-galaxy collection install edb_devops.edb_postgres
+    ansible-galaxy collection install t_systems_mms.icinga_director
     echo '--------------------'
     echo 'Install Azure Storage Blobs client library for Python'
     pip install azure-storage-blob

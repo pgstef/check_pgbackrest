@@ -37,7 +37,7 @@ First of all, initialize the virtual machine: `make init`.
 
 To build pgBackRest from sources, use `uc1_full` or `uc2_full` make targets.
 
-To install pgBackRest and **check_pgbackrest** using PGDG packages, use `uc1_light` or `uc2_light` make targets.
+To install pgBackRest and **check_pgbackrest** using PGDG packages, without deploying Icinga2, use `uc1_light` or `uc2_light` make targets.
 
 ### Change the test profile
 

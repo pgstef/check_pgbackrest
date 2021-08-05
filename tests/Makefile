@@ -8,16 +8,16 @@ PROFILE='c7pg'
 init: clean_vm create_vm
 
 uc1:
-	ACTIVITY=$(ACTIVITY) ARCH='use-case-1' EXTRA="$(EXTRA) check_pgbackrest_build=true" PGBR_BUILD='false' PGBR_REPO_TYPE=$(PGBR_REPO_TYPE) PROFILE=$(PROFILE) vagrant up --provision-with=exec-ci
+	ACTIVITY=$(ACTIVITY) ARCH='use-case-1' EXTRA="$(EXTRA) check_pgbackrest_build=true deploy_icinga2=true" PGBR_BUILD='false' PGBR_REPO_TYPE=$(PGBR_REPO_TYPE) PROFILE=$(PROFILE) vagrant up --provision-with=exec-ci
 uc1_full:
-	ACTIVITY=$(ACTIVITY) ARCH='use-case-1' EXTRA="$(EXTRA) check_pgbackrest_build=true" PGBR_BUILD='true' PGBR_REPO_TYPE=$(PGBR_REPO_TYPE) PROFILE=$(PROFILE) vagrant up --provision-with=exec-ci
+	ACTIVITY=$(ACTIVITY) ARCH='use-case-1' EXTRA="$(EXTRA) check_pgbackrest_build=true deploy_icinga2=true" PGBR_BUILD='true' PGBR_REPO_TYPE=$(PGBR_REPO_TYPE) PROFILE=$(PROFILE) vagrant up --provision-with=exec-ci
 uc1_light:
 	ACTIVITY=$(ACTIVITY) ARCH='use-case-1' EXTRA="$(EXTRA)" PGBR_BUILD='false' PGBR_REPO_TYPE=$(PGBR_REPO_TYPE) PROFILE=$(PROFILE) vagrant up --provision-with=exec-ci
 
 uc2:
-	ACTIVITY=$(ACTIVITY) ARCH='use-case-2' EXTRA="$(EXTRA) check_pgbackrest_build=true" PGBR_BUILD='false' PGBR_REPO_TYPE=$(PGBR_REPO_TYPE) PROFILE=$(PROFILE) vagrant up --provision-with=exec-ci
+	ACTIVITY=$(ACTIVITY) ARCH='use-case-2' EXTRA="$(EXTRA) check_pgbackrest_build=true deploy_icinga2=true" PGBR_BUILD='false' PGBR_REPO_TYPE=$(PGBR_REPO_TYPE) PROFILE=$(PROFILE) vagrant up --provision-with=exec-ci
 uc2_full:
-	ACTIVITY=$(ACTIVITY) ARCH='use-case-2' EXTRA="$(EXTRA) check_pgbackrest_build=true" PGBR_BUILD='true' PGBR_REPO_TYPE=$(PGBR_REPO_TYPE) PROFILE=$(PROFILE) vagrant up --provision-with=exec-ci
+	ACTIVITY=$(ACTIVITY) ARCH='use-case-2' EXTRA="$(EXTRA) check_pgbackrest_build=true deploy_icinga2=true" PGBR_BUILD='true' PGBR_REPO_TYPE=$(PGBR_REPO_TYPE) PROFILE=$(PROFILE) vagrant up --provision-with=exec-ci
 uc2_light:
 	ACTIVITY=$(ACTIVITY) ARCH='use-case-2' EXTRA="$(EXTRA)" PGBR_BUILD='false' PGBR_REPO_TYPE=$(PGBR_REPO_TYPE) PROFILE=$(PROFILE) vagrant up --provision-with=exec-ci
 

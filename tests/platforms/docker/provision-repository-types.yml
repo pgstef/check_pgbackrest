@@ -17,7 +17,7 @@
     (cluster_vars.pgbackrest_repo_type == "s3" or cluster_vars.pgbackrest_repo_type == "multi")
 
 - name: Provision MinIO docker container
-  docker_container:
+  community.docker.docker_container:
     image: minio/minio
     name: "{{ cluster_name }}-minio"
     state: started
@@ -53,7 +53,7 @@
     (cluster_vars.pgbackrest_repo_type == "azure" or cluster_vars.pgbackrest_repo_type == "multi")
 
 - name: Provision Azurite docker container
-  docker_container:
+  community.docker.docker_container:
     image: mcr.microsoft.com/azure-storage/azurite
     name: "{{ cluster_name }}-azurite"
     state: started
@@ -88,3 +88,22 @@
   when: >
     cluster_vars.pgbackrest_repo_type is defined and
     (cluster_vars.pgbackrest_repo_type == "azure" or cluster_vars.pgbackrest_repo_type == "multi")
+
+- name: Provision Icinga2 docker container
+  community.docker.docker_container:
+    image: jordan/icinga2
+    name: "{{ cluster_name }}-icinga2"
+    state: started
+    restart_policy: always
+    published_ports:
+      - "80"
+      - "443"
+      - "5665"
+    networks: 
+      - name: "network_{{ cluster_name }}"
+    networks_cli_compatible: yes
+    network_mode: default
+    container_default_behavior: compatibility
+    env:
+      ICINGA2_FEATURE_DIRECTOR_PASS: "anyPassWord"
+  when: cluster_vars.deploy_icinga2 is defined and cluster_vars.deploy_icinga2 | bool

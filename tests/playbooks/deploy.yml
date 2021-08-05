@@ -8,6 +8,7 @@
         msg: "No cluster directory specified"
         that:
           - cluster_dir is defined and cluster_dir != ''
+      run_once: true
 
     - name: Check EDB repository credentials
       assert:
@@ -15,6 +16,7 @@
         that:
           - lookup('env', 'EDB_REPO_USERNAME') != ''
           - lookup('env', 'EDB_REPO_PASSWORD') != ''
+      run_once: true
 
     # Install PGDG and EDB repositories
     - include_role:
@@ -23,6 +25,7 @@
         pg_type: "PG"
         repo_username: "{{ lookup('env', 'EDB_REPO_USERNAME') }}"
         repo_password: "{{ lookup('env', 'EDB_REPO_PASSWORD') }}"
+      when: "'icinga2' not in group_names"
 
     - include_role:
         name: edb_devops.edb_postgres.setup_repo
@@ -30,6 +33,7 @@
         pg_type: "EPAS"
         repo_username: "{{ lookup('env', 'EDB_REPO_USERNAME') }}"
         repo_password: "{{ lookup('env', 'EDB_REPO_PASSWORD') }}"
+      when: "'icinga2' not in group_names"
 
     - include_role:
         name: edb_devops.edb_postgres.install_dbserver
@@ -54,7 +58,8 @@
         name: setup_check_pgbackrest
       when: >
         'pgbackrest_repo_host' in group_names or
-        (hostvars[inventory_hostname].pgbackrest is defined and hostvars[inventory_hostname].pgbackrest == true)
+        (hostvars[inventory_hostname].pgbackrest is defined and hostvars[inventory_hostname].pgbackrest == true) or
+        'icinga2' in group_names
 
     # Save facts locally for other playbooks
     - name: Ensure local facts directory exists

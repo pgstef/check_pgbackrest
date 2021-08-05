@@ -6,7 +6,7 @@ pgbackrest_force_backup: false
 pgbackrest_git_url: "https://github.com/pgbackrest/pgbackrest.git"
 pgbackrest_git_branch: "master"
 pgbackrest_repo_path: "/var/lib/pgbackrest"
-pgbackrest_repo_retention_full: 2
+pgbackrest_repo_retention_full: 1
 pgbackrest_repo_type: "posix"
 pgbackrest_repo_s3_endpoint: "{{ cluster_name }}-minio"
 pgbackrest_repo_azure_host: "{{ cluster_name }}-azurite"

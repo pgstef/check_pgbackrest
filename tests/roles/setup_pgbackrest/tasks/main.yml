@@ -30,6 +30,7 @@
 - set_fact:
     postgres_user: "{{ pg_owner }}"
     pgbackrest_user: "{{ pgbackrest_user }}"
+    pgbackrest_repo_retention_full: "{{ pgbackrest_repo_retention_full }}"
     pgbackrest_repo_type: "{{ pgbackrest_repo_type }}"
   when: inventory_hostname in pgbackrest_servers
 

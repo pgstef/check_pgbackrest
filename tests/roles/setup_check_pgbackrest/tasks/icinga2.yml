@@ -1,0 +1,249 @@
+---
+# --------------------
+# SSH connection setup
+# --------------------
+- name: Generate Icinga2 SSH keys
+  community.crypto.openssh_keypair:
+    path: "{{ cluster_dir }}/keys/id_icinga2"
+  delegate_to: localhost
+  when: "'icinga2' in group_names"
+
+- name: Ensure that .ssh exists on Icinga2 server
+  file:
+    path: "~nagios/.ssh"
+    state: directory
+    mode: '0700'
+  become_user: "nagios"
+  become: yes
+  when: "'icinga2' in group_names"
+
+- name: Install keypair on Icinga2 server
+  copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    mode: "{{ item.mode }}"
+  with_items:
+    - src: "{{ cluster_dir }}/keys/id_icinga2"
+      dest: "~nagios/.ssh/id_rsa"
+      mode: '0600'
+    - src: "{{ cluster_dir }}/keys/id_icinga2.pub"
+      dest: "~nagios/.ssh/id_rsa.pub"
+      mode: '0640'
+  become_user: "nagios"
+  become: yes
+  when: "'icinga2' in group_names"
+
+- name: Setup user accessed_by_ssh on db and repo hosts
+  user:
+    name: accessed_by_ssh
+    groups: wheel
+    append: yes
+  when: inventory_hostname in repository_server or inventory_hostname in pgbackrest_servers
+
+- name: Add user to sudoers file on db and repo hosts
+  lineinfile:
+    path: /etc/sudoers
+    regexp: '^accessed_by_ssh'
+    line: 'accessed_by_ssh ALL=(ALL) NOPASSWD:ALL'
+    validate: 'visudo -cf %s'
+  when: inventory_hostname in repository_server or inventory_hostname in pgbackrest_servers
+
+- name: Authorise SSH connection on db and repo hosts
+  authorized_key:
+    user: accessed_by_ssh
+    key: "{{ lookup('file', cluster_dir+'/keys/id_icinga2.pub') }}"
+  when: inventory_hostname in repository_server or inventory_hostname in pgbackrest_servers
+
+- name: Test SSH connection from Icinga2 server to db hosts
+  shell: "/usr/bin/ssh {{ssh_args}} {{ user }}@{{ host }} uname -a"
+  vars:
+    host: "{{ hostvars[item].private_ip }}"
+    user: "accessed_by_ssh"
+    ssh_args: "-o ConnectTimeout=10 -o BatchMode=yes -o StrictHostKeyChecking=no"
+  loop: "{{ pgbackrest_servers }}"
+  become_user: "nagios"
+  become: yes
+  when: "'icinga2' in group_names"
+
+- name: Test SSH connection from Icinga2 server to repo host
+  shell: "/usr/bin/ssh {{ssh_args}} {{ user }}@{{ host }} uname -a"
+  vars:
+    host: "{{ hostvars[item].private_ip }}"
+    user: "accessed_by_ssh"
+    ssh_args: "-o ConnectTimeout=10 -o BatchMode=yes -o StrictHostKeyChecking=no"
+  loop: "{{ repository_server }}"
+  become_user: "nagios"
+  become: yes
+  when: "'icinga2' in group_names"
+
+# ------------------------------------
+# Configure Icinga2 hosts and services
+# ------------------------------------
+- set_fact:
+    icinga_url: "http://127.0.0.1/icingaweb2"
+    icinga_user: "icingaadmin"
+    icinga_pass: "icinga"
+  when: "'icinga2' in group_names"
+
+- name: Create Icinga2 host template
+  t_systems_mms.icinga_director.icinga_host_template:
+    state: present
+    url: "{{ icinga_url }}"
+    url_username: "{{ icinga_user }}"
+    url_password: "{{ icinga_pass }}"
+    object_name: host-template
+    check_command: hostalive
+  when: "'icinga2' in group_names"
+
+- name: Create Icinga2 service template
+  t_systems_mms.icinga_director.icinga_service_template:
+    state: present
+    url: "{{ icinga_url }}"
+    url_username: "{{ icinga_user }}"
+    url_password: "{{ icinga_pass }}"
+    object_name: service-template
+    max_check_attempts: "5"
+    check_interval: "1m"
+    retry_interval: "30s"
+  when: "'icinga2' in group_names"
+
+- name: Add db hosts to Icinga2
+  t_systems_mms.icinga_director.icinga_host:
+    state: present
+    url: "{{ icinga_url }}"
+    url_username: "{{ icinga_user }}"
+    url_password: "{{ icinga_pass }}"
+    object_name: "{{ item }}"
+    address: "{{ hostvars[item].private_ip }}"
+    imports:
+      - "host-template"
+    vars:
+      os: "Linux"
+  loop: "{{ pgbackrest_servers }}"
+  when: "'icinga2' in group_names"
+
+- name: Add repo hosts to Icinga2
+  t_systems_mms.icinga_director.icinga_host:
+    state: present
+    url: "{{ icinga_url }}"
+    url_username: "{{ icinga_user }}"
+    url_password: "{{ icinga_pass }}"
+    object_name: "{{ item }}"
+    address: "{{ hostvars[item].private_ip }}"
+    imports:
+      - "host-template"
+    vars:
+      os: "Linux"
+  loop: "{{ repository_server }}"
+  when: "'icinga2' in group_names"
+
+- name: Create Icinga2 check retention command
+  t_systems_mms.icinga_director.icinga_command:
+    state: present
+    url: "{{ icinga_url }}"
+    url_username: "{{ icinga_user }}"
+    url_password: "{{ icinga_pass }}"
+    object_name: "by_ssh_pgbackrest_retention"
+    imports:
+      - "by_ssh"
+    vars:
+      by_ssh_command: "check_pgbackrest --stanza=$stanza$ --service=retention --retention-full=$retention_full$ --prefix=\"$prefix$\""
+  when: "'icinga2' in group_names"
+
+- name: Create Icinga2 check archives command
+  t_systems_mms.icinga_director.icinga_command:
+    state: present
+    url: "{{ icinga_url }}"
+    url_username: "{{ icinga_user }}"
+    url_password: "{{ icinga_pass }}"
+    object_name: "by_ssh_pgbackrest_archives"
+    imports:
+      - "by_ssh"
+    vars:
+      by_ssh_command: "check_pgbackrest --stanza=$stanza$ --service=archives --prefix=\"$prefix$\""
+  when: "'icinga2' in group_names"
+
+- name: Create Icinga2 check retention services for db hosts
+  t_systems_mms.icinga_director.icinga_service:
+    state: present
+    url: "{{ icinga_url }}"
+    url_username: "{{ icinga_user }}"
+    url_password: "{{ icinga_pass }}"
+    object_name: "pgbackrest_retention"
+    imports:
+      - "service-template"
+    check_command: "by_ssh_pgbackrest_retention"
+    host: "{{ item }}"
+    vars:
+      by_ssh_logname: "accessed_by_ssh"
+      stanza: "{{ cluster_name }}"
+      retention_full: "{{ hostvars[item].pgbackrest_repo_retention_full }}"
+      prefix: "sudo -u {{ hostvars[item].pg_owner }}"
+  loop: "{{ pgbackrest_servers }}"
+  when: "'icinga2' in group_names"
+
+- name: Create Icinga2 check retention services for repo host
+  t_systems_mms.icinga_director.icinga_service:
+    state: present
+    url: "{{ icinga_url }}"
+    url_username: "{{ icinga_user }}"
+    url_password: "{{ icinga_pass }}"
+    object_name: "pgbackrest_retention"
+    imports:
+      - "service-template"
+    check_command: "by_ssh_pgbackrest_retention"
+    host: "{{ item }}"
+    vars:
+      by_ssh_logname: "accessed_by_ssh"
+      stanza: "{{ cluster_name }}"
+      retention_full: "{{ hostvars[item].pgbackrest_repo_retention_full }}"
+      prefix: "sudo -u {{ hostvars[item].pgbackrest_user }}"
+  loop: "{{ repository_server }}"
+  when: "'icinga2' in group_names"
+
+- name: Create Icinga2 check archives services for db hosts
+  t_systems_mms.icinga_director.icinga_service:
+    state: present
+    url: "{{ icinga_url }}"
+    url_username: "{{ icinga_user }}"
+    url_password: "{{ icinga_pass }}"
+    object_name: "pgbackrest_archives"
+    imports:
+      - "service-template"
+    check_command: "by_ssh_pgbackrest_archives"
+    host: "{{ item }}"
+    vars:
+      by_ssh_logname: "accessed_by_ssh"
+      stanza: "{{ cluster_name }}"
+      prefix: "sudo -u {{ hostvars[item].pg_owner }}"
+  loop: "{{ pgbackrest_servers }}"
+  when: "'icinga2' in group_names"
+
+- name: Create Icinga2 check retention services for repo host
+  t_systems_mms.icinga_director.icinga_service:
+    state: present
+    url: "{{ icinga_url }}"
+    url_username: "{{ icinga_user }}"
+    url_password: "{{ icinga_pass }}"
+    object_name: "pgbackrest_archives"
+    imports:
+      - "service-template"
+    check_command: "by_ssh_pgbackrest_archives"
+    host: "{{ item }}"
+    vars:
+      by_ssh_logname: "accessed_by_ssh"
+      stanza: "{{ cluster_name }}"
+      prefix: "sudo -u {{ hostvars[item].pgbackrest_user }}"
+  loop: "{{ repository_server }}"
+  when: "'icinga2' in group_names"
+
+- name: Deploy Icinga2 config
+  uri:
+    url: "{{ icinga_url }}/director/config/deploy"
+    user: "{{ icinga_user }}"
+    password: "{{ icinga_pass }}"
+    method: POST
+    headers:
+      Accept: "application/json"
+  register: icinga2_deploy_config
+  when: "'icinga2' in group_names"

@@ -10,3 +10,10 @@ all:
 {% endif%}
 {% endfor %}
 {% endfor %}
+{% if cluster_vars.deploy_icinga2 is defined and cluster_vars.deploy_icinga2 | bool %}
+    icinga2:
+      hosts:
+        {{ cluster_name }}-icinga2:
+          ansible_connection: docker
+          ansible_python_interpreter: auto
+{% endif%}

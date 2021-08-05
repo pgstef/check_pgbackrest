@@ -6,8 +6,6 @@ on:
     branches:
       - master
   workflow_dispatch:
-  schedule:
-    - cron: '30 5 * * 1'
 
 jobs:
   use-case-1:

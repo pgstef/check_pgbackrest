@@ -7,6 +7,7 @@
         msg: "No cluster directory specified"
         that:
           - cluster_dir is defined and cluster_dir != ''
+      run_once: true
 
     - import_tasks: load-config.yml
     
