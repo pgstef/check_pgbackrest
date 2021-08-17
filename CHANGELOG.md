@@ -3,6 +3,10 @@ Changelog
 
 2021-xx-xx v2.1:
 
+  - Only support pgBackRest **2.33** and above in order to introduce some basic
+  support for the multi-repository feature.
+  Introduce the ``--repo` option to set the repository index to operate on.
+  When multiple repositories will be found, the `--repo` option is mandatory.
   - ...
 
   

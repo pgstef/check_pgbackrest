@@ -21,8 +21,8 @@ while getopts "Ac:Chi" o; do
         A)
             INIT_ONLY=false
             CLEAN_ONLY=false
-            PROVISION=true
-            DEPLOY=true
+            PROVISION=false
+            DEPLOY=false
             ACTIVITY=true
             ;;
         c)
@@ -115,5 +115,5 @@ if $ACTIVITY; then
     #-----------------------------------------------------------------------------------------------------------------------
     echo '-------------------- Simulate basic activity --------------------' && date
     #-----------------------------------------------------------------------------------------------------------------------
-        ansible-playbook playbooks/activity.yml -i "$CLUSTER_DIR/inventory"
+    ansible-playbook playbooks/activity.yml -i "$CLUSTER_DIR/inventory"
 fi

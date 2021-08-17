@@ -23,6 +23,7 @@
         STANZA: "{{ cluster_vars['cluster_name'] }}"
         PGBR_HOST: "{{ cluster_vars['pgbackrest_repo_host'] | default(None) }}"
         PGBR_USER: "{{ cluster_vars['pgbackrest_user'] }}"
+        PGBR_REPO_TYPE: "{{ cluster_vars['pgbackrest_repo_type'] }}"
         SCRIPT_PROFILE: ""
       vars:
         cluster_vars: "{{ ansible_local['profile']['global'] }}"
@@ -35,43 +36,43 @@
       debug: var=regress_output.stdout_lines
       when: regress_output.changed
 
-    - name: Copy activity script to remote host
-      copy:
-        src: scripts/simulate-activity-basic.bash
-        dest: /tmp/simulate-activity-basic.bash
-        mode: '0755'
-      when: >
-        'primary' in group_names and
-        (hostvars[inventory_hostname].pgbackrest is defined and hostvars[inventory_hostname].pgbackrest == true)
+    # - name: Copy activity script to remote host
+    #   copy:
+    #     src: scripts/simulate-activity-basic.bash
+    #     dest: /tmp/simulate-activity-basic.bash
+    #     mode: '0755'
+    #   when: >
+    #     'primary' in group_names and
+    #     (hostvars[inventory_hostname].pgbackrest is defined and hostvars[inventory_hostname].pgbackrest == true)
 
-    - name: Simulate basic activity
-      command: /usr/bin/env bash /tmp/simulate-activity-basic.bash -s 10 -a 10 2>&1 |tee /var/log/simulate-activity-basic.log
-      environment:
-        PGBIN: "{{ cluster_vars['pg_bin_path'] }}"
-        PGDATABASE: "{{ cluster_vars['pg_database'] }}"
-        PGSVC: "{{ cluster_vars['pg_service'] }}"
-        PGUNIXSOCKET: "{{ cluster_vars['pg_unix_socket'] }}"
-        PGUSER: "{{ cluster_vars['pg_owner'] }}"
-        STANZA: "{{ cluster_vars['cluster_name'] }}"
-        PGBR_HOST: "{{ cluster_vars['pgbackrest_repo_host'] | default(None) }}"
-        PGBR_STANDBIES: "{{ cluster_vars['pgbackrest_standbies'] | default(None) }}"
-        PGBR_USER: "{{ cluster_vars['pgbackrest_user'] }}"
-        SCRIPT_PROFILE: ""
-      vars:
-        cluster_vars: "{{ ansible_local['profile']['global'] }}"
-      register: basic_activity_output
-      when: >
-        'primary' in group_names and
-        (hostvars[inventory_hostname].pgbackrest is defined and hostvars[inventory_hostname].pgbackrest == true)
+    # - name: Simulate basic activity
+    #   command: /usr/bin/env bash /tmp/simulate-activity-basic.bash -s 10 -a 10 2>&1 |tee /var/log/simulate-activity-basic.log
+    #   environment:
+    #     PGBIN: "{{ cluster_vars['pg_bin_path'] }}"
+    #     PGDATABASE: "{{ cluster_vars['pg_database'] }}"
+    #     PGSVC: "{{ cluster_vars['pg_service'] }}"
+    #     PGUNIXSOCKET: "{{ cluster_vars['pg_unix_socket'] }}"
+    #     PGUSER: "{{ cluster_vars['pg_owner'] }}"
+    #     STANZA: "{{ cluster_vars['cluster_name'] }}"
+    #     PGBR_HOST: "{{ cluster_vars['pgbackrest_repo_host'] | default(None) }}"
+    #     PGBR_STANDBIES: "{{ cluster_vars['pgbackrest_standbies'] | default(None) }}"
+    #     PGBR_USER: "{{ cluster_vars['pgbackrest_user'] }}"
+    #     SCRIPT_PROFILE: ""
+    #   vars:
+    #     cluster_vars: "{{ ansible_local['profile']['global'] }}"
+    #   register: basic_activity_output
+    #   when: >
+    #     'primary' in group_names and
+    #     (hostvars[inventory_hostname].pgbackrest is defined and hostvars[inventory_hostname].pgbackrest == true)
 
-    - name: Basic activity output
-      debug: var=basic_activity_output.stdout_lines
-      when: basic_activity_output.changed
+    # - name: Basic activity output
+    #   debug: var=basic_activity_output.stdout_lines
+    #   when: basic_activity_output.changed
 
-    - name: Check Icinga2 services
-      include_role:
-        name: setup_check_pgbackrest
-        tasks_from: icinga2-check.yml
-      vars:
-        reschedule_check_icinga2: true
-      when: deploy_icinga2 | bool
+    # - name: Check Icinga2 services
+    #   include_role:
+    #     name: setup_check_pgbackrest
+    #     tasks_from: icinga2-check.yml
+    #   vars:
+    #     reschedule_check_icinga2: true
+    #   when: deploy_icinga2 | bool
