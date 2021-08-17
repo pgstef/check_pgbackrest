@@ -31,6 +31,9 @@ clean_docker:
 clean_git:
 	git clean -f -dX --dry-run
 
+clean_icinga2:
+	vagrant ssh -c "docker stop $(PROFILE)-icinga2 && docker rm $(PROFILE)-icinga2"
+
 clean_vm:
 	vagrant destroy -f
 

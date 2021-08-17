@@ -3,6 +3,11 @@ set -o errexit
 set -o nounset
 
 cd /vagrant
+export RUN_ARGS=""
+if [ "$ACTIVITY" == "only" ]; then
+    export ACTIVITY=true
+    export RUN_ARGS="-A"
+fi
 echo "ACTIVITY = '$ACTIVITY'"
 echo "ARCH = '$ARCH'"
 echo "PGBR_BUILD = '$PGBR_BUILD'"
@@ -30,4 +35,5 @@ fi
 [ ! -z "$pgbackrest_git_branch" ] && export EXTRA_VARS="$EXTRA_VARS pgbackrest_git_branch=$pgbackrest_git_branch"
 
 echo "EXTRA_VARS = '$EXTRA_VARS'"
+echo "CLNAME=$CLNAME"
 sh ci.sh

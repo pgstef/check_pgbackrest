@@ -38,7 +38,18 @@
     name: accessed_by_ssh
     groups: wheel
     append: yes
-  when: inventory_hostname in repository_server or inventory_hostname in pgbackrest_servers
+  when: >
+    ( inventory_hostname in repository_server or inventory_hostname in pgbackrest_servers )
+    and ansible_os_family == 'RedHat'
+
+- name: Setup user accessed_by_ssh on db and repo hosts
+  user:
+    name: accessed_by_ssh
+    groups: sudo
+    append: yes
+  when: >
+    ( inventory_hostname in repository_server or inventory_hostname in pgbackrest_servers )
+    and ansible_os_family == 'Debian'
 
 - name: Add user to sudoers file on db and repo hosts
   lineinfile:
@@ -245,5 +256,8 @@
     method: POST
     headers:
       Accept: "application/json"
-  register: icinga2_deploy_config
+  when: "'icinga2' in group_names"
+
+- name: Check Icinga2 services
+  include_tasks: icinga2-check.yml
   when: "'icinga2' in group_names"

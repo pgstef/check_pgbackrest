@@ -5,6 +5,7 @@ cd "$(dirname "$0")"
 
 usage() {
     echo "Usage:"
+    echo "    -A                          Activity step only."
     echo "    -c <cluster_dir>            Cluster directory."
     echo "    -C                          Cleaning step only."
     echo "    -h                          Display this help message."
@@ -13,8 +14,17 @@ usage() {
 
 INIT_ONLY=false
 CLEAN_ONLY=false
-while getopts "c:Chi" o; do
+PROVISION=true
+DEPLOY=true
+while getopts "Ac:Chi" o; do
     case "${o}" in
+        A)
+            INIT_ONLY=false
+            CLEAN_ONLY=false
+            PROVISION=true
+            DEPLOY=true
+            ACTIVITY=true
+            ;;
         c)
             CLUSTER_DIR=${OPTARG}
             ;;
@@ -79,27 +89,31 @@ if $CLEAN_ONLY; then
     exit 0;
 fi
 
-#-----------------------------------------------------------------------------------------------------------------------
-echo '-------------------- Provision --------------------' && date
-#-----------------------------------------------------------------------------------------------------------------------
-export ANSIBLE_ROLES_PATH=${ANSIBLE_ROLES_PATH:+$ANSIBLE_ROLES_PATH:}$(pwd)/roles
-: "${CLUSTER_DIR:?Variable not set or empty}"
-echo "CLUSTER_DIR=$CLUSTER_DIR"
-ansible-playbook platforms/provision.yml -e cluster_dir=$CLUSTER_DIR
-ansible-playbook platforms/system-config.yml -i "$CLUSTER_DIR/inventory.docker.yml" -e cluster_dir=$CLUSTER_DIR
+if $PROVISION; then
+    #-----------------------------------------------------------------------------------------------------------------------
+    echo '-------------------- Provision --------------------' && date
+    #-----------------------------------------------------------------------------------------------------------------------
+    export ANSIBLE_ROLES_PATH=${ANSIBLE_ROLES_PATH:+$ANSIBLE_ROLES_PATH:}$(pwd)/roles
+    : "${CLUSTER_DIR:?Variable not set or empty}"
+    echo "CLUSTER_DIR=$CLUSTER_DIR"
+    ansible-playbook platforms/provision.yml -e cluster_dir=$CLUSTER_DIR
+    ansible-playbook platforms/system-config.yml -i "$CLUSTER_DIR/inventory.docker.yml" -e cluster_dir=$CLUSTER_DIR
+fi
 
-#-----------------------------------------------------------------------------------------------------------------------
-echo '-------------------- Deploy --------------------' && date
-#-----------------------------------------------------------------------------------------------------------------------
-: "${EDB_REPO_USERNAME:?Variable not set or empty}"
-: "${EDB_REPO_PASSWORD:?Variable not set or empty}"
-export ANSIBLE_HOST_KEY_CHECKING=False
-export ANSIBLE_REMOTE_USER="root"
-ansible-playbook playbooks/deploy.yml -i "$CLUSTER_DIR/inventory" -e cluster_dir=$CLUSTER_DIR
+if $DEPLOY; then
+    #-----------------------------------------------------------------------------------------------------------------------
+    echo '-------------------- Deploy --------------------' && date
+    #-----------------------------------------------------------------------------------------------------------------------
+    : "${EDB_REPO_USERNAME:?Variable not set or empty}"
+    : "${EDB_REPO_PASSWORD:?Variable not set or empty}"
+    export ANSIBLE_HOST_KEY_CHECKING=False
+    export ANSIBLE_REMOTE_USER="root"
+    ansible-playbook playbooks/deploy.yml -i "$CLUSTER_DIR/inventory" -e cluster_dir=$CLUSTER_DIR
+fi
 
 if $ACTIVITY; then
-#-----------------------------------------------------------------------------------------------------------------------
-echo '-------------------- Simulate basic activity --------------------' && date
-#-----------------------------------------------------------------------------------------------------------------------
-    ansible-playbook playbooks/activity.yml -i "$CLUSTER_DIR/inventory"
+    #-----------------------------------------------------------------------------------------------------------------------
+    echo '-------------------- Simulate basic activity --------------------' && date
+    #-----------------------------------------------------------------------------------------------------------------------
+        ansible-playbook playbooks/activity.yml -i "$CLUSTER_DIR/inventory"
 fi

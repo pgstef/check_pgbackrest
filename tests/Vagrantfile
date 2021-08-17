@@ -27,7 +27,7 @@ Vagrant.configure(2) do |config|
         usermod -aG docker vagrant
         #-----------------------------------------------------------------------------------------------------------------------
         echo 'Install Perl modules' && date
-        apt-get install -y libyaml-libyaml-perl
+        apt-get install -y libyaml-libyaml-perl jq
     SHELL
 
     config.vm.provision "shell", privileged: false, inline: <<-SHELL

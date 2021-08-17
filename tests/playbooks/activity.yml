@@ -67,3 +67,11 @@
     - name: Basic activity output
       debug: var=basic_activity_output.stdout_lines
       when: basic_activity_output.changed
+
+    - name: Check Icinga2 services
+      include_role:
+        name: setup_check_pgbackrest
+        tasks_from: icinga2-check.yml
+      vars:
+        reschedule_check_icinga2: true
+      when: deploy_icinga2 | bool
