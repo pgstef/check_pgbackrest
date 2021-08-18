@@ -148,6 +148,11 @@
   loop: "{{ repository_server }}"
   when: "'icinga2' in group_names"
 
+- name: Set default repo when multiple repositories are defined
+  set_fact:
+    repo_option: "--repo=1"
+  when: "pgbackrest_repo_type is defined and pgbackrest_repo_type == 'multi'"
+
 - name: Create Icinga2 check retention command
   t_systems_mms.icinga_director.icinga_command:
     state: present
@@ -158,7 +163,7 @@
     imports:
       - "by_ssh"
     vars:
-      by_ssh_command: "check_pgbackrest --stanza=$stanza$ --service=retention --retention-full=$retention_full$ --prefix=\"$prefix$\""
+      by_ssh_command: "check_pgbackrest --stanza=$stanza$ --service=retention --retention-full=$retention_full$ --prefix=\"$prefix$\" {{ repo_option | default(None) }}"
   when: "'icinga2' in group_names"
 
 - name: Create Icinga2 check archives command
@@ -171,7 +176,7 @@
     imports:
       - "by_ssh"
     vars:
-      by_ssh_command: "check_pgbackrest --stanza=$stanza$ --service=archives --prefix=\"$prefix$\""
+      by_ssh_command: "check_pgbackrest --stanza=$stanza$ --service=archives --prefix=\"$prefix$\" {{ repo_option | default(None) }}"
   when: "'icinga2' in group_names"
 
 - name: Create Icinga2 check retention services for db hosts
