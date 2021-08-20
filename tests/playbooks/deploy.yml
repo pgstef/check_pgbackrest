@@ -35,19 +35,26 @@
         repo_password: "{{ lookup('env', 'EDB_REPO_PASSWORD') }}"
       when: "'icinga2' not in group_names"
 
+    # Install db server and setup replication
     - include_role:
         name: edb_devops.edb_postgres.install_dbserver
       when: "'primary' in group_names or 'standby' in group_names"
     
-    # Use modified roles to avoid replication slots
     - include_role:
-        name: init_dbserver
+        name: edb_devops.edb_postgres.init_dbserver
+      vars:
+        use_replication_slots: false
+        use_hostname: false
       when: "'primary' in group_names"
 
     - include_role:
-        name: setup_replication
+        name: edb_devops.edb_postgres.setup_replication
+      vars:
+        use_replication_slots: false
+        use_hostname: false
       when: "'standby' in group_names"
 
+    # Install pgBackRest and check_pgbackrest
     - include_role:
         name: setup_pgbackrest
       when: >

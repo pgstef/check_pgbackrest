@@ -61,6 +61,12 @@ if [ ! -z "$PGBR_STANDBIES" ]; then
     echo "PGBR_STANDBIES = $PGBR_STANDBIES"
     PGBR_STANDBIES=(`$PYTHON -c "print(' '.join($PGBR_STANDBIES))"`)
 fi
+echo "PGBR_REPO_TYPE = $PGBR_REPO_TYPE"
+REPO=""
+if [ "$PGBR_REPO_TYPE" = "multi" ]; then
+    REPO="--repo=1"
+    echo "...multi repo support, defaulting to repo1"
+fi
 
 # run
 echo "-------------------PROCESS START-------------------"
@@ -71,33 +77,33 @@ sudo -iu $PGUSER $PGBIN/pgbench -h $PGUNIXSOCKET -i -s $SCALE --quiet --foreign-
 
 echo "--Take a full backup"
 if [ "$SCRIPT_PROFILE" = "local" ]; then
-    sudo -iu $PGUSER pgbackrest --stanza=$STANZA --type=full backup
+    sudo -iu $PGUSER pgbackrest --stanza=$STANZA $REPO --type=full backup
 else
-    sudo -iu $PGUSER ssh ${SSH_ARGS} ${PGBR_USER}@${PGBR_HOST} "pgbackrest --stanza=$STANZA --type=full backup"
+    sudo -iu $PGUSER ssh ${SSH_ARGS} ${PGBR_USER}@${PGBR_HOST} "pgbackrest --stanza=$STANZA $REPO --type=full backup"
 fi
-sudo -iu $PGUSER pgbackrest --stanza=$STANZA info
+sudo -iu $PGUSER pgbackrest --stanza=$STANZA $REPO info
 
 echo "--Simulate $ACTIVITY_TIME sec activity"
 sudo -iu $PGUSER $PGBIN/pgbench -h $PGUNIXSOCKET -T $ACTIVITY_TIME bench
 
 echo "--Take an incremental backup"
 if [ "$SCRIPT_PROFILE" = "local" ]; then
-    sudo -iu $PGUSER pgbackrest --stanza=$STANZA --type=incr backup
+    sudo -iu $PGUSER pgbackrest --stanza=$STANZA $REPO --type=incr backup
 else
-    sudo -iu $PGUSER ssh ${SSH_ARGS} ${PGBR_USER}@${PGBR_HOST} "pgbackrest --stanza=$STANZA --type=incr backup"
+    sudo -iu $PGUSER ssh ${SSH_ARGS} ${PGBR_USER}@${PGBR_HOST} "pgbackrest --stanza=$STANZA $REPO --type=incr backup"
 fi
-sudo -iu $PGUSER pgbackrest --stanza=$STANZA info
+sudo -iu $PGUSER pgbackrest --stanza=$STANZA $REPO info
 
 echo "--Simulate $ACTIVITY_TIME sec activity"
 sudo -iu $PGUSER $PGBIN/pgbench -h $PGUNIXSOCKET -T $ACTIVITY_TIME bench
 
 echo "--Take a full backup to test the purge action"
 if [ "$SCRIPT_PROFILE" = "local" ]; then
-    sudo -iu $PGUSER pgbackrest --stanza=$STANZA --type=full backup
+    sudo -iu $PGUSER pgbackrest --stanza=$STANZA $REPO --type=full backup
 else
-    sudo -iu $PGUSER ssh ${SSH_ARGS} ${PGBR_USER}@${PGBR_HOST} "pgbackrest --stanza=$STANZA --type=full backup"
+    sudo -iu $PGUSER ssh ${SSH_ARGS} ${PGBR_USER}@${PGBR_HOST} "pgbackrest --stanza=$STANZA $REPO --type=full backup"
 fi
-sudo -iu $PGUSER pgbackrest --stanza=$STANZA info
+sudo -iu $PGUSER pgbackrest --stanza=$STANZA $REPO info
 
 echo "--Simulate $ACTIVITY_TIME sec activity"
 sudo -iu $PGUSER $PGBIN/pgbench -h $PGUNIXSOCKET -T $ACTIVITY_TIME bench
@@ -112,7 +118,7 @@ sudo -iu $PGUSER $PGBIN/psql -h $PGUNIXSOCKET -d bench -c 'SELECT max(mtime) FRO
 
 echo "--Restore RP1 restore point and get latest pgbench history time"
 systemctl stop $PGSVC
-sudo -iu $PGUSER pgbackrest restore --stanza=$STANZA --delta --type=name --target=RP1 --target-action=promote
+sudo -iu $PGUSER pgbackrest restore --stanza=$STANZA $REPO --delta --type=name --target=RP1 --target-action=promote
 systemctl start $PGSVC
 systemctl status $PGSVC
 
@@ -127,15 +133,15 @@ sudo -iu $PGUSER $PGBIN/psql -h $PGUNIXSOCKET -d bench -c 'SELECT max(mtime) FRO
 echo "--Resync standby server(s)"
 echo "----Take incremental backup"
 if [ "$SCRIPT_PROFILE" = "local" ]; then
-    sudo -iu $PGUSER pgbackrest --stanza=$STANZA --type=incr backup
+    sudo -iu $PGUSER pgbackrest --stanza=$STANZA $REPO --type=incr backup
 else
-    sudo -iu $PGUSER ssh ${SSH_ARGS} ${PGBR_USER}@${PGBR_HOST} "pgbackrest --stanza=$STANZA --type=incr backup"
+    sudo -iu $PGUSER ssh ${SSH_ARGS} ${PGBR_USER}@${PGBR_HOST} "pgbackrest --stanza=$STANZA $REPO --type=incr backup"
 fi
 
 for i in "${PGBR_STANDBIES[@]}"; do
     echo "----Restore on standby server - $i"
     ssh ${SSH_ARGS} "$i" "systemctl stop $PGSVC"
-    ssh ${SSH_ARGS} "$i" "sudo -iu $PGUSER pgbackrest --stanza=$STANZA --reset-pg2-host --type=standby restore"
+    ssh ${SSH_ARGS} "$i" "sudo -iu $PGUSER pgbackrest --stanza=$STANZA $REPO --reset-pg2-host --type=standby restore"
     ssh ${SSH_ARGS} "$i" "systemctl start $PGSVC"
 done
 
@@ -149,5 +155,5 @@ sudo -iu $PGUSER $PGBIN/psql -h $PGUNIXSOCKET -d $PGDATABASE -x -c "SELECT * FRO
 
 echo "--Simulate $ACTIVITY_TIME sec activity to get archives on different time-lines"
 sudo -iu $PGUSER $PGBIN/pgbench -h $PGUNIXSOCKET -T $ACTIVITY_TIME bench
-sudo -iu $PGUSER pgbackrest --stanza=$STANZA info
+sudo -iu $PGUSER pgbackrest --stanza=$STANZA $REPO info
 echo "-------------------PROCESS END-------------------"

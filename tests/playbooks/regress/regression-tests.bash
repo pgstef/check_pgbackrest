@@ -97,48 +97,48 @@ fi
 
 # --service=retention --retention-full
 echo "--service=retention --retention-full"
-$PLUGIN_PATH/check_pgbackrest --prefix="sudo -u postgres" --stanza=$STANZA $REPO --service=retention --retention-full=1 --output=human
-$PLUGIN_PATH/check_pgbackrest --prefix="sudo -u postgres" --stanza=$STANZA $REPO --service=retention --retention-full=1 | cut -f1 -d"|" > $RESULTS_DIR/retention-full.out
+$PLUGIN_PATH/check_pgbackrest --prefix="sudo -u $PGUSER" --stanza=$STANZA $REPO --service=retention --retention-full=1 --output=human
+$PLUGIN_PATH/check_pgbackrest --prefix="sudo -u $PGUSER" --stanza=$STANZA $REPO --service=retention --retention-full=1 | cut -f1 -d"|" > $RESULTS_DIR/retention-full.out
 
 # --service=retention --retention-age
 echo "--service=retention --retention-age"
-$PLUGIN_PATH/check_pgbackrest --prefix="sudo -u postgres" --stanza=$STANZA $REPO --service=retention --retention-age=1h --output=human
-$PLUGIN_PATH/check_pgbackrest --prefix="sudo -u postgres" --stanza=$STANZA $REPO --service=retention --retention-age=1h | cut -f1 -d"|" > $RESULTS_DIR/retention-age.out
+$PLUGIN_PATH/check_pgbackrest --prefix="sudo -u $PGUSER" --stanza=$STANZA $REPO --service=retention --retention-age=1h --output=human
+$PLUGIN_PATH/check_pgbackrest --prefix="sudo -u $PGUSER" --stanza=$STANZA $REPO --service=retention --retention-age=1h | cut -f1 -d"|" > $RESULTS_DIR/retention-age.out
 
 # --service=retention --retention-age-to-full
 echo "--service=retention --retention-age-to-full"
-$PLUGIN_PATH/check_pgbackrest --prefix="sudo -u postgres" --stanza=$STANZA $REPO --service=retention --retention-age-to-full=1h --output=human
-$PLUGIN_PATH/check_pgbackrest --prefix="sudo -u postgres" --stanza=$STANZA $REPO --service=retention --retention-age-to-full=1h | cut -f1 -d"|" > $RESULTS_DIR/retention-age-to-full.out
+$PLUGIN_PATH/check_pgbackrest --prefix="sudo -u $PGUSER" --stanza=$STANZA $REPO --service=retention --retention-age-to-full=1h --output=human
+$PLUGIN_PATH/check_pgbackrest --prefix="sudo -u $PGUSER" --stanza=$STANZA $REPO --service=retention --retention-age-to-full=1h | cut -f1 -d"|" > $RESULTS_DIR/retention-age-to-full.out
 
 # --service=retention fail
 echo "--service=retention fail"
 sudo -iu $PGUSER $PGBIN/psql -h $PGUNIXSOCKET -d $PGDATABASE -c "SELECT pg_sleep(2);" > /dev/null 2>&1
-$PLUGIN_PATH/check_pgbackrest --prefix="sudo -u postgres" --stanza=$STANZA $REPO --service=retention --retention-full=2 --retention-age=1s --retention-age-to-full=1s --output=human
-$PLUGIN_PATH/check_pgbackrest --prefix="sudo -u postgres" --stanza=$STANZA $REPO --service=retention --retention-full=2 --retention-age=1s --retention-age-to-full=1s | cut -f1 -d"|" > $RESULTS_DIR/retention-fail.out
+$PLUGIN_PATH/check_pgbackrest --prefix="sudo -u $PGUSER" --stanza=$STANZA $REPO --service=retention --retention-full=2 --retention-age=1s --retention-age-to-full=1s --output=human
+$PLUGIN_PATH/check_pgbackrest --prefix="sudo -u $PGUSER" --stanza=$STANZA $REPO --service=retention --retention-full=2 --retention-age=1s --retention-age-to-full=1s | cut -f1 -d"|" > $RESULTS_DIR/retention-fail.out
 
 # --service=archives
 echo "--service=archives"
 sudo -iu $PGUSER $PGBIN/psql -h $PGUNIXSOCKET -d $PGDATABASE -c "SELECT pg_switch_xlog();" > /dev/null 2>&1
 sudo -iu $PGUSER $PGBIN/psql -h $PGUNIXSOCKET -d $PGDATABASE -c "SELECT pg_switch_wal();" > /dev/null 2>&1
 sudo -iu $PGUSER $PGBIN/psql -h $PGUNIXSOCKET -d $PGDATABASE -c "SELECT pg_sleep(1);" > /dev/null 2>&1
-$PLUGIN_PATH/check_pgbackrest --prefix="sudo -u postgres" --stanza=$STANZA $REPO --service=archives --output=human
-$PLUGIN_PATH/check_pgbackrest --prefix="sudo -u postgres" --stanza=$STANZA $REPO --service=archives | cut -f1 -d"-" > $RESULTS_DIR/archives-ok.out
+$PLUGIN_PATH/check_pgbackrest --prefix="sudo -u $PGUSER" --stanza=$STANZA $REPO --service=archives --output=human
+$PLUGIN_PATH/check_pgbackrest --prefix="sudo -u $PGUSER" --stanza=$STANZA $REPO --service=archives | cut -f1 -d"-" > $RESULTS_DIR/archives-ok.out
 
 # --service=archives --ignore-archived-before
 echo "--service=archives --ignore-archived-before"
 sudo -iu $PGUSER $PGBIN/psql -h $PGUNIXSOCKET -d $PGDATABASE -c "SELECT pg_sleep(2);" > /dev/null 2>&1
-$PLUGIN_PATH/check_pgbackrest --prefix="sudo -u postgres" --stanza=$STANZA $REPO --service=archives --ignore-archived-before=1s > $RESULTS_DIR/archives-ignore-before.out
+$PLUGIN_PATH/check_pgbackrest --prefix="sudo -u $PGUSER" --stanza=$STANZA $REPO --service=archives --ignore-archived-before=1s > $RESULTS_DIR/archives-ignore-before.out
 
 # --service=archives --ignore-archived-after
 echo "--service=archives --ignore-archived-after"
-$PLUGIN_PATH/check_pgbackrest --prefix="sudo -u postgres" --stanza=$STANZA $REPO --service=archives --ignore-archived-after=1h > $RESULTS_DIR/archives-ignore-after.out
+$PLUGIN_PATH/check_pgbackrest --prefix="sudo -u $PGUSER" --stanza=$STANZA $REPO --service=archives --ignore-archived-after=1h > $RESULTS_DIR/archives-ignore-after.out
 
 # --service=archives --latest-archive-age-alert
 echo "--service=archives --latest-archive-age-alert"
 sudo -iu $PGUSER $PGBIN/psql -h $PGUNIXSOCKET -d $PGDATABASE -c "SELECT pg_sleep(2);" > /dev/null 2>&1
-$PLUGIN_PATH/check_pgbackrest --prefix="sudo -u postgres" --stanza=$STANZA $REPO --service=archives --latest-archive-age-alert=1h | cut -f1 -d"-" > $RESULTS_DIR/archives-age-alert-ok.out
-$PLUGIN_PATH/check_pgbackrest --prefix="sudo -u postgres" --stanza=$STANZA $REPO --service=archives --latest-archive-age-alert=1s --output=human
-$PLUGIN_PATH/check_pgbackrest --prefix="sudo -u postgres" --stanza=$STANZA $REPO --service=archives --latest-archive-age-alert=1s | cut -f1 -d"-" > $RESULTS_DIR/archives-age-alert-ko.out
+$PLUGIN_PATH/check_pgbackrest --prefix="sudo -u $PGUSER" --stanza=$STANZA $REPO --service=archives --latest-archive-age-alert=1h | cut -f1 -d"-" > $RESULTS_DIR/archives-age-alert-ok.out
+$PLUGIN_PATH/check_pgbackrest --prefix="sudo -u $PGUSER" --stanza=$STANZA $REPO --service=archives --latest-archive-age-alert=1s --output=human
+$PLUGIN_PATH/check_pgbackrest --prefix="sudo -u $PGUSER" --stanza=$STANZA $REPO --service=archives --latest-archive-age-alert=1s | cut -f1 -d"-" > $RESULTS_DIR/archives-age-alert-ko.out
 
 ## Results
 diff -abB expected/ $RESULTS_DIR/ > /tmp/regression.diffs

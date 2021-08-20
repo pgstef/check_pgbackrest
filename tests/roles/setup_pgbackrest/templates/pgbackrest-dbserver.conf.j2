@@ -2,6 +2,10 @@
 {% if repository_server|length > 0 %}
 repo1-host={{ hostvars[pgbackrest_repo_host].private_ip }}
 repo1-host-user={{ pgbackrest_user }}
+{% if pgbackrest_repo_type == "multi" %}
+repo2-host={{ hostvars[pgbackrest_repo_host].private_ip }}
+repo2-host-user={{ pgbackrest_user }}
+{% endif %}
 {% elif pgbackrest_repo_type == "s3" %}
 repo1-type=s3
 repo1-path=/repo1

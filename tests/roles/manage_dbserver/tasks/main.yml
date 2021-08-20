@@ -1,4 +1,0 @@
----
-# Entry point of the manage_dbserver role
-- name: Include the manage_dbserver.yml
-  include_tasks: manage_dbserver.yml

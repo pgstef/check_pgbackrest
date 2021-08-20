@@ -57,6 +57,7 @@
         PGBR_HOST: "{{ cluster_vars['pgbackrest_repo_host'] | default(None) }}"
         PGBR_STANDBIES: "{{ cluster_vars['pgbackrest_standbies'] | default(None) }}"
         PGBR_USER: "{{ cluster_vars['pgbackrest_user'] }}"
+        PGBR_REPO_TYPE: "{{ cluster_vars['pgbackrest_repo_type'] }}"
         SCRIPT_PROFILE: ""
       vars:
         cluster_vars: "{{ ansible_local['profile']['global'] }}"

@@ -19,6 +19,10 @@ Vagrant.configure(2) do |config|
     config.ssh.insert_key = false
     # mount check_pgbackrest path for development testing
     config.vm.synced_folder "..", "/check_pgbackrest"
+    # mount edb-ansible local git clone
+    if File.directory?(File.expand_path("../../edb-ansible"))
+        config.vm.synced_folder "../../edb-ansible", "/edb-ansible"
+    end
 
     config.vm.provision "shell", inline: <<-SHELL
         #-----------------------------------------------------------------------------------------------------------------------
