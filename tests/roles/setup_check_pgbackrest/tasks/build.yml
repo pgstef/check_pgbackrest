@@ -21,7 +21,7 @@
   git:
     repo: "https://github.com/pgstef/check_pgbackrest"
     dest: "{{ check_pgbackrest_src_dir }}"
-    version: "master"
+    version: "main"
     depth: 1
     accept_hostkey: yes
   when: not dev_file.stat.exists | bool

@@ -4,7 +4,7 @@ name: main
 on:
   push:
     branches:
-      - master
+      - main
   workflow_dispatch:
 
 jobs:
@@ -23,10 +23,12 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+        with:
+          path: check_pgbackrest
       - uses: shogo82148/actions-setup-perl@v1
 
       - name: Initial step
-        run: sh run.sh -i
+        run: cd ${HOME?} && sh ${GITHUB_WORKSPACE?}/check_pgbackrest/tests/run.sh -i
 
       - name: Run CI script
         env:
@@ -39,7 +41,7 @@ jobs:
           DBVERSION: ${{ matrix.DBVERSION }}
           DOCKERI: ${{ matrix.DOCKERI }}
           EXTRA_VARS: ${{ matrix.EXTRA_VARS }}
-        run: sh ci.sh
+        run: cd ${HOME?} && sh ${GITHUB_WORKSPACE?}/check_pgbackrest/tests/ci.sh
 
   use-case-2:
     runs-on: ubuntu-latest
@@ -56,10 +58,12 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+        with:
+          path: check_pgbackrest
       - uses: shogo82148/actions-setup-perl@v1
 
       - name: Initial step
-        run: sh run.sh -i
+        run: cd ${HOME?} && sh ${GITHUB_WORKSPACE?}/check_pgbackrest/tests/run.sh -i
 
       - name: Run CI script
         env:
@@ -72,4 +76,4 @@ jobs:
           DBVERSION: ${{ matrix.DBVERSION }}
           DOCKERI: ${{ matrix.DOCKERI }}
           EXTRA_VARS: ${{ matrix.EXTRA_VARS }}
-        run: sh ci.sh
+        run: cd ${HOME?} && sh ${GITHUB_WORKSPACE?}/check_pgbackrest/tests/ci.sh
