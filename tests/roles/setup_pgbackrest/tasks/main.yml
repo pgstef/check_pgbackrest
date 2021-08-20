@@ -1,0 +1,96 @@
+---
+- name: Create a list of primary and standby instances using pgbackrest
+  set_fact:
+    pgbackrest_servers: "{{
+      pgbackrest_servers | default([]) | union([ item ]) 
+    }}"
+  when: "hostvars[item].pgbackrest == true"
+  loop:
+    "{{ groups['primary'] | list | union (groups['standby'] | default([]) | list) }}"
+  loop_control:
+    label: >-
+      {{ item }}
+
+- name: Create a list of standby instances using pgbackrest
+  set_fact:
+    pgbackrest_standbies: "{{
+      pgbackrest_standbies | default([]) | union([ item ]) 
+    }}"
+  when: "hostvars[item].pgbackrest == true"
+  loop:
+    "{{ groups['standby'] | default([]) | list }}"
+  loop_control:
+    label: >-
+      {{ item }}
+
+- name: Identify repository server
+  set_fact:
+    repository_server: "{{ groups['pgbackrest_repo_host']| default([]) | list }}"
+
+- set_fact:
+    postgres_user: "{{ pg_owner }}"
+  when: inventory_hostname in pgbackrest_servers
+
+- set_fact:
+    pgbackrest_user: "{{ pgbackrest_user }}"
+    pgbackrest_repo_retention_full: "{{ pgbackrest_repo_retention_full }}"
+    pgbackrest_repo_type: "{{ pgbackrest_repo_type }}"
+
+- name: Ensure repository type is valid
+  assert:
+    msg: "Unsupported repository type: '{{ pgbackrest_repo_type }}'"
+    that:
+      - pgbackrest_repo_type in _available_repo_types
+  vars:
+    _available_repo_types:
+      - 'azure'
+      - 'multi'
+      - 'posix'
+      - 's3'
+
+- name: Build pgbackrest from sources
+  include_tasks: build.yml
+  vars:
+    pgbackrest_src_dir: /opt/pgbackrest/src
+    pgbackrest_build_dir: /opt/pgbackrest/build
+    pgbackrest_build_prefix: /usr
+  when: pgbackrest_build | bool
+
+- name: Install pgbackrest package
+  package:
+    name:
+      - pgbackrest
+    state: latest
+  when: not pgbackrest_build | bool
+
+- shell: pgbackrest version | awk '{print $2}'
+  register: version
+
+- name: pgbackrest installed version
+  debug: var=version.stdout
+
+- name: Ensure the pgbackrest installed version match {{ pgbackrest_excpected_release }}
+  assert:
+    that:
+      - "'{{ pgbackrest_excpected_release }}' in version.stdout"
+
+- include_tasks: server.yml
+  when: inventory_hostname in repository_server
+
+- include_tasks: ssh_setup.yml
+
+- include_tasks: client.yml
+  when: inventory_hostname in pgbackrest_servers
+
+- name: Configure archive_command
+  include_role:
+    name: edb_devops.edb_postgres.manage_dbserver
+  vars:
+    pg_postgres_conf_params:
+      - name: archive_command
+        value: "pgbackrest --stanza={{ cluster_name }} --log-level-console=debug archive-push %p"
+  when: inventory_hostname in pgbackrest_servers
+
+- include_tasks: stanza-create.yml
+- include_tasks: backup.yml
+- include_tasks: info.yml

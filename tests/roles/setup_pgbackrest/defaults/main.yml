@@ -1,0 +1,37 @@
+---
+pgbackrest_build: false
+pgbackrest_configuration_file: "/etc/pgbackrest.conf"
+pgbackrest_excpected_release: ""
+pgbackrest_force_backup: false
+pgbackrest_git_url: "https://github.com/pgbackrest/pgbackrest.git"
+pgbackrest_git_branch: "master"
+pgbackrest_repo_path: "/var/lib/pgbackrest"
+pgbackrest_repo_retention_full: 1
+pgbackrest_repo_type: "posix"
+pgbackrest_repo_s3_endpoint: "{{ cluster_name }}-minio"
+pgbackrest_repo_azure_host: "{{ cluster_name }}-azurite"
+pgbackrest_repo_cipher_pass: "it3BF2WqbFCNbY4KkSbvUsRybHyJkvcmQYAOB46x3qXfrc0EKqGGClsh42Q1g91O"
+pgbackrest_user: "pgbackrest"
+
+build_packages:
+  common:
+    - git
+    - make
+    - gcc
+  Debian:
+    - libpq-dev
+    - libssl-dev
+    - libxml2-dev
+    - pkg-config
+    - liblz4-dev
+    - libzstd-dev
+    - libbz2-dev
+    - libz-dev
+    - libyaml-dev
+  RedHat:
+    - openssl-devel
+    - libxml2-devel
+    - lz4-devel
+    - libzstd-devel
+    - bzip2-devel
+    - libyaml-devel

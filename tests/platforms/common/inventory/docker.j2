@@ -1,0 +1,9 @@
+---
+all:
+  hosts:
+{% for h in instances %}
+{% if platform == 'docker' %}
+    {{ h.name }}:
+      ansible_connection: docker
+{% endif%}
+{% endfor %}

@@ -1,0 +1,109 @@
+---
+- name: Create docker network
+  docker_network:
+    name: "network_{{ cluster_name }}"
+    state: present
+
+- name: Ensure that the cluster's MinIO data directory exists with default bucket
+  file:
+    path: "{{ cluster_dir }}/{{ item }}"
+    state: directory
+  loop:
+    - "minio"
+    - "minio/data"
+    - "minio/data/bucket"
+  when: >
+    cluster_vars.pgbackrest_repo_type is defined and
+    (cluster_vars.pgbackrest_repo_type == "s3" or cluster_vars.pgbackrest_repo_type == "multi")
+
+- name: Provision MinIO docker container
+  community.docker.docker_container:
+    image: minio/minio
+    name: "{{ cluster_name }}-minio"
+    state: started
+    restart_policy: always
+    command: server /data --address :443
+    exposed_ports: "443"
+    published_ports: "443"
+    networks: 
+      - name: "network_{{ cluster_name }}"
+    volumes:
+      - "{{ cluster_dir }}/minio/data:/data:z"
+      - "{{ cluster_dir }}/certs/{{ cluster_name }}.crt:/root/.minio/certs/public.crt:z"
+      - "{{ cluster_dir }}/certs/{{ cluster_name }}.key:/root/.minio/certs/private.key:z"
+    networks_cli_compatible: yes
+    network_mode: default
+    container_default_behavior: compatibility
+    env:
+      MINIO_ACCESS_KEY: "accessKey"
+      MINIO_SECRET_KEY: "superSECRETkey"
+  when: >
+    cluster_vars.pgbackrest_repo_type is defined and
+    (cluster_vars.pgbackrest_repo_type == "s3" or cluster_vars.pgbackrest_repo_type == "multi")
+
+- name: Ensure that the cluster's Azurite data directory exists
+  file:
+    path: "{{ cluster_dir }}/{{ item }}"
+    state: directory
+  loop:
+    - "azurite"
+    - "azurite/data"
+  when: >
+    cluster_vars.pgbackrest_repo_type is defined and
+    (cluster_vars.pgbackrest_repo_type == "azure" or cluster_vars.pgbackrest_repo_type == "multi")
+
+- name: Provision Azurite docker container
+  community.docker.docker_container:
+    image: mcr.microsoft.com/azure-storage/azurite
+    name: "{{ cluster_name }}-azurite"
+    state: started
+    restart_policy: always
+    command: azurite-blob --blobPort 443 --blobHost 0.0.0.0 --cert=/root/public.crt --key=/root/private.key -l /workspace -d /workspace/debug.log
+    exposed_ports: "443"
+    published_ports: "443"
+    networks: 
+      - name: "network_{{ cluster_name }}"
+    volumes:
+      - "{{ cluster_dir }}/azurite/data:/workspace:z"
+      - "{{ cluster_dir }}/certs/{{ cluster_name }}.crt:/root/public.crt:ro"
+      - "{{ cluster_dir }}/certs/{{ cluster_name }}.key:/root/private.key:ro"
+    networks_cli_compatible: yes
+    network_mode: default
+    container_default_behavior: compatibility
+    env:
+      AZURITE_ACCOUNTS: "pgbackrest:aF49wnZP"
+  register: azure_docker_container_register
+  when: >
+    cluster_vars.pgbackrest_repo_type is defined and
+    (cluster_vars.pgbackrest_repo_type == "azure" or cluster_vars.pgbackrest_repo_type == "multi")
+
+- name: Azure Blob Storage - create container
+  command: "python3 {{ playbook_dir }}/azure/blob-create-container.py -c container"
+  vars:
+    dc: "{{ azure_docker_container_register.container }}"
+    nw: "{{ dc.NetworkSettings }}"
+    nw_name: "network_{{ cluster_name }}"
+  environment:
+    AZURE_STORAGE_CONNECTION_STRING: "DefaultEndpointsProtocol=https;AccountName=pgbackrest;AccountKey=aF49wnZP;BlobEndpoint=https://{{nw.Networks[nw_name].IPAddress}}/pgbackrest;"
+  when: >
+    cluster_vars.pgbackrest_repo_type is defined and
+    (cluster_vars.pgbackrest_repo_type == "azure" or cluster_vars.pgbackrest_repo_type == "multi")
+
+- name: Provision Icinga2 docker container
+  community.docker.docker_container:
+    image: jordan/icinga2
+    name: "{{ cluster_name }}-icinga2"
+    state: started
+    restart_policy: "no"
+    published_ports:
+      - "80:80"
+      - "443:443"
+      - "5665:5665"
+    networks: 
+      - name: "network_{{ cluster_name }}"
+    networks_cli_compatible: yes
+    network_mode: default
+    container_default_behavior: compatibility
+    env:
+      ICINGA2_FEATURE_DIRECTOR_PASS: "anyPassWord"
+  when: cluster_vars.deploy_icinga2 is defined and cluster_vars.deploy_icinga2 | bool

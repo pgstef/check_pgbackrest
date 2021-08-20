@@ -24,6 +24,11 @@ list.
 
 Name of the stanza to check.
 
+=item B<--repo> REPOSITORY
+
+Repository index to operate on. The C<--repo> argument is mandatory when 
+multiple repositories are defined.
+
 =item B<-O>, B<--output> OUTPUT_FORMAT
 
 The output format. Supported outputs are: C<human>, C<json> and C<nagios> (default).

@@ -1,0 +1,75 @@
+---
+name: main
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+jobs:
+  use-case-1:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - DOCKERI: centos:7
+            DBTYPE: PG
+            DBVERSION: 13
+            CLNAME: c7pg
+            EXTRA_VARS: "pgbackrest_excpected_release=2.34 check_pgbackrest_build=true"
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: shogo82148/actions-setup-perl@v1
+
+      - name: Initial step
+        run: sh run.sh -i
+
+      - name: Run CI script
+        env:
+          EDB_REPO_USERNAME: ${{ secrets.EDB_REPO_USERNAME }}
+          EDB_REPO_PASSWORD: ${{ secrets.EDB_REPO_PASSWORD }}
+          ARCH: use-case-1
+          CLPATH: /home/runner/clusters
+          CLNAME: ${{ matrix.CLNAME }}
+          DBTYPE: ${{ matrix.DBTYPE }}
+          DBVERSION: ${{ matrix.DBVERSION }}
+          DOCKERI: ${{ matrix.DOCKERI }}
+          EXTRA_VARS: ${{ matrix.EXTRA_VARS }}
+        run: sh ci.sh
+
+  use-case-2:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - DOCKERI: ubuntu:20.04
+            DBTYPE: PG
+            DBVERSION: 13
+            CLNAME: u20pg
+            EXTRA_VARS: "pgbackrest_excpected_release=2.34 check_pgbackrest_build=true"
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: shogo82148/actions-setup-perl@v1
+
+      - name: Initial step
+        run: sh run.sh -i
+
+      - name: Run CI script
+        env:
+          EDB_REPO_USERNAME: ${{ secrets.EDB_REPO_USERNAME }}
+          EDB_REPO_PASSWORD: ${{ secrets.EDB_REPO_PASSWORD }}
+          ARCH: use-case-2
+          CLPATH: /home/runner/clusters
+          CLNAME: ${{ matrix.CLNAME }}
+          DBTYPE: ${{ matrix.DBTYPE }}
+          DBVERSION: ${{ matrix.DBVERSION }}
+          DOCKERI: ${{ matrix.DOCKERI }}
+          EXTRA_VARS: ${{ matrix.EXTRA_VARS }}
+        run: sh ci.sh

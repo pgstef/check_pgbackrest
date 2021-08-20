@@ -1,0 +1,30 @@
+---
+- name: Deprovision MinIO docker container
+  docker_container:
+    name: "{{ cluster_name }}-minio"
+    state: absent
+    container_default_behavior: compatibility
+  when: >
+    cluster_vars.pgbackrest_repo_type is defined and
+    (cluster_vars.pgbackrest_repo_type == "s3" or cluster_vars.pgbackrest_repo_type == "multi")
+
+- name: Deprovision Azurite docker container
+  docker_container:
+    name: "{{ cluster_name }}-azurite"
+    state: absent
+    container_default_behavior: compatibility
+  when: >
+    cluster_vars.pgbackrest_repo_type is defined and
+    (cluster_vars.pgbackrest_repo_type == "azure" or cluster_vars.pgbackrest_repo_type == "multi")
+
+- name: Deprovision Icinga2 docker container
+  docker_container:
+    name: "{{ cluster_name }}-icinga2"
+    state: absent
+    container_default_behavior: compatibility
+  when: cluster_vars.deploy_icinga2 is defined and cluster_vars.deploy_icinga2 | bool
+
+- name: Delete docker network
+  docker_network:
+    name: "network_{{ cluster_name }}"
+    state: absent

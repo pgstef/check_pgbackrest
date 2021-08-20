@@ -1,0 +1,15 @@
+---
+check_pgbackrest_build: false
+deploy_icinga2: false
+reschedule_check_icinga2: false
+
+build_packages:
+  common:
+    - git
+  Debian:
+    - libjson-perl
+    - libdata-dump-perl
+  RedHat:
+    - nagios-plugins
+    - perl-JSON
+    - perl-Data-Dumper

@@ -1,0 +1,76 @@
+---
+- assert:
+    msg: "Unsupported docker image_name: '{{ docker.image_name }}'"
+    that: docker.image_name in _available_images
+  vars:
+    _available_images:
+      - 'debian:9'
+      - 'debian:10'
+      - 'ubuntu:18.04'
+      - 'ubuntu:20.04'
+      - 'centos:7'
+      - 'centos:8'
+
+- name: Build systemd image {{ docker.image_name }}
+  docker_image:
+    name: "systemd/{{ _image_base }}:{{ _image_tag }}"
+    state: present
+    source: build
+    build:
+      path: docker/systemd
+      dockerfile: "{{ _image_base }}.Dockerfile"
+      pull: no
+      args:
+        BASE_IMAGE: "{{ _image_base }}:{{ _image_tag }}"
+  vars:
+    _parts: "{{ docker.image_name.split(':') }}"
+    _image_base: "{{ _parts[0] }}"
+    _image_tag: "{{ _parts[1] }}"
+
+- name: Create docker network
+  docker_network:
+    name: "network_{{ cluster_name }}"
+    state: present
+
+- name: Ensure that the cluster's default shared directory exist
+  file:
+    path: "{{ cluster_dir }}/shared"
+    state: directory
+    owner: root
+    group: root
+    mode: '1777'
+  become: yes
+
+- name: Provision docker containers
+  include_tasks: docker_container.yml
+  loop: "{{ instances | flatten(levels=1) }}"
+  loop_control:
+    label: >-
+      {{ item.name }}
+
+- name: Set instance variables
+  set_fact:
+    instance_vars: "{{
+      instance_vars | default([]) | union([
+        { 
+          'name': item.item.name,
+          'vars': item.item
+        }
+      ]) 
+    }}"
+  with_items:
+    "{{ docker_container_results }}"
+  loop_control:
+    label: >-
+      {{ item.item.name }}
+
+- name: Create private ip list
+  set_fact:
+    private_ip_list: "{{
+      private_ip_list | default({}) | combine({ item.name: item.vars.private_ip })
+    }}"
+  when: item.vars.private_ip is defined
+  loop: "{{ instance_vars|flatten(levels=1) }}"
+  loop_control:
+    label: >-
+      {{ item.name }}

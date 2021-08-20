@@ -1,0 +1,25 @@
+---
+- name: Provision cluster
+  hosts: localhost
+  tasks:
+    - name: Require cluster directory to be specified
+      assert:
+        msg: "No cluster directory specified"
+        that:
+          - cluster_dir is defined and cluster_dir != ''
+      
+    - import_tasks: load-config.yml
+
+    - assert:
+        msg: "Unsupported platform: '{{ platform }}'"
+        that:
+          - platform is defined
+          - platform in _available_platforms
+      vars:
+        _available_platforms:
+          - 'docker'
+
+    - include_tasks: "common/provision.yml"
+    - include_tasks: "{{ platform }}/provision.yml"
+    - include_tasks: "docker/provision-repository-types.yml"
+    - include_tasks: common/inventory/write.yml

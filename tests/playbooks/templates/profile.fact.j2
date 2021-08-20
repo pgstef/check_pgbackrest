@@ -1,0 +1,18 @@
+[global]
+cluster_name={{ cluster_name }}
+pg_bin_path={{ pg_bin_path }}
+pg_data={{ pg_data }}
+pg_database={{ pg_database }}
+pg_owner={{ pg_owner }}
+pg_port={{ pg_port }}
+pg_service={{ pg_service }}
+pg_unix_socket={{ pg_unix_socket_directories[0] }}
+pg_version={{ pg_version }}
+pgbackrest_user={{ pgbackrest_user }}
+pgbackrest_repo_type={{ pgbackrest_repo_type }}
+{% if repository_server|length > 0 %}
+pgbackrest_repo_host={{ repository_server }}
+{% endif %}
+{% if pgbackrest_standbies|length > 0 %}
+pgbackrest_standbies={{ pgbackrest_standbies }}
+{% endif %}

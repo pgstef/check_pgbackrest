@@ -1,0 +1,15 @@
+---
+- name: Deprovision docker containers
+  docker_container:
+    name: "{{ item.name }}"
+    state: absent
+    container_default_behavior: compatibility
+  loop: "{{ instances | flatten(levels=1) }}"
+  loop_control:
+    label: >-
+      {{ item.name }}
+
+- name: Delete docker network
+  docker_network:
+    name: "network_{{ cluster_name }}"
+    state: absent

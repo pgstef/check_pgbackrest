@@ -1,0 +1,28 @@
+---
+- name: Initialise the stanza on repository server
+  command: >
+    pgbackrest stanza-create --stanza="{{ cluster_name }}"
+  become_user: "{{ pgbackrest_user }}"
+  become: yes
+  when: inventory_hostname in repository_server
+
+- name: check cluster configuration on repository server
+  command: >
+    pgbackrest check --stanza="{{ cluster_name }}"
+  become_user: "{{ pgbackrest_user }}"
+  become: yes
+  when: inventory_hostname in repository_server
+
+- name: Initialise the stanza on primary server
+  command: >
+    pgbackrest stanza-create --stanza="{{ cluster_name }}"
+  become_user: "{{ postgres_user }}"
+  become: yes
+  when: (not repository_server|length > 0) and (inventory_hostname in pgbackrest_servers) and ('primary' in group_names)
+
+- name: check cluster configuration on primary server
+  command: >
+    pgbackrest check --stanza="{{ cluster_name }}"
+  become_user: "{{ postgres_user }}"
+  become: yes
+  when: (not repository_server|length > 0) and (inventory_hostname in pgbackrest_servers) and ('primary' in group_names)  

@@ -1,0 +1,67 @@
+---
+- name: Install build requirements
+  package:
+    name: >
+      {{ query('flattened', package_lists) }}
+    state: latest
+  vars:
+    package_lists:
+      - "{{ build_packages['common'] }}"
+      - "{{ build_packages[ansible_os_family] }}"
+
+- name: Install PG devel package
+  package:
+    name: "postgresql-devel"
+    state: latest
+  when: pg_type == 'PG' and ansible_os_family == 'RedHat'
+
+- name: Install EPAS devel package
+  package:
+    name: "edb-as{{ pg_version }}-server-devel"
+    state: latest
+  when: pg_type == 'EPAS' and ansible_os_family == 'RedHat'
+
+- name: Ensure src directory exists
+  file: state=directory path="{{ pgbackrest_src_dir }}"
+
+- name: Fetch pgbackrest from {{ pgbackrest_git_url }}, {{ pgbackrest_git_branch }}
+  git:
+    repo: "{{ pgbackrest_git_url }}"
+    dest: "{{ pgbackrest_src_dir }}"
+    version: "{{ pgbackrest_git_branch }}"
+    depth: 1
+    accept_hostkey: yes
+
+- name: Fetch currently checked-out branch in {{ pgbackrest_src_dir }}
+  shell: git branch | sed -n 's/^\* //p'
+  args:
+    chdir: "{{ pgbackrest_src_dir }}"
+  register: git_branch
+
+- name: pgbackrest source branch to build
+  debug: var=git_branch.stdout
+
+- name: Remove old build directory
+  file: state=absent path="{{ pgbackrest_build_dir }}" force=yes
+
+- name: Ensure build directory exists
+  file: state=directory path="{{ pgbackrest_build_dir }}"
+
+- set_fact:
+    cppflags: "CPPFLAGS='-I /usr/edb/as{{ pg_version }}/include' LDFLAGS='-L/usr/edb/as{{ pg_version }}/lib'"
+  when: pg_type == 'EPAS'
+
+- name: Configure pgbackrest
+  shell: "{{ pgbackrest_src_dir }}/src/configure {{ cppflags | default('', true) }} --prefix={{ pgbackrest_build_prefix }} --bindir={{ pgbackrest_build_prefix }}/bin"
+  args:
+    chdir: "{{ pgbackrest_build_dir }}"
+
+- name: Build pgbackrest
+  shell: "make"
+  args:
+    chdir: "{{ pgbackrest_build_dir }}"
+
+- name: Install pgbackrest
+  shell: "make install"
+  args:
+    chdir: "{{ pgbackrest_build_dir }}"
