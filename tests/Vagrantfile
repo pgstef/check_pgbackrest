@@ -39,6 +39,8 @@ Vagrant.configure(2) do |config|
         echo 'Install Ansible' && date
         sudo apt-get install -y python3-pip python3-venv
         python3 -m pip install --user pipx
+        python3 -m pipx ensurepath
+        python3 -m pipx install ansible-core
     SHELL
 
     # Execute CI script in Vagrant environment

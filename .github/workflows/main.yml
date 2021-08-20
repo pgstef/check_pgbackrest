@@ -42,6 +42,7 @@ jobs:
           DOCKERI: ${{ matrix.DOCKERI }}
           EXTRA_VARS: ${{ matrix.EXTRA_VARS }}
           RUN_ARGS:
+          ACTIVITY: true
         run: cd ${HOME?} && sh ${GITHUB_WORKSPACE?}/check_pgbackrest/tests/ci.sh
 
   use-case-2:
@@ -78,4 +79,5 @@ jobs:
           DOCKERI: ${{ matrix.DOCKERI }}
           EXTRA_VARS: ${{ matrix.EXTRA_VARS }}
           RUN_ARGS:
+          ACTIVITY: true
         run: cd ${HOME?} && sh ${GITHUB_WORKSPACE?}/check_pgbackrest/tests/ci.sh

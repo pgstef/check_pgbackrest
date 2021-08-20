@@ -8,7 +8,6 @@ if [ "$ACTIVITY" == "only" ]; then
     export ACTIVITY=true
     export RUN_ARGS="-A"
 fi
-echo "ACTIVITY = '$ACTIVITY'"
 echo "ARCH = '$ARCH'"
 echo "PGBR_BUILD = '$PGBR_BUILD'"
 echo "PGBR_REPO_TYPE = '$PGBR_REPO_TYPE'"

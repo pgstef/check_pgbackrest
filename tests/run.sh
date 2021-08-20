@@ -64,9 +64,7 @@ if $INIT_ONLY; then
     ansible --version
     echo '--------------------'
     echo 'Install ansible dependencies'
-    pipx ensurepath
-    pipx install ansible-base
-    pipx inject ansible-base docker-py
+    pipx inject ansible-core docker-py
     ansible-galaxy collection install community.docker
     ansible-galaxy collection install edb_devops.edb_postgres
     ansible-galaxy collection install t_systems_mms.icinga_director
