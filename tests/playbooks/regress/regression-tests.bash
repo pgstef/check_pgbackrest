@@ -61,6 +61,11 @@ if [ ! -z "$PGBR_HOST" ]; then
     PGBR_HOST=(`$PYTHON -c "print(' '.join($PGBR_HOST))"`)
 fi
 echo "PGBR_REPO_TYPE = $PGBR_REPO_TYPE"
+REPO=""
+if [ "$PGBR_REPO_TYPE" = "multi" ]; then
+    REPO="--repo=1"
+    echo "...multi repo support, defaulting to repo1"
+fi
 
 if [ ! -d $RESULTS_DIR ]; then
      mkdir $RESULTS_DIR
@@ -71,13 +76,13 @@ fi
 if ! $SKIP_INIT; then
     echo "...Initiate backups (full, diff, incr)"
     if [ "$SCRIPT_PROFILE" = "local" ]; then
-        sudo -iu $PGUSER pgbackrest --stanza=$STANZA backup --type=full --repo1-retention-full=1
-        sudo -iu $PGUSER pgbackrest --stanza=$STANZA backup --type=diff
-        sudo -iu $PGUSER pgbackrest --stanza=$STANZA backup --type=incr
+        sudo -iu $PGUSER pgbackrest --stanza=$STANZA $REPO backup --type=full --repo1-retention-full=1
+        sudo -iu $PGUSER pgbackrest --stanza=$STANZA $REPO backup --type=diff
+        sudo -iu $PGUSER pgbackrest --stanza=$STANZA $REPO backup --type=incr
     else
-        sudo -iu $PGUSER ssh ${SSH_ARGS} ${PGBR_USER}@${PGBR_HOST} "pgbackrest --stanza=$STANZA backup --type=full --repo1-retention-full=1"
-        sudo -iu $PGUSER ssh ${SSH_ARGS} ${PGBR_USER}@${PGBR_HOST} "pgbackrest --stanza=$STANZA backup --type=diff"
-        sudo -iu $PGUSER ssh ${SSH_ARGS} ${PGBR_USER}@${PGBR_HOST} "pgbackrest --stanza=$STANZA backup --type=incr"
+        sudo -iu $PGUSER ssh ${SSH_ARGS} ${PGBR_USER}@${PGBR_HOST} "pgbackrest --stanza=$STANZA $REPO backup --type=full --repo1-retention-full=1"
+        sudo -iu $PGUSER ssh ${SSH_ARGS} ${PGBR_USER}@${PGBR_HOST} "pgbackrest --stanza=$STANZA $REPO backup --type=diff"
+        sudo -iu $PGUSER ssh ${SSH_ARGS} ${PGBR_USER}@${PGBR_HOST} "pgbackrest --stanza=$STANZA $REPO backup --type=incr"
     fi
 fi
 
@@ -89,11 +94,6 @@ $PLUGIN_PATH/check_pgbackrest --list | tee $RESULTS_DIR/list.out
 echo "--version"
 $PLUGIN_PATH/check_pgbackrest --version
 
-REPO=""
-if [ "$PGBR_REPO_TYPE" = "multi" ]; then
-    REPO="--repo=1"
-    echo "...multi repo support, defaulting to repo1"
-fi
 
 # --service=retention --retention-full
 echo "--service=retention --retention-full"
@@ -118,6 +118,7 @@ $PLUGIN_PATH/check_pgbackrest --prefix="sudo -u $PGUSER" --stanza=$STANZA $REPO 
 
 # --service=archives
 echo "--service=archives"
+sudo -iu $PGUSER $PGBIN/psql -h $PGUNIXSOCKET -d $PGDATABASE -c "SELECT pg_create_restore_point('generate WAL');" > /dev/null 2>&1
 sudo -iu $PGUSER $PGBIN/psql -h $PGUNIXSOCKET -d $PGDATABASE -c "SELECT pg_switch_xlog();" > /dev/null 2>&1
 sudo -iu $PGUSER $PGBIN/psql -h $PGUNIXSOCKET -d $PGDATABASE -c "SELECT pg_switch_wal();" > /dev/null 2>&1
 sudo -iu $PGUSER $PGBIN/psql -h $PGUNIXSOCKET -d $PGDATABASE -c "SELECT pg_sleep(1);" > /dev/null 2>&1
@@ -139,6 +140,10 @@ sudo -iu $PGUSER $PGBIN/psql -h $PGUNIXSOCKET -d $PGDATABASE -c "SELECT pg_sleep
 $PLUGIN_PATH/check_pgbackrest --prefix="sudo -u $PGUSER" --stanza=$STANZA $REPO --service=archives --latest-archive-age-alert=1h | cut -f1 -d"-" > $RESULTS_DIR/archives-age-alert-ok.out
 $PLUGIN_PATH/check_pgbackrest --prefix="sudo -u $PGUSER" --stanza=$STANZA $REPO --service=archives --latest-archive-age-alert=1s --output=human
 $PLUGIN_PATH/check_pgbackrest --prefix="sudo -u $PGUSER" --stanza=$STANZA $REPO --service=archives --latest-archive-age-alert=1s | cut -f1 -d"-" > $RESULTS_DIR/archives-age-alert-ko.out
+
+# --service=archives --max-archives-check-number
+echo "--service=archives --max-archives-check-number"
+$PLUGIN_PATH/check_pgbackrest --prefix="sudo -u $PGUSER" --stanza=$STANZA $REPO --service=archives --max-archives-check-number=1 > $RESULTS_DIR/archives-max-archives-check-ko.out 2>&1
 
 ## Results
 diff -abB expected/ $RESULTS_DIR/ > /tmp/regression.diffs

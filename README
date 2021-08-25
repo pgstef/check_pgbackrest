@@ -110,6 +110,12 @@ DESCRIPTION
         Use the "--extended-check" argument to force a full check of the
         found archives and raise warnings in case of inconsistencies.
 
+        When WAL archives on different timelines are found, .history files
+        are parsed to find the switch point and define the boundary WAL.
+
+        Use the "--max-archives-check-number" to prevent infinite WAL
+        archives check when boundary WAL can't be defined properly.
+
     check_pgb_version
         Check if this script is running a given version.
 
