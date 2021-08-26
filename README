@@ -18,6 +18,10 @@ DESCRIPTION
     -S, --stanza NAME
         Name of the stanza to check.
 
+    --repo REPOSITORY
+        Repository index to operate on. The "--repo" argument is mandatory
+        when multiple repositories are defined.
+
     -O, --output OUTPUT_FORMAT
         The output format. Supported outputs are: "human", "json", "nagios"
         (default) and "prtg".

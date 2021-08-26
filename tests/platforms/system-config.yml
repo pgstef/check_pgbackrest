@@ -1,0 +1,15 @@
+---
+- name: Apply default system configuration
+  hosts: all
+  tasks:
+    - name: Require cluster directory to be specified
+      assert:
+        msg: "No cluster directory specified"
+        that:
+          - cluster_dir is defined and cluster_dir != ''
+      run_once: true
+
+    - import_tasks: load-config.yml
+    
+    - include_role:
+        name: 'sys'

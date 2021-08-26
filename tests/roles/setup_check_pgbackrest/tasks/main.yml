@@ -1,0 +1,63 @@
+---
+- name: Create a list of primary and standby instances using pgbackrest
+  set_fact:
+    pgbackrest_servers: "{{
+      pgbackrest_servers | default([]) | union([ item ]) 
+    }}"
+  when: "hostvars[item].pgbackrest == true"
+  loop:
+    "{{ groups['primary'] | list | union (groups['standby'] | default([]) | list) }}"
+  loop_control:
+    label: >-
+      {{ item }}
+
+- name: Identify repository server
+  set_fact:
+    repository_server: "{{ groups['pgbackrest_repo_host']| default([]) | list }}"
+
+- name: Install check_pgbackrest package
+  package:
+    name:
+      - check-pgbackrest
+    state: latest
+  when: >
+    (inventory_hostname in repository_server or inventory_hostname in pgbackrest_servers)
+    and not check_pgbackrest_build | bool and ansible_os_family == 'Debian'
+
+- name: Install check_pgbackrest package
+  package:
+    name:
+      - nagios-plugins-pgbackrest
+    state: latest
+  when: >
+    (inventory_hostname in repository_server or inventory_hostname in pgbackrest_servers)
+    and not check_pgbackrest_build | bool and ansible_os_family == 'RedHat'
+
+- name: Create a symbolic link
+  file:
+    src: /usr/lib64/nagios/plugins/check_pgbackrest
+    dest: /usr/bin/check_pgbackrest
+    state: link
+  when: >
+    (inventory_hostname in repository_server or inventory_hostname in pgbackrest_servers)
+    and not check_pgbackrest_build | bool and ansible_os_family == 'RedHat'
+
+- name: Build check_pgbackrest from sources
+  include_tasks: build.yml
+  vars:
+    check_pgbackrest_src_dir: /opt/check_pgbackrest/src
+  when: >
+    (inventory_hostname in repository_server or inventory_hostname in pgbackrest_servers)
+    and check_pgbackrest_build | bool
+
+- shell: check_pgbackrest --version | cut -f1 -d"," | awk '{print $3}'
+  register: version
+  when: inventory_hostname in repository_server or inventory_hostname in pgbackrest_servers
+
+- name: check_pgbackrest installed version
+  debug: var=version.stdout
+  when: inventory_hostname in repository_server or inventory_hostname in pgbackrest_servers
+
+- name: Deploy Icinga2 check services
+  include_tasks: icinga2-config.yml
+  when: deploy_icinga2 | bool

@@ -63,7 +63,7 @@ my $output_fmt;
 
 $VERSION = '2.1dev';
 $PROGRAM = 'check_pgbackrest';
-$PGBR_SUPPORT = '2.32';
+$PGBR_SUPPORT = '2.33';
 $INIT_TIME = time();
 
 # Available services and descriptions.
@@ -98,6 +98,11 @@ list.
 =item B<-S>, B<--stanza> NAME
 
 Name of the stanza to check.
+
+=item B<--repo> REPOSITORY
+
+Repository index to operate on. The C<--repo> argument is mandatory when 
+multiple repositories are defined.
 
 =item B<-O>, B<--output> OUTPUT_FORMAT
 
@@ -471,7 +476,11 @@ sub pgbackrest_info {
 
     if(defined $args{'config'}) {
         $infocmd .= " --config=".$args{'config'};
-    }    
+    }
+
+    if(defined $args{'repo'}) {
+        $infocmd .= " --repo=".$args{'repo'};
+    }
 
     if(defined $args{'prefix'}) {
         $infocmd = $args{'prefix'}." $infocmd";
@@ -511,6 +520,10 @@ sub pgbackrest_get {
         $getcmd .= " --config=".$args{'config'};
     }
 
+    if(defined $args{'repo'}) {
+        $getcmd .= " --repo=".$args{'repo'};
+    }
+
     if(defined $args{'prefix'}) {
         $getcmd = $args{'prefix'}." $getcmd";
     }
@@ -545,7 +558,11 @@ sub pgbackrest_ls {
 
     if(defined $args{'config'}) {
         $lscmd .= " --config=".$args{'config'};
-    }    
+    }
+
+    if(defined $args{'repo'}) {
+        $lscmd .= " --repo=".$args{'repo'};
+    }
 
     if(defined $args{'prefix'}) {
         $lscmd = $args{'prefix'}." $lscmd";
@@ -620,6 +637,12 @@ sub check_retention {
     die("Can't get pgBackRest info.\n") unless (defined $backups_info);
 
     if($backups_info->{'status'}->{'code'} == 0) {
+        # Require the --repo option if multiple repositories are defined
+        pod2usage(
+            -message => 'FATAL: multiple repositories found, you must provide --repo.',
+            -exitval => 127
+        ) if scalar(@{$backups_info->{'repo'}}) > 1 and not defined $args{'repo'};
+
         my @full_bck;
         my @diff_bck;
         my @incr_bck;
@@ -673,6 +696,13 @@ sub check_retention {
         }
     }else{
         push @crit_msg, $backups_info->{'status'}->{'message'};
+
+        # Add detailed messages in case of multiple repositories
+        if(scalar(@{$backups_info->{'repo'}}) > 1) {
+            foreach my $line (@{$backups_info->{'repo'}}) {
+                push @crit_msg, "repo".$line->{'key'}." - ".$line->{'status'}->{'message'};
+            }
+        }
     }
 
     return critical($me, \@crit_msg, \@longmsg) if @crit_msg;
@@ -778,7 +808,7 @@ sub get_archived_wal_list {
             push @filelist, [substr($filename, 0, 24), $filename, $list->{$key}->{'time'}, $list->{$key}->{'size'}, "$archives_dir/$key"];
 
         }elsif($filename =~ /$history_re_full/ && $start_tl ne $end_tl){
-            # Look for the last history file if needed
+            # Look for the last history file if needed
             dprint("history file to open : $archives_dir/$key\n");
 
             my $history_content = pgbackrest_get(\%args, $archives_dir, $filename);
@@ -851,6 +881,12 @@ sub check_wal_archives {
     dprint("!> pgBackRest info took ".(time() - $start_time)."s\n");
 
     if($backups_info->{'status'}->{'code'} == 0) {
+        # Require the --repo option if multiple repositories are defined
+        pod2usage(
+            -message => 'FATAL: multiple repositories found, you must provide --repo.',
+            -exitval => 127
+        ) if scalar(@{$backups_info->{'repo'}}) > 1 and not defined $args{'repo'};
+
         my $archives_dir = "archive/".$args{'stanza'}."/".$backups_info->{'archive'}[0]->{'id'}; # Relative path inside repository
         dprint("archives_dir: $archives_dir\n");
         my $min_wal = $backups_info->{'archive'}[0]->{'min'};
@@ -1089,6 +1125,7 @@ GetOptions(
         'list-archives|L!',
         'output|O=s',
         'prefix|P=s',
+        'repo=s',
         'retention-age=s',
         'retention-age-to-full=s',
         'retention-full=i',

@@ -1,0 +1,28 @@
+---
+- name: Run ssh-keygen
+  command: ssh-keygen -P "" -f "{{ ssh_key_file }}"
+  args:
+    chdir: "{{ cluster_dir }}"
+    creates: "{{ ssh_key_file }}"
+
+- name: Ensure that the cluster's certs directory exist
+  file:
+    path: "{{ cluster_dir }}/certs"
+    state: directory
+
+- name: Generate an OpenSSL private key - 2048 bits
+  community.crypto.openssl_privatekey:
+    path: "{{ cluster_dir }}/certs/{{ cluster_name }}.key"
+    size: 2048
+
+- name: Generate an OpenSSL Certificate Signing Request
+  community.crypto.openssl_csr:
+    path: "{{ cluster_dir }}/certs/{{ cluster_name }}.csr"
+    privatekey_path: "{{ cluster_dir }}/certs/{{ cluster_name }}.key"
+
+- name: Generate a Self Signed OpenSSL certificate
+  community.crypto.x509_certificate:
+    provider: selfsigned
+    path: "{{ cluster_dir }}/certs/{{ cluster_name }}.crt"
+    privatekey_path: "{{ cluster_dir }}/certs/{{ cluster_name }}.key"
+    csr_path: "{{ cluster_dir }}/certs/{{ cluster_name }}.csr"

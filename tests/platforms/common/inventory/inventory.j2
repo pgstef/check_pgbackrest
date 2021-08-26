@@ -1,0 +1,19 @@
+---
+all:
+  children:
+{% for g in instances_groups %}
+    {{ g }}:
+      hosts:
+{% for h in instances %}
+{% if h.ansible_group == g %}
+        {{ h.name }}:
+{% endif%}
+{% endfor %}
+{% endfor %}
+{% if cluster_vars.deploy_icinga2 is defined and cluster_vars.deploy_icinga2 | bool %}
+    icinga2:
+      hosts:
+        {{ cluster_name }}-icinga2:
+          ansible_connection: docker
+          ansible_python_interpreter: auto
+{% endif%}

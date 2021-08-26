@@ -1,0 +1,48 @@
+---
+- set_fact:
+    icinga_api_url: "https://localhost:5665/v1"
+    icinga_api_user: "icinga2-director"
+    icinga_api_pass: "anyPassWord"
+  when: "'icinga2' in group_names"
+
+- name: Reschedule-check on all check_pgbackrest services
+  uri:
+    url: "{{ icinga_api_url }}/actions/reschedule-check"
+    validate_certs: no
+    user: "{{ icinga_api_user }}"
+    password: "{{ icinga_api_pass }}"
+    method: POST
+    headers:
+        Accept: "application/json"
+    body_format: json
+    body: '{ "type": "Service", "filter": "match(pattern,service.name)", "filter_vars": { "pattern": "pgbackrest*" } }'
+  when: >
+    'icinga2' in group_names and reschedule_check_icinga2
+
+- name: Get services status
+  uri:
+    url: "{{ icinga_api_url }}/objects/services"
+    validate_certs: no
+    user: "{{ icinga_api_user }}"
+    password: "{{ icinga_api_pass }}"
+    method: GET
+    return_content: yes
+    headers:
+        Content-Type: "application/json"
+    body_format: json
+    body: '{ "filter": "match(pattern,service.name)", "filter_vars": { "pattern": "pgbackrest*" } }'
+  register: icinga2_services_status
+  when: "'icinga2' in group_names"
+
+- name: Verify services status
+  debug: 
+    msg:
+      - "Check {{ item.attrs.host_name }} - {{ item.attrs.name }}"
+      - "    State: {{ item.attrs.state }}"
+      - "    Last check time: {{ '%Y-%m-%d %H:%M:%S %Z' | strftime(item.attrs.last_check) }}"
+      - "    Output: {{ item.attrs.last_check_result.output }}"
+  failed_when: "item.attrs.state != 0"
+  loop: "{{ icinga2_services_status.json.results | sort(attribute='name') }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: "'icinga2' in group_names"

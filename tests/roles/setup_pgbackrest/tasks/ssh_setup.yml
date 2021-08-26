@@ -1,0 +1,118 @@
+---
+- name: Ensure the localhost keys directory exists
+  file:
+    state: directory
+    path: "{{ cluster_dir }}/keys"
+  delegate_to: localhost
+
+- name: Generate {{ pgbackrest_user }} SSH keys
+  community.crypto.openssh_keypair:
+    path: "{{ cluster_dir }}/keys/id_pgbackrest"
+  delegate_to: localhost
+  when: inventory_hostname in repository_server
+
+- name: Generate db hosts SSH keys
+  community.crypto.openssh_keypair:
+    path: "{{ cluster_dir }}/keys/id_postgres"
+  delegate_to: localhost
+  when: inventory_hostname in pgbackrest_servers
+
+- name: Authorise SSH connection from {{ pgbackrest_user }}
+  authorized_key:
+    user: "{{ postgres_user }}"
+    key: "{{ lookup('file', cluster_dir+'/keys/id_pgbackrest.pub') }}"
+  when: inventory_hostname in pgbackrest_servers and repository_server|length > 0
+
+- name: Authorise SSH connection between db hosts
+  authorized_key:
+    user: "{{ postgres_user }}"
+    key: "{{ lookup('file', cluster_dir+'/keys/id_postgres.pub') }}"
+  when: inventory_hostname in pgbackrest_servers
+
+- name: Authorise SSH connection to {{ pgbackrest_user }}
+  authorized_key:
+    user: "{{ pgbackrest_user }}"
+    key: "{{ lookup('file', cluster_dir+'/keys/id_postgres.pub') }}"
+  when: inventory_hostname in repository_server
+
+- name: Ensure that .ssh exists on db hosts
+  file:
+    path: "~{{ postgres_user }}/.ssh"
+    state: directory
+    mode: '0700'
+  become_user: "{{ postgres_user }}"
+  become: yes
+  when: inventory_hostname in pgbackrest_servers
+
+- name: Install keypair on db hosts
+  copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    mode: "{{ item.mode }}"
+  with_items:
+    - src: "{{ cluster_dir }}/keys/id_postgres"
+      dest: "~{{ postgres_user }}/.ssh/id_rsa"
+      mode: '0600'
+    - src: "{{ cluster_dir }}/keys/id_postgres.pub"
+      dest: "~{{ postgres_user }}/.ssh/id_rsa.pub"
+      mode: '0640'
+  become_user: "{{ postgres_user }}"
+  become: yes
+  when: inventory_hostname in pgbackrest_servers
+
+- name: Ensure that .ssh exists on repo host
+  file:
+    path: "~{{ pgbackrest_user }}/.ssh"
+    state: directory
+    mode: '0700'
+  become_user: "{{ pgbackrest_user }}"
+  become: yes
+  when: inventory_hostname in repository_server
+
+- name: Install keypair on repo host
+  copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    mode: "{{ item.mode }}"
+  with_items:
+    - src: "{{ cluster_dir }}/keys/id_pgbackrest"
+      dest: "~{{ pgbackrest_user }}/.ssh/id_rsa"
+      mode: '0600'
+    - src: "{{ cluster_dir }}/keys/id_pgbackrest.pub"
+      dest: "~{{ pgbackrest_user }}/.ssh/id_rsa.pub"
+      mode: '0640'
+  become_user: "{{ pgbackrest_user }}"
+  become: yes
+  when: inventory_hostname in repository_server
+
+- name: Test SSH connection from repo host
+  shell: "/usr/bin/ssh {{ssh_args}} {{ user }}@{{ host }} uname -a"
+  vars:
+    host: "{{ hostvars[item].private_ip }}"
+    user: "{{ hostvars[item].pg_owner }}"
+    ssh_args: "-o ConnectTimeout=10 -o BatchMode=yes -o StrictHostKeyChecking=no"
+  loop: "{{ pgbackrest_servers }}"
+  become_user: "{{ pgbackrest_user }}"
+  become: yes
+  when: inventory_hostname in repository_server
+
+- name: Test SSH connection to repo host
+  shell: "/usr/bin/ssh {{ssh_args}} {{ user }}@{{ host }} uname -a"
+  vars:
+    host: "{{ hostvars[pgbackrest_repo_host].private_ip }}"
+    user: "{{ pgbackrest_user }}"
+    ssh_args: "-o ConnectTimeout=10 -o BatchMode=yes -o StrictHostKeyChecking=no"
+  become_user: "{{ postgres_user }}"
+  become: yes
+  when: inventory_hostname in pgbackrest_servers and repository_server|length > 0
+
+- name: Test SSH connection to db hosts
+  shell: "/usr/bin/ssh {{ssh_args}} {{ user }}@{{ host }} uname -a"
+  vars:
+    host: "{{ hostvars[item].private_ip }}"
+    user: "{{ hostvars[item].pg_owner }}"
+    ssh_args: "-o ConnectTimeout=10 -o BatchMode=yes -o StrictHostKeyChecking=no"
+  loop: "{{ pgbackrest_servers }}"
+  become_user: "{{ postgres_user }}"
+  become: yes
+  when: inventory_hostname in pgbackrest_servers

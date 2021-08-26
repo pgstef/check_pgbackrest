@@ -1,0 +1,18 @@
+---
+- name: Info command on repository server
+  command: >
+    pgbackrest info --stanza="{{ cluster_name }}"
+  become_user: "{{ pgbackrest_user }}"
+  become: yes
+  when: inventory_hostname in repository_server
+  register: info
+
+- name: Info command on database server
+  command: >
+    pgbackrest info --stanza="{{ cluster_name }}"
+  become_user: "{{ postgres_user }}"
+  become: yes
+  when: inventory_hostname in pgbackrest_servers
+  register: info
+
+- debug: var=info.stdout_lines

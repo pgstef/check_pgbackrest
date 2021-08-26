@@ -1,0 +1,27 @@
+---
+- name: Build configuration file {{ pgbackrest_configuration_file }}
+  template:
+    src: "pgbackrest-dbserver.conf.j2"
+    dest: "{{ pgbackrest_configuration_file }}"
+    owner: "{{ postgres_user }}"
+    group: "{{ postgres_user }}"
+    mode: 0640
+  become: true
+  register: pgbackrest_config
+
+- name: Record if a new backup is needed
+  set_fact:
+    pgbackrest_force_backup: true
+  when: pgbackrest_config.changed
+
+- name: Ensure pgbackrest directories exist with the right ownership and permissions
+  file:
+    name: "{{ item }}"
+    state: directory
+    owner: "{{ postgres_user }}"
+    group: "{{ postgres_user }}"
+    mode: 0770
+  loop:
+    - /var/log/pgbackrest
+    - /var/spool/pgbackrest
+  become: yes
