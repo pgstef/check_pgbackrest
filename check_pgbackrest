@@ -299,7 +299,6 @@ sub prtg_output ($$;$$) {
     $text .= $service . " CRITICAL" if $rc == 2;
     $text .= $service . " UNKNOWN"  if $rc == 3;
     $text .= " - ". join( ', ', @msg )  if @msg;
-    $text .= "</text>";
 
     # Generate service status result
     my $results = "<result><channel>status</channel><value>$rc</value>";
@@ -314,13 +313,20 @@ sub prtg_output ($$;$$) {
 
     foreach my $msg_to_split (@longmsg) {
         my ($key, $value) = split(/=/, $msg_to_split);
-        chop($value) if ( grep /^$key$/, @TimeKeys );
-        $results .= "<result><channel>$key</channel><value>$value</value>";
-        $results .= "<Unit>TimeSeconds</Unit>" if ( grep /^$key$/, @TimeKeys );
-        $results .= "<Unit>Count</Unit>" if ( grep /^$key$/, @CountKeys );
-        $results .= "</result>"
+        if ($key eq "latest") { # is string, goes into <Text> element
+            $text .= " - latest: ". $value;
+        } elsif ($key eq "latest_full") { # is string, goes into <Text> element
+            $text .= " - latest full: ". $value;
+        } else {
+            chop($value) if ( grep /^$key$/, @TimeKeys );
+            $results .= "<result><channel>$key</channel><value>$value</value>";
+            $results .= "<Unit>TimeSeconds</Unit>" if ( grep /^$key$/, @TimeKeys );
+            $results .= "<Unit>Count</Unit>" if ( grep /^$key$/, @CountKeys );
+            $results .= "</result>"
+        }
     }
 
+    $text .= "</text>";
     print "<prtg>" . $results . $text. "</prtg>";
     return $rc;
 }
