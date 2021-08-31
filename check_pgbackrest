@@ -755,6 +755,12 @@ are ignored.
 Use the C<--extended-check> argument to force a full check of the found 
 archives and raise warnings in case of inconsistencies.
 
+When WAL archives on different timelines are found, .history files are parsed to
+find the switch point and define the boundary WAL.
+
+Use the C<--max-archives-check-number> to prevent infinite WAL archives check
+when boundary WAL can't be defined properly.
+
 =cut
 
 sub get_archived_wal_list {
@@ -838,6 +844,8 @@ sub generate_needed_wal_archives_list {
     my $timeline = hex($start_tl);
     my $wal = hex(substr($min_wal, 8, 8));
     my $seg = hex(substr($min_wal, 16, 8));
+    my $args_ref = shift;
+    my %args = %{ $args_ref };
 
     # Generate list
     my $curr = $min_wal;
@@ -860,6 +868,13 @@ sub generate_needed_wal_archives_list {
         }else{
             push @needed_wal_archives_list, $curr;
         }
+
+        # Break the loop in case max-archives-check-number is defined
+        # Infinite loop might happen when there's a timeline switch but boundary WAL isn't detected correctly
+        die("max-archives-check-number limit exceeded.\n") if (
+            defined $args{'max-archives-check-number'} and
+            scalar(@needed_wal_archives_list) > $args{'max-archives-check-number'}
+        );
     }
 
     my @unique_needed_wal_archives_list = do { my %seen; grep { !$seen{$_}++ } @needed_wal_archives_list };
@@ -916,7 +931,7 @@ sub check_wal_archives {
         # Sort by filename
         my @filelist_sorted = sort { $a->[0] cmp $b->[0] }
             grep{ (defined($_->[0]) and defined($_->[1]))
-                or die "Can't read WAL files."
+                or die "Can't read WAL files.\n"
             } @filelist;
 
         my @filelist_simplified;
@@ -964,7 +979,7 @@ sub check_wal_archives {
         $seg_per_wal-- if $dbver <= 92;
         dprint("Get all the needed WAL archives...\n");
         $start_time = time();
-        my @needed_wal_archives_list=&generate_needed_wal_archives_list($min_wal, $max_wal, \@branch_wals, $seg_per_wal);
+        my @needed_wal_archives_list=&generate_needed_wal_archives_list($min_wal, $max_wal, \@branch_wals, $seg_per_wal, \%args);
         dprint("!> Get all the needed WAL archives took ".(time() - $start_time)."s\n");
 
         # Get the latest backup info
@@ -1015,7 +1030,7 @@ sub check_wal_archives {
                 next;
             }
 
-            foreach my $needed_wal (&generate_needed_wal_archives_list($line->{'archive'}->{'start'}, $line->{'archive'}->{'stop'}, \@branch_wals, $seg_per_wal)) {
+            foreach my $needed_wal (&generate_needed_wal_archives_list($line->{'archive'}->{'start'}, $line->{'archive'}->{'stop'}, \@branch_wals, $seg_per_wal, \%args)) {
                 unless ( $filelist_simplified_hash{ $needed_wal } ) {
                     push @crit_missing_files => $needed_wal;
                 }
@@ -1123,6 +1138,7 @@ GetOptions(
         'latest-archive-age-alert=s',
         'list|l!',
         'list-archives|L!',
+        'max-archives-check-number=s',
         'output|O=s',
         'prefix|P=s',
         'repo=s',
@@ -1162,11 +1178,11 @@ pod2usage(
 ) if ( $args{'retention-age'} or $args{'retention-age-to-full'} or $args{'retention-full'} )
     and $args{'service'} ne 'retention';
 
-# Check "archives" specific args --extended-check, --ignore-archived-after, --ignore-archived-before and --latest-archive-age-alert
+# Check "archives" specific args --extended-check, --ignore-archived-after, --ignore-archived-before, --latest-archive-age-alert and --max-archives-check-number
 pod2usage(
-    -message => 'FATAL: "extended-check", "ignore-archived-after", "ignore-archived-before" and "latest-archive-age-alert" are only allowed with "archives" service.',
+    -message => 'FATAL: "extended-check", "ignore-archived-after", "ignore-archived-before", "latest-archive-age-alert" and "max-archives-check-number" are only allowed with "archives" service.',
     -exitval => 127
-) if ( $args{'extended-check'} or $args{'ignore-archived-after'} or $args{'ignore-archived-before'} or $args{'latest-archive-age-alert'} )
+) if ( $args{'extended-check'} or $args{'ignore-archived-after'} or $args{'ignore-archived-before'} or $args{'latest-archive-age-alert'} or $args{'max-archives-check-number'} )
     and $args{'service'} ne 'archives';
 
 # Check "archives" specific arg --list-archives
