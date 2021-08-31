@@ -52,7 +52,7 @@ BEGIN {
     die "@missingDBs module(s) not loaded.\n" if @missingDBs;
 }
 
-# Messing with PATH so pod2usage always finds this script
+# Messing with PATH so pod2usage always finds this script
 my @path = split /$Config{'path_sep'}/ => $ENV{'PATH'};
 push @path => $FindBin::Bin;
 $ENV{'PATH'} = join $Config{'path_sep'} => @path;
@@ -288,39 +288,39 @@ sub prtg_output ($$;$$) {
     my $ret;
     my @msg;
     my @longmsg;
-    my $results;
-    my $text;
 
-    $text = "<text>";
+    @msg      = @{ $_[0] } if defined $_[0];
+    @longmsg  = @{ $_[1] } if defined $_[1];
+
+    # Generate TEXT message
+    my $text = "<text>";
     $text .= $service . " OK"       if $rc == 0;
     $text .= $service . " WARNING"  if $rc == 1;
     $text .= $service . " CRITICAL" if $rc == 2;
     $text .= $service . " UNKNOWN"  if $rc == 3;
+    $text .= " - ". join( ', ', @msg )  if @msg;
+    $text .= "</text>";
 
-    $results = "<result><channel>status</channel><value>$rc</value>";
+    # Generate service status result
+    my $results = "<result><channel>status</channel><value>$rc</value>";
     $results .= "<LimitMaxWarning>0</LimitMaxWarning>";
     $results .= "<LimitMaxError>1</LimitMaxError>";
     $results .= "<LimitMode>1</LimitMode></result>";
     
-    @msg      = @{ $_[0] } if defined $_[0];
-    @longmsg  = @{ $_[1] } if defined $_[1];
+    # Define which @longmsg keys will use TimeSeconds or Count units.
+    # Otherwise, the default unit is Custom.
+    my @TimeKeys = ("latest_age", "latest_full_age", "latest_archive_age");
+    my @CountKeys = ("full", "diff", "incr", "num_archives", "num_missing_archives");
+
     foreach my $msg_to_split (@longmsg) {
         my ($key, $value) = split(/=/, $msg_to_split);
-        if ($key eq "latest") { # is string, goes into <Text> element
-            $text .= "\nLatest backup: ". $value;
-        } elsif ($key =~ m/^latest.*age$/) {
-            chop($value);
-            $results .= "<result><channel>$key</channel><value>$value</value>";
-            $results .= "<Unit>TimeSeconds</Unit></result>"
-        } elsif ($key eq "latest_full") { # is string, goes into <Text> element
-            $text .= "\nLatest full backup: ". $value;
-        } else {
-            $results .= "<result><channel>$key</channel><value>$value</value>";
-            $results .= "<Unit>Count</Unit></result>"
-        }
+        chop($value) if ( grep /^$key$/, @TimeKeys );
+        $results .= "<result><channel>$key</channel><value>$value</value>";
+        $results .= "<Unit>TimeSeconds</Unit>" if ( grep /^$key$/, @TimeKeys );
+        $results .= "<Unit>Count</Unit>" if ( grep /^$key$/, @CountKeys );
+        $results .= "</result>"
     }
 
-    $text .= "</text>";
     print "<prtg>" . $results . $text. "</prtg>";
     return $rc;
 }
