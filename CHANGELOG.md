@@ -10,6 +10,7 @@ Changelog
   - Add a new `max-archives-check-number` option for the archives service.
   This is intended to use in case of timeline switch and when boundary WAL can't
   be detected properly, in order to prevent infinite WAL archives check.
+  - Add `prtg` output format (Hans-Peter Zahno).
   - ...
 
   
