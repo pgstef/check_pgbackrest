@@ -98,7 +98,9 @@ $PLUGIN_PATH/check_pgbackrest --version
 # --service=retention --retention-full
 echo "--service=retention --retention-full"
 $PLUGIN_PATH/check_pgbackrest --prefix="sudo -u $PGUSER" --stanza=$STANZA $REPO --service=retention --retention-full=1 --output=human
+$PLUGIN_PATH/check_pgbackrest --prefix="sudo -u $PGUSER" --stanza=$STANZA $REPO --service=retention --retention-full=1 --output=prtg
 $PLUGIN_PATH/check_pgbackrest --prefix="sudo -u $PGUSER" --stanza=$STANZA $REPO --service=retention --retention-full=1 | cut -f1 -d"|" > $RESULTS_DIR/retention-full.out
+echo
 
 # --service=retention --retention-age
 echo "--service=retention --retention-age"
@@ -123,7 +125,9 @@ sudo -iu $PGUSER $PGBIN/psql -h $PGUNIXSOCKET -d $PGDATABASE -c "SELECT pg_switc
 sudo -iu $PGUSER $PGBIN/psql -h $PGUNIXSOCKET -d $PGDATABASE -c "SELECT pg_switch_wal();" > /dev/null 2>&1
 sudo -iu $PGUSER $PGBIN/psql -h $PGUNIXSOCKET -d $PGDATABASE -c "SELECT pg_sleep(1);" > /dev/null 2>&1
 $PLUGIN_PATH/check_pgbackrest --prefix="sudo -u $PGUSER" --stanza=$STANZA $REPO --service=archives --output=human
+$PLUGIN_PATH/check_pgbackrest --prefix="sudo -u $PGUSER" --stanza=$STANZA $REPO --service=archives --output=prtg
 $PLUGIN_PATH/check_pgbackrest --prefix="sudo -u $PGUSER" --stanza=$STANZA $REPO --service=archives | cut -f1 -d"-" > $RESULTS_DIR/archives-ok.out
+echo
 
 # --service=archives --ignore-archived-before
 echo "--service=archives --ignore-archived-before"

@@ -52,7 +52,7 @@ BEGIN {
     die "@missingDBs module(s) not loaded.\n" if @missingDBs;
 }
 
-# Messing with PATH so pod2usage always finds this script
+# Messing with PATH so pod2usage always finds this script
 my @path = split /$Config{'path_sep'}/ => $ENV{'PATH'};
 push @path => $FindBin::Bin;
 $ENV{'PATH'} = join $Config{'path_sep'} => @path;
@@ -106,7 +106,8 @@ multiple repositories are defined.
 
 =item B<-O>, B<--output> OUTPUT_FORMAT
 
-The output format. Supported outputs are: C<human>, C<json> and C<nagios> (default).
+The output format. Supported outputs are: C<human>, C<json>, C<nagios> (default)
+and C<prtg>.
 
 =item B<-C>, B<--command> FILE
 
@@ -281,6 +282,57 @@ sub nagios_output ($$;$$) {
     return $rc;
 }
 
+sub prtg_output ($$;$$) {
+    my $rc  = shift;
+    my $service = shift;
+    my $ret;
+    my @msg;
+    my @longmsg;
+
+    @msg      = @{ $_[0] } if defined $_[0];
+    @longmsg  = @{ $_[1] } if defined $_[1];
+
+    # Generate TEXT message
+    my $text = "<text>";
+    $text .= $service . " OK"       if $rc == 0;
+    $text .= $service . " WARNING"  if $rc == 1;
+    $text .= $service . " CRITICAL" if $rc == 2;
+    $text .= $service . " UNKNOWN"  if $rc == 3;
+    $text .= " - ". join( ', ', @msg )  if @msg;
+
+    # Generate service status result
+    my $results = "<result><channel>status</channel><value>$rc</value>";
+    $results .= "<LimitMaxWarning>0</LimitMaxWarning>";
+    $results .= "<LimitMaxError>1</LimitMaxError>";
+    $results .= "<LimitMode>1</LimitMode></result>";
+    
+    # Define which @longmsg keys will use TimeSeconds or Count units.
+    # Otherwise, it will be added to TEXT message.
+    my @TimeKeys = ("latest_age", "latest_full_age", "latest_archive_age");
+    my @CountKeys = ("full", "diff", "incr", "num_archives", "num_missing_archives");
+    my @textmsg;
+
+    foreach my $msg_to_split (@longmsg) {
+        my ($key, $value) = split(/=/, $msg_to_split);
+
+        if ( grep /^$key$/, @TimeKeys ) {
+            chop($value);
+            $results .= "<result><channel>$key</channel><value>$value</value><Unit>TimeSeconds</Unit></result>";
+
+        } elsif ( grep /^$key$/, @CountKeys ) {
+            $results .= "<result><channel>$key</channel><value>$value</value><Unit>Count</Unit></result>";
+
+        } else {
+            push @textmsg, $msg_to_split;
+        }
+    }
+
+    $text .= " - ". join( ', ', @textmsg )  if @textmsg;
+    $text .= "</text>";
+    print "<prtg>" . $results . $text. "</prtg>";
+    return $rc;
+}
+
 # Handle time intervals
 #-----------------------------------------------------------------------------
 
@@ -335,7 +387,7 @@ sub to_interval_output_dependent($) {
 
     return $val if $val =~ /^-?inf/i;
     $val = int($val);
-    return to_interval($val) unless $args{'output'} =~ /^nagios$/;
+    return to_interval($val) unless $args{'output'} =~ /^(nagios|prtg)$/;
     return "${val}s";
 }
 
@@ -1158,6 +1210,7 @@ for ( $args{'output'} ) {
        if ( /^human$/         ) { $output_fmt = \&human_output  }
     elsif ( /^json$/        ) { $output_fmt = \&json_output }
     elsif ( /^nagios$/        ) { $output_fmt = \&nagios_output }
+    elsif ( /^prtg$/        ) { $output_fmt = \&prtg_output }
     else {
         pod2usage(
             -message => "FATAL: unrecognized output format \"$_\" (see \"--output\")",
