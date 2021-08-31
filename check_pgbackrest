@@ -307,25 +307,27 @@ sub prtg_output ($$;$$) {
     $results .= "<LimitMode>1</LimitMode></result>";
     
     # Define which @longmsg keys will use TimeSeconds or Count units.
-    # Otherwise, the default unit is Custom.
+    # Otherwise, it will be added to TEXT message.
     my @TimeKeys = ("latest_age", "latest_full_age", "latest_archive_age");
     my @CountKeys = ("full", "diff", "incr", "num_archives", "num_missing_archives");
+    my @textmsg;
 
     foreach my $msg_to_split (@longmsg) {
         my ($key, $value) = split(/=/, $msg_to_split);
-        if ($key eq "latest") { # is string, goes into <Text> element
-            $text .= " - latest: ". $value;
-        } elsif ($key eq "latest_full") { # is string, goes into <Text> element
-            $text .= " - latest full: ". $value;
+
+        if ( grep /^$key$/, @TimeKeys ) {
+            chop($value);
+            $results .= "<result><channel>$key</channel><value>$value</value><Unit>TimeSeconds</Unit></result>";
+
+        } elsif ( grep /^$key$/, @CountKeys ) {
+            $results .= "<result><channel>$key</channel><value>$value</value><Unit>Count</Unit></result>";
+
         } else {
-            chop($value) if ( grep /^$key$/, @TimeKeys );
-            $results .= "<result><channel>$key</channel><value>$value</value>";
-            $results .= "<Unit>TimeSeconds</Unit>" if ( grep /^$key$/, @TimeKeys );
-            $results .= "<Unit>Count</Unit>" if ( grep /^$key$/, @CountKeys );
-            $results .= "</result>"
+            push @textmsg, $msg_to_split;
         }
     }
 
+    $text .= " - ". join( ', ', @textmsg )  if @textmsg;
     $text .= "</text>";
     print "<prtg>" . $results . $text. "</prtg>";
     return $rc;
