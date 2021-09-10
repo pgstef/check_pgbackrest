@@ -101,8 +101,10 @@ Name of the stanza to check.
 
 =item B<--repo> REPOSITORY
 
-Repository index to operate on. The C<--repo> argument is mandatory when 
-multiple repositories are defined.
+Repository index to operate on. If no C<--repo> argument is provided, the
+service will operate on all repositories defined. To check for inconsistencies
+across multiple repositories, this might be handy. Using the C<--repo> argument
+will rather check the sanity of the specified repository.
 
 =item B<-O>, B<--output> OUTPUT_FORMAT
 
@@ -513,6 +515,7 @@ sub pgbackrest_get {
     my %args = %{ $args_ref };
     my $directory = shift;
     my $filename = shift;
+    my $repo_key = shift;
 
     pod2usage(
         -message => 'FATAL: Unsupported pgBackRest version.',
@@ -523,13 +526,10 @@ sub pgbackrest_get {
     $getcmd .= " --stanza=".$args{'stanza'};
     $getcmd .= " ".$directory."/".$filename;
     $getcmd .= " --log-level-console=error";
+    $getcmd .= " --repo=".$repo_key;
 
     if(defined $args{'config'}) {
         $getcmd .= " --config=".$args{'config'};
-    }
-
-    if(defined $args{'repo'}) {
-        $getcmd .= " --repo=".$args{'repo'};
     }
 
     if(defined $args{'prefix'}) {
@@ -548,6 +548,7 @@ sub pgbackrest_ls {
     my $args_ref = shift;
     my %args = %{ $args_ref };
     my $directory = shift;
+    my $repo_key = shift;
     my $recurse = shift;
 
     pod2usage(
@@ -559,6 +560,7 @@ sub pgbackrest_ls {
     $lscmd .= " --stanza=".$args{'stanza'};
     $lscmd .= " ".$directory;
     $lscmd .= " --output=json --log-level-console=error";
+    $lscmd .= " --repo=".$repo_key;
 
     if($recurse) {
         $lscmd .= " --recurse";
@@ -566,10 +568,6 @@ sub pgbackrest_ls {
 
     if(defined $args{'config'}) {
         $lscmd .= " --config=".$args{'config'};
-    }
-
-    if(defined $args{'repo'}) {
-        $lscmd .= " --repo=".$args{'repo'};
     }
 
     if(defined $args{'prefix'}) {
@@ -641,24 +639,24 @@ sub check_retention {
     my @crit_msg;
     my @longmsg;
 
+    # When using the --repo option, pgBackRest info will apply the repository filter
     my $backups_info = pgbackrest_info();
     die("Can't get pgBackRest info.\n") unless (defined $backups_info);
 
     if($backups_info->{'status'}->{'code'} == 0) {
-        # Require the --repo option if multiple repositories are defined
-        pod2usage(
-            -message => 'FATAL: multiple repositories found, you must provide --repo.',
-            -exitval => 127
-        ) if scalar(@{$backups_info->{'repo'}}) > 1 and not defined $args{'repo'};
+        # List each repository content
+        my @backups_dir_content;
 
+        foreach my $repo (@{$backups_info->{'repo'}}) {
+            my $backups_dir = "backup/".$args{'stanza'}; # Relative path inside repository
+            dprint("repo".$repo->{'key'}.", backups_dir: $backups_dir\n");
+            $backups_dir_content[$repo->{'key'}] = pgbackrest_ls(\%args, $backups_dir, $repo->{'key'}, 0);
+        }
+
+        # List backups per type and check consistency between backup info and real repository content
         my @full_bck;
         my @diff_bck;
         my @incr_bck;
-
-        # List backup directory content to check consistency between backup info and real repository content
-        my $backups_dir = "backup/".$args{'stanza'}; # Relative path inside repository
-        dprint("backups_dir: $backups_dir\n");
-        my $backups_dir_content = pgbackrest_ls(\%args, $backups_dir, 0);
 
         foreach my $line (@{$backups_info->{'backup'}}) {
             push @full_bck, $line if($line->{'type'} eq "full");
@@ -666,8 +664,11 @@ sub check_retention {
             push @incr_bck, $line if($line->{'type'} eq "incr");
 
             my $backup_label = $line->{'label'};
-            unless(defined $backups_dir_content->{$backup_label} and $backups_dir_content->{$backup_label}->{'type'} eq 'path') {
-                push @crit_msg, "$backup_label directory missing in the repository";
+            my $repo_key = $line->{'database'}->{'repo-key'};
+
+            unless(defined $backups_dir_content[$repo_key]->{$backup_label} and
+                        $backups_dir_content[$repo_key]->{$backup_label}->{'type'} eq 'path') {
+                push @crit_msg, "$backup_label directory missing in repo$repo_key";
             }
         }
 
@@ -675,7 +676,7 @@ sub check_retention {
         push @longmsg, "diff=".scalar(@diff_bck);
         push @longmsg, "incr=".scalar(@incr_bck);
 
-        # check retention
+        # Check retention
         if(defined $args{'retention-full'} and scalar(@full_bck) < $args{'retention-full'}) {
             push @crit_msg, "not enough full backups, ".$args{'retention-full'}." required";
         }
@@ -702,14 +703,11 @@ sub check_retention {
             my $bck_age_limit = get_time($args{'retention-age-to-full'} );
             push @crit_msg, "full backups are too old" if $latest_full_bck_age >= $bck_age_limit;
         }
-    }else{
-        push @crit_msg, $backups_info->{'status'}->{'message'};
 
-        # Add detailed messages in case of multiple repositories
-        if(scalar(@{$backups_info->{'repo'}}) > 1) {
-            foreach my $line (@{$backups_info->{'repo'}}) {
-                push @crit_msg, "repo".$line->{'key'}." - ".$line->{'status'}->{'message'};
-            }
+    }else{
+        # Get the exact status code per repository
+        foreach my $repo (@{$backups_info->{'repo'}}) {
+            push @crit_msg, "repo".$repo->{'key'}.": ".$repo->{'status'}->{'message'} if $repo->{'status'}->{'code'} gt 0;
         }
     }
 
@@ -779,66 +777,73 @@ sub get_archived_wal_list {
     my $archives_dir = shift;
     my $suffix = "\.(gz|lz4|zst|xz|bz2)";
 
-    my @filelist;
+    my %filelist;
     my @branch_wals;
     my $filename_re_full = qr/[0-9A-F]{24}.*$suffix$/;
     my $start_tl = substr($min_wal, 0, 8);
     my $end_tl   = substr($max_wal, 0, 8);
     my $history_re_full = qr/$end_tl.history$/;
 
-    my $list = pgbackrest_ls(\%args, $archives_dir, 1);
-    foreach my $key (keys %{$list}) {
-        next unless $list->{$key}->{'type'} eq 'file';
-        my @split_tab = split('/', $key);
-        my $filename = $split_tab[-1];
+    foreach my $repo_key (keys %{$archives_dir}) {
+        dprint("repo$repo_key, archives_dir: ".$archives_dir->{$repo_key}."\n");
+        my $list = pgbackrest_ls(\%args, $archives_dir->{$repo_key}, $repo_key, 1);
 
-        if($filename =~ /$filename_re_full/){
-            # Get stats of the archived WALs
-            if ( $args{'ignore-archived-after'} or $args{'ignore-archived-before'} ) {
-                my $diff_epoch = $INIT_TIME - $list->{$key}->{'time'};
+        foreach my $key (keys %{$list}) {
+            next unless $list->{$key}->{'type'} eq 'file';
+            my @split_tab = split('/', $key);
+            my $filename = $split_tab[-1];
 
-                if ( $args{'ignore-archived-after'} && $diff_epoch <= get_time($args{'ignore-archived-after'}) ){
-                    dprint ("ignored file ".$filename." as interval since epoch : ".to_interval($diff_epoch)."\n");
+            if($filename =~ /$filename_re_full/){
+                # Get stats of the archived WALs
+                if ( $args{'ignore-archived-after'} or $args{'ignore-archived-before'} ) {
+                    my $diff_epoch = $INIT_TIME - $list->{$key}->{'time'};
+
+                    if ( $args{'ignore-archived-after'} && $diff_epoch <= get_time($args{'ignore-archived-after'}) ){
+                        dprint ("ignored file ".$filename." as interval since epoch : ".to_interval($diff_epoch)."\n");
+                        next;
+                    }
+
+                    if ( $args{'ignore-archived-before'} && $diff_epoch >= get_time($args{'ignore-archived-before'}) ){
+                        dprint ("ignored file ".$filename." as interval since epoch : ".to_interval($diff_epoch)."\n");
+                        next;
+                    }
+                }
+
+                my $segname = substr($filename, 0, 24);
+                if ( ! $args{'extended-check'} && $segname lt $min_wal ){
+                    dprint ("ignored file ".$segname." older than ".$min_wal."\n");
                     next;
                 }
 
-                if ( $args{'ignore-archived-before'} && $diff_epoch >= get_time($args{'ignore-archived-before'}) ){
-                    dprint ("ignored file ".$filename." as interval since epoch : ".to_interval($diff_epoch)."\n");
+                if ( ! $args{'extended-check'} && $segname gt $max_wal ){
+                    dprint ("ignored file ".$segname." newer than ".$max_wal."\n");
                     next;
                 }
-            }
 
-            my $segname = substr($filename, 0, 24);
-            if ( ! $args{'extended-check'} && $segname lt $min_wal ){
-                dprint ("ignored file ".$segname." older than ".$min_wal."\n");
-                next;
-            }
+                # Only add the file in the list if not already found in a previous loop/repository
+                unless(defined $filelist{$segname}){
+                    $filelist{$segname} = [$segname, $filename, $list->{$key}->{'time'}, $list->{$key}->{'size'}, $archives_dir->{$repo_key}."/$key"];
+                }
 
-            if ( ! $args{'extended-check'} && $segname gt $max_wal ){
-                dprint ("ignored file ".$segname." newer than ".$max_wal."\n");
-                next;
-            }
+            }elsif($filename =~ /$history_re_full/ && $start_tl ne $end_tl){
+                # Look for the last history file if needed
+                dprint("history file to open : ".$archives_dir->{$repo_key}."/$key\n");
 
-            push @filelist, [substr($filename, 0, 24), $filename, $list->{$key}->{'time'}, $list->{$key}->{'size'}, "$archives_dir/$key"];
+                my $history_content = pgbackrest_get(\%args, $archives_dir->{$repo_key}, $filename, $repo_key);
+                my @history_lines = split /\n/, $history_content;
+                foreach my $line ( @history_lines ){
 
-        }elsif($filename =~ /$history_re_full/ && $start_tl ne $end_tl){
-            # Look for the last history file if needed
-            dprint("history file to open : $archives_dir/$key\n");
-
-            my $history_content = pgbackrest_get(\%args, $archives_dir, $filename);
-            my @history_lines = split /\n/, $history_content;
-            foreach my $line ( @history_lines ){
-
-                my $line_re = qr/^\s*(\d)\t([0-9A-F]+)\/([0-9A-F]+)\t.*$/;
-                $line =~ /$line_re/ || next;
-                push @branch_wals =>
-                    sprintf("%08d%08s%08X", $1, $2, hex($3)>>24);
+                    my $line_re = qr/^\s*(\d)\t([0-9A-F]+)\/([0-9A-F]+)\t.*$/;
+                    $line =~ /$line_re/ || next;
+                    push @branch_wals =>
+                        sprintf("%08d%08s%08X", $1, $2, hex($3)>>24);
+                }
             }
         }
     }
 
     my @unique_branch_wals = do { my %seen; grep { !$seen{$_}++ } @branch_wals };
-    return(\@filelist, \@unique_branch_wals);
+    return(\%filelist, \@unique_branch_wals);
 }
 
 sub generate_needed_wal_archives_list {
@@ -898,22 +903,23 @@ sub check_wal_archives {
     my @longmsg;
     my @human_only_longmsg;
 
+    # When using the --repo option, pgBackRest info will apply the repository filter
     my $start_time = time();
     my $backups_info = pgbackrest_info();
     die("Can't get pgBackRest info.\n") unless (defined $backups_info);
     dprint("!> pgBackRest info took ".(time() - $start_time)."s\n");
 
     if($backups_info->{'status'}->{'code'} == 0) {
-        # Require the --repo option if multiple repositories are defined
-        pod2usage(
-            -message => 'FATAL: multiple repositories found, you must provide --repo.',
-            -exitval => 127
-        ) if scalar(@{$backups_info->{'repo'}}) > 1 and not defined $args{'repo'};
+        my %archives_dir;
+        my $min_wal;
+        my $max_wal;
 
-        my $archives_dir = "archive/".$args{'stanza'}."/".$backups_info->{'archive'}[0]->{'id'}; # Relative path inside repository
-        dprint("archives_dir: $archives_dir\n");
-        my $min_wal = $backups_info->{'archive'}[0]->{'min'};
-        my $max_wal = $backups_info->{'archive'}[0]->{'max'};
+        foreach my $line (@{$backups_info->{'archive'}}) {
+            my $repo_key = $line->{'database'}->{'repo-key'};
+            $archives_dir{$repo_key} = "archive/".$args{'stanza'}."/".$line->{'id'}; # Relative path inside repository
+            $min_wal = $line->{'min'} if(not $min_wal or $line->{'min'} lt $min_wal);
+            $max_wal = $line->{'max'} if(not $max_wal or $line->{'max'} gt $max_wal);
+        }
 
         # Get the oldest backup info
         my $oldest_bck = @{$backups_info->{'backup'}}[0];
@@ -928,47 +934,38 @@ sub check_wal_archives {
         # Get all the WAL archives and history files
         $start_time = time();
         dprint("Get all the WAL archives and history files...\n");
-        my ($filelist_ref, $branch_wals_ref) = &get_archived_wal_list($min_wal, $max_wal, \%args, $archives_dir);
-        my @filelist;
-        @filelist = @{ $filelist_ref } if $filelist_ref;
+        my ($filelist_ref, $branch_wals_ref) = &get_archived_wal_list($min_wal, $max_wal, \%args, \%archives_dir);
+        my %filelist;
+        %filelist = %{ $filelist_ref } if $filelist_ref;
+        my @filelist_simplified = sort(keys %filelist);
+        my $first_wal_in_list = $filelist_simplified[0];    # identify first elem of hash array
+        my $last_wal_in_list = $filelist_simplified[-1];    # identify last elem of hash array
+
         my @branch_wals;
         @branch_wals = @{ $branch_wals_ref } if $branch_wals_ref;
-        return unknown $me, ['no archived WAL found'] unless @filelist;
+        return unknown $me, ['no archived WAL found'] unless %filelist;
         dprint("!> Get all the WAL archives and history files took ".(time() - $start_time)."s\n");
-
-        # Sort by filename
-        my @filelist_sorted = sort { $a->[0] cmp $b->[0] }
-            grep{ (defined($_->[0]) and defined($_->[1]))
-                or die "Can't read WAL files.\n"
-            } @filelist;
-
-        my @filelist_simplified;
-        my %filelist_simplified_hash;
-        foreach my $elem (@filelist_sorted) {
-            push @filelist_simplified, $elem->[0];
-            $filelist_simplified_hash{ $elem->[0] } = $elem;
-        }
 
         # Change min_wal if some archives are ignored
         if ( $args{'ignore-archived-before'} && $min_wal ) {
-            $min_wal = substr($filelist_sorted[0][0], 0, 24);
+            $min_wal = $first_wal_in_list;
             dprint ("min_wal changed to ".$min_wal."\n");
         }
 
         # Change max_wal if some archives are ignored
         if ( $args{'ignore-archived-after'} && $max_wal ) {
-            $max_wal = substr($filelist_sorted[-1][0], 0, 24);
+            $max_wal = $last_wal_in_list;
             dprint ("max_wal changed to ".$max_wal."\n");
         }
 
         # Check min/max exists, start = min, last = max ?
         return critical $me, ['min WAL not found: '.$min_wal] if($min_wal && ! grep( /^$min_wal$/, @filelist_simplified ));
         return critical $me, ['max WAL not found: '.$max_wal] if($max_wal && ! grep( /^$max_wal$/, @filelist_simplified ));
-        push @warn_msg, "min WAL is not the oldest archive" if($min_wal && $filelist_sorted[0][0] lt $min_wal);
-        push @warn_msg, "max WAL is not the latest archive" if($max_wal && $filelist_sorted[-1][0] gt $max_wal);
+        push @warn_msg, "min WAL is not the oldest archive" if($min_wal && $filelist{$first_wal_in_list}[0] lt $min_wal);
+        push @warn_msg, "max WAL is not the latest archive" if($max_wal && $filelist{$last_wal_in_list}[0] gt $max_wal);
 
-        my $latest_archive_age = time() - $filelist_sorted[-1][2];
-        my $num_archives = scalar(@filelist_sorted);
+        my $latest_archive_age = time() - $filelist{$last_wal_in_list}[2];
+        my $num_archives = scalar(@filelist_simplified);
         push @longmsg, "latest_archive_age=".to_interval_output_dependent($latest_archive_age);
         push @longmsg, "num_archives=$num_archives";
 
@@ -995,13 +992,12 @@ sub check_wal_archives {
         my $latest_bck_archive_start = $latest_bck->{'archive'}->{'start'};
 
         # Print human_only_longmsg
-        push @human_only_longmsg, "archives_dir=$archives_dir";
         push @human_only_longmsg, "min_wal=$min_wal" if $min_wal;
         push @human_only_longmsg, "max_wal=$max_wal" if $max_wal;
-        push @human_only_longmsg, "latest_archive=".$filelist_sorted[-1][0];
+        push @human_only_longmsg, "latest_archive=".$filelist{$last_wal_in_list}[0];
         push @human_only_longmsg, "latest_bck_archive_start=".$latest_bck_archive_start;
         push @human_only_longmsg, "latest_bck_type=".$latest_bck->{'type'};
-        push @human_only_longmsg, "oldest_archive=".$filelist_sorted[0][0];
+        push @human_only_longmsg, "oldest_archive=".$filelist{$first_wal_in_list}[0];
         push @human_only_longmsg, "oldest_bck_archive_start=".$oldest_bck_archive_start;
         push @human_only_longmsg, "oldest_bck_type=".$oldest_bck->{'type'};
 
@@ -1010,7 +1006,7 @@ sub check_wal_archives {
         # Go through needed WAL list and check if it exists in the file list
         $start_time = time();
         foreach my $needed_wal (@needed_wal_archives_list) {
-            unless ( $filelist_simplified_hash{ $needed_wal } ) {
+            unless ( $filelist{ $needed_wal } ) {
                 if($needed_wal lt $latest_bck_archive_start) {
                     push @warn_missing_files => $needed_wal;
                 }else{
@@ -1039,7 +1035,7 @@ sub check_wal_archives {
             }
 
             foreach my $needed_wal (&generate_needed_wal_archives_list($line->{'archive'}->{'start'}, $line->{'archive'}->{'stop'}, \@branch_wals, $seg_per_wal, \%args)) {
-                unless ( $filelist_simplified_hash{ $needed_wal } ) {
+                unless ( $filelist{ $needed_wal } ) {
                     push @crit_missing_files => $needed_wal;
                 }
             }
@@ -1080,7 +1076,10 @@ sub check_wal_archives {
         }
 
     }else{
-        push @crit_msg, $backups_info->{'status'}->{'message'};
+        # Get the exact status code per repository
+        foreach my $repo (@{$backups_info->{'repo'}}) {
+            push @crit_msg, "repo".$repo->{'key'}.": ".$repo->{'status'}->{'message'} if $repo->{'status'}->{'code'} gt 0;
+        }
     }
 
     return critical($me, \@crit_msg, \@longmsg, \@human_only_longmsg) if @crit_msg;
