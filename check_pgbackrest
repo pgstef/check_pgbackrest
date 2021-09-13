@@ -102,9 +102,10 @@ Name of the stanza to check.
 =item B<--repo> REPOSITORY
 
 Repository index to operate on. If no C<--repo> argument is provided, the
-service will operate on all repositories defined. To check for inconsistencies
-across multiple repositories, this might be handy. Using the C<--repo> argument
-will rather check the sanity of the specified repository.
+service will operate on all repositories defined, checking for inconsistencies
+across multiple repositories. When using multiple repositories, it is
+recommended to also define checks using the C<--repo> argument to verify the
+sanity of each repository separately.
 
 =item B<-O>, B<--output> OUTPUT_FORMAT
 
@@ -311,7 +312,7 @@ sub prtg_output ($$;$$) {
     # Define which @longmsg keys will use TimeSeconds or Count units.
     # Otherwise, it will be added to TEXT message.
     my @TimeKeys = ("latest_age", "latest_full_age", "latest_archive_age");
-    my @CountKeys = ("full", "diff", "incr", "num_archives", "num_missing_archives");
+    my @CountKeys = ("full", "diff", "incr", "num_unique_archives", "num_missing_archives");
     my @textmsg;
 
     foreach my $msg_to_split (@longmsg) {
@@ -967,13 +968,13 @@ sub check_wal_archives {
         my $latest_archive_age = time() - $filelist{$last_wal_in_list}[2];
         my $num_archives = scalar(@filelist_simplified);
         push @longmsg, "latest_archive_age=".to_interval_output_dependent($latest_archive_age);
-        push @longmsg, "num_archives=$num_archives";
+        push @longmsg, "num_unique_archives=$num_archives";
 
         # Is the latest archive too old ?
         if ( $args{'latest-archive-age-alert'} && $latest_archive_age > get_time($args{'latest-archive-age-alert'})){
             push @crit_msg => "latest_archive_age (".to_interval($latest_archive_age).") exceeded";
         }
-        push @msg, "$num_archives WAL archived";
+        push @msg, "$num_archives unique WAL archived";
         push @msg, "latest archived since ". to_interval($latest_archive_age);
 
         # Get all the needed WAL archives based on min/max pgBackRest info

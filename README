@@ -19,8 +19,12 @@ DESCRIPTION
         Name of the stanza to check.
 
     --repo REPOSITORY
-        Repository index to operate on. The "--repo" argument is mandatory
-        when multiple repositories are defined.
+        Repository index to operate on. If no "--repo" argument is provided,
+        the service will operate on all repositories defined, checking for
+        inconsistencies across multiple repositories. When using multiple
+        repositories, it is recommended to also define checks using the
+        "--repo" argument to verify the sanity of each repository
+        separately.
 
     -O, --output OUTPUT_FORMAT
         The output format. Supported outputs are: "human", "json", "nagios"

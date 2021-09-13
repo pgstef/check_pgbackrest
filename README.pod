@@ -26,8 +26,11 @@ Name of the stanza to check.
 
 =item B<--repo> REPOSITORY
 
-Repository index to operate on. The C<--repo> argument is mandatory when 
-multiple repositories are defined.
+Repository index to operate on. If no C<--repo> argument is provided, the
+service will operate on all repositories defined, checking for inconsistencies
+across multiple repositories. When using multiple repositories, it is
+recommended to also define checks using the C<--repo> argument to verify the
+sanity of each repository separately.
 
 =item B<-O>, B<--output> OUTPUT_FORMAT
 
