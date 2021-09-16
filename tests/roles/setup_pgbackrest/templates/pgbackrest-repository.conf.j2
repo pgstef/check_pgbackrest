@@ -53,8 +53,8 @@ repo1-retention-full={{ pgbackrest_repo_retention_full }}
 repo1-cipher-type=aes-256-cbc
 repo1-cipher-pass={{ pgbackrest_repo_cipher_pass }}
 {% endif %}
-log-level-console=warn
-log-level-file=info
+log-level-console=info
+log-level-file=debug
 start-fast=y
 delta=y
 process-max=2

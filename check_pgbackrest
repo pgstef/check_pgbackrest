@@ -1072,8 +1072,7 @@ sub check_wal_archives {
 
         # DEBUG print all archives
         if($args{'list-archives'}) {
-            my @unique_wals = do { my %seen; grep { !$seen{$_}++ } @filelist_simplified };
-            foreach (@unique_wals) { dprint("found $_\n"); }
+            foreach (@filelist_simplified) { dprint("found $_\n"); }
         }
 
     }else{
