@@ -2,9 +2,17 @@
 {% if repository_server|length > 0 %}
 repo1-host={{ hostvars[pgbackrest_repo_host].private_ip }}
 repo1-host-user={{ pgbackrest_user }}
+repo1-cipher-type=aes-256-cbc
+repo1-cipher-pass={{ pgbackrest_repo_cipher_pass }}
 {% if pgbackrest_repo_type == "multi" %}
 repo2-host={{ hostvars[pgbackrest_repo_host].private_ip }}
 repo2-host-user={{ pgbackrest_user }}
+repo2-cipher-type=aes-256-cbc
+repo2-cipher-pass={{ pgbackrest_repo_cipher_pass }}
+{% if ansible_os_family == 'Debian' %}
+repo1-path=/repo1
+repo2-path=/repo2
+{% endif %}
 {% endif %}
 {% elif pgbackrest_repo_type == "s3" %}
 repo1-type=s3
@@ -64,8 +72,8 @@ repo1-cipher-type=aes-256-cbc
 repo1-cipher-pass={{ pgbackrest_repo_cipher_pass }}
 start-fast=y
 {% endif %}
-log-level-console=warn
-log-level-file=info
+log-level-console=info
+log-level-file=debug
 delta=y
 process-max=2
 

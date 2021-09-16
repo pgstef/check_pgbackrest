@@ -148,11 +148,6 @@
   loop: "{{ repository_server }}"
   when: "'icinga2' in group_names"
 
-- name: Set default repo when multiple repositories are defined
-  set_fact:
-    repo_option: "--repo=1"
-  when: "pgbackrest_repo_type is defined and pgbackrest_repo_type == 'multi'"
-
 - name: Create Icinga2 check retention command
   t_systems_mms.icinga_director.icinga_command:
     state: present
@@ -163,7 +158,7 @@
     imports:
       - "by_ssh"
     vars:
-      by_ssh_command: "check_pgbackrest --stanza=$stanza$ --service=retention --retention-full=$retention_full$ --prefix=\"$prefix$\" {{ repo_option | default(None) }}"
+      by_ssh_command: "check_pgbackrest --stanza=$stanza$ --service=retention --retention-full=$retention_full$ --prefix=\"$prefix$\""
   when: "'icinga2' in group_names"
 
 - name: Create Icinga2 check archives command
@@ -176,7 +171,7 @@
     imports:
       - "by_ssh"
     vars:
-      by_ssh_command: "check_pgbackrest --stanza=$stanza$ --service=archives --prefix=\"$prefix$\" {{ repo_option | default(None) }}"
+      by_ssh_command: "check_pgbackrest --stanza=$stanza$ --service=archives --prefix=\"$prefix$\""
   when: "'icinga2' in group_names"
 
 - name: Create Icinga2 check retention services for db hosts
@@ -253,6 +248,113 @@
   loop: "{{ repository_server }}"
   when: "'icinga2' in group_names"
 
+# Multiple repositories support, add check commands using --repo=1
+- name: Set default repo when multiple repositories are defined
+  set_fact:
+    default_repo_key: "1"
+  when: "pgbackrest_repo_type is defined and pgbackrest_repo_type == 'multi'"
+
+- name: Create Icinga2 check retention command - multiple repositories
+  t_systems_mms.icinga_director.icinga_command:
+    state: present
+    url: "{{ icinga_url }}"
+    url_username: "{{ icinga_user }}"
+    url_password: "{{ icinga_pass }}"
+    object_name: "by_ssh_pgbackrest_retention_with_repo"
+    imports:
+      - "by_ssh"
+    vars:
+      by_ssh_command: "check_pgbackrest --stanza=$stanza$ --service=retention --retention-full=$retention_full$ --prefix=\"$prefix$\" --repo={{ default_repo_key }}"
+  when: "'icinga2' in group_names and default_repo_key is defined"
+
+- name: Create Icinga2 check archives command - multiple repositories
+  t_systems_mms.icinga_director.icinga_command:
+    state: present
+    url: "{{ icinga_url }}"
+    url_username: "{{ icinga_user }}"
+    url_password: "{{ icinga_pass }}"
+    object_name: "by_ssh_pgbackrest_archives_with_repo"
+    imports:
+      - "by_ssh"
+    vars:
+      by_ssh_command: "check_pgbackrest --stanza=$stanza$ --service=archives --prefix=\"$prefix$\" --repo={{ default_repo_key }}"
+  when: "'icinga2' in group_names and default_repo_key is defined"
+
+- name: Create Icinga2 check retention services for db hosts - multiple repositories
+  t_systems_mms.icinga_director.icinga_service:
+    state: present
+    url: "{{ icinga_url }}"
+    url_username: "{{ icinga_user }}"
+    url_password: "{{ icinga_pass }}"
+    object_name: "pgbackrest_retention_repo{{ default_repo_key }}"
+    imports:
+      - "service-template"
+    check_command: "by_ssh_pgbackrest_retention_with_repo"
+    host: "{{ item }}"
+    vars:
+      by_ssh_logname: "accessed_by_ssh"
+      stanza: "{{ cluster_name }}"
+      retention_full: "{{ hostvars[item].pgbackrest_repo_retention_full }}"
+      prefix: "sudo -u {{ hostvars[item].pg_owner }}"
+  loop: "{{ pgbackrest_servers }}"
+  when: "'icinga2' in group_names and default_repo_key is defined"
+
+- name: Create Icinga2 check retention services for repo host - multiple repositories
+  t_systems_mms.icinga_director.icinga_service:
+    state: present
+    url: "{{ icinga_url }}"
+    url_username: "{{ icinga_user }}"
+    url_password: "{{ icinga_pass }}"
+    object_name: "pgbackrest_retention_repo{{ default_repo_key }}"
+    imports:
+      - "service-template"
+    check_command: "by_ssh_pgbackrest_retention_with_repo"
+    host: "{{ item }}"
+    vars:
+      by_ssh_logname: "accessed_by_ssh"
+      stanza: "{{ cluster_name }}"
+      retention_full: "{{ hostvars[item].pgbackrest_repo_retention_full }}"
+      prefix: "sudo -u {{ hostvars[item].pgbackrest_user }}"
+  loop: "{{ repository_server }}"
+  when: "'icinga2' in group_names and default_repo_key is defined"
+
+- name: Create Icinga2 check archives services for db hosts - multiple repositories
+  t_systems_mms.icinga_director.icinga_service:
+    state: present
+    url: "{{ icinga_url }}"
+    url_username: "{{ icinga_user }}"
+    url_password: "{{ icinga_pass }}"
+    object_name: "pgbackrest_archives_repo{{ default_repo_key }}"
+    imports:
+      - "service-template"
+    check_command: "by_ssh_pgbackrest_archives_with_repo"
+    host: "{{ item }}"
+    vars:
+      by_ssh_logname: "accessed_by_ssh"
+      stanza: "{{ cluster_name }}"
+      prefix: "sudo -u {{ hostvars[item].pg_owner }}"
+  loop: "{{ pgbackrest_servers }}"
+  when: "'icinga2' in group_names and default_repo_key is defined"
+
+- name: Create Icinga2 check retention services for repo host - multiple repositories
+  t_systems_mms.icinga_director.icinga_service:
+    state: present
+    url: "{{ icinga_url }}"
+    url_username: "{{ icinga_user }}"
+    url_password: "{{ icinga_pass }}"
+    object_name: "pgbackrest_archives_repo{{ default_repo_key }}"
+    imports:
+      - "service-template"
+    check_command: "by_ssh_pgbackrest_archives_with_repo"
+    host: "{{ item }}"
+    vars:
+      by_ssh_logname: "accessed_by_ssh"
+      stanza: "{{ cluster_name }}"
+      prefix: "sudo -u {{ hostvars[item].pgbackrest_user }}"
+  loop: "{{ repository_server }}"
+  when: "'icinga2' in group_names and default_repo_key is defined"
+
+# Deploy
 - name: Deploy Icinga2 config
   uri:
     url: "{{ icinga_url }}/director/config/deploy"

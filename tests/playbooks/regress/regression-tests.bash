@@ -6,18 +6,23 @@ cd "$(dirname "$0")"
 PLUGIN_PATH=/usr/lib64/nagios/plugins
 RESULTS_DIR=/tmp/results
 SKIP_INIT=false
+SKIP_REPO2_CLEAR=false
 
 usage() {
     echo "Usage:"
     echo "    -s                          Skip backups initialization step."
+    echo "    -S                          Skip repo2 clear step when multiple repositories are used."
     echo "    -P <path>                   Change check_pgbackrest plugin path."
     echo "    -p <local|remote>           Use local or remote profile."
 }
 
-while getopts "sP:p:" o; do
+while getopts "sSP:p:" o; do
     case "${o}" in
         s)
             SKIP_INIT=true
+            ;;
+        S)
+            SKIP_REPO2_CLEAR=true
             ;;
         P)
             PLUGIN_PATH=${OPTARG}
@@ -65,6 +70,20 @@ REPO=""
 if [ "$PGBR_REPO_TYPE" = "multi" ]; then
     REPO="--repo=1"
     echo "...multi repo support, defaulting to repo1"
+
+    if ! $SKIP_REPO2_CLEAR; then
+        # Clear repo2
+        echo "...clear repo2"
+        if [ "$SCRIPT_PROFILE" = "local" ]; then
+            sudo -iu $PGUSER pgbackrest --stanza=$STANZA --repo=2 --recurse repo-rm archive/$STANZA
+            sudo -iu $PGUSER pgbackrest --stanza=$STANZA --repo=2 --recurse repo-rm backup/$STANZA
+            sudo -iu $PGUSER pgbackrest --stanza=$STANZA --log-level-console=warn stanza-create
+        else
+            sudo -iu $PGUSER ssh ${SSH_ARGS} ${PGBR_USER}@${PGBR_HOST} "pgbackrest --stanza=$STANZA --repo=2 --recurse repo-rm archive/$STANZA"
+            sudo -iu $PGUSER ssh ${SSH_ARGS} ${PGBR_USER}@${PGBR_HOST} "pgbackrest --stanza=$STANZA --repo=2 --recurse repo-rm backup/$STANZA"
+            sudo -iu $PGUSER ssh ${SSH_ARGS} ${PGBR_USER}@${PGBR_HOST} "pgbackrest --stanza=$STANZA --log-level-console=warn stanza-create"
+        fi
+    fi
 fi
 
 if [ ! -d $RESULTS_DIR ]; then
@@ -76,13 +95,13 @@ fi
 if ! $SKIP_INIT; then
     echo "...Initiate backups (full, diff, incr)"
     if [ "$SCRIPT_PROFILE" = "local" ]; then
-        sudo -iu $PGUSER pgbackrest --stanza=$STANZA $REPO backup --type=full --repo1-retention-full=1
-        sudo -iu $PGUSER pgbackrest --stanza=$STANZA $REPO backup --type=diff
-        sudo -iu $PGUSER pgbackrest --stanza=$STANZA $REPO backup --type=incr
+        sudo -iu $PGUSER pgbackrest --stanza=$STANZA $REPO backup --type=full --log-level-console=warn --repo1-retention-full=1
+        sudo -iu $PGUSER pgbackrest --stanza=$STANZA $REPO backup --type=diff --log-level-console=warn
+        sudo -iu $PGUSER pgbackrest --stanza=$STANZA $REPO backup --type=incr --log-level-console=warn
     else
-        sudo -iu $PGUSER ssh ${SSH_ARGS} ${PGBR_USER}@${PGBR_HOST} "pgbackrest --stanza=$STANZA $REPO backup --type=full --repo1-retention-full=1"
-        sudo -iu $PGUSER ssh ${SSH_ARGS} ${PGBR_USER}@${PGBR_HOST} "pgbackrest --stanza=$STANZA $REPO backup --type=diff"
-        sudo -iu $PGUSER ssh ${SSH_ARGS} ${PGBR_USER}@${PGBR_HOST} "pgbackrest --stanza=$STANZA $REPO backup --type=incr"
+        sudo -iu $PGUSER ssh ${SSH_ARGS} ${PGBR_USER}@${PGBR_HOST} "pgbackrest --stanza=$STANZA $REPO backup --type=full --log-level-console=warn --repo1-retention-full=1"
+        sudo -iu $PGUSER ssh ${SSH_ARGS} ${PGBR_USER}@${PGBR_HOST} "pgbackrest --stanza=$STANZA $REPO backup --type=diff --log-level-console=warn"
+        sudo -iu $PGUSER ssh ${SSH_ARGS} ${PGBR_USER}@${PGBR_HOST} "pgbackrest --stanza=$STANZA $REPO backup --type=incr --log-level-console=warn"
     fi
 fi
 
@@ -94,13 +113,27 @@ $PLUGIN_PATH/check_pgbackrest --list | tee $RESULTS_DIR/list.out
 echo "--version"
 $PLUGIN_PATH/check_pgbackrest --version
 
-
 # --service=retention --retention-full
 echo "--service=retention --retention-full"
+if [ "$PGBR_REPO_TYPE" = "multi" ] && ! $SKIP_REPO2_CLEAR; then
+    # repo2 should be empty, the service should then fail
+    $PLUGIN_PATH/check_pgbackrest --prefix="sudo -u $PGUSER" --stanza=$STANZA --service=retention --retention-full=1 > $RESULTS_DIR/retention-full-repo2-ko.out
+fi
 $PLUGIN_PATH/check_pgbackrest --prefix="sudo -u $PGUSER" --stanza=$STANZA $REPO --service=retention --retention-full=1 --output=human
 $PLUGIN_PATH/check_pgbackrest --prefix="sudo -u $PGUSER" --stanza=$STANZA $REPO --service=retention --retention-full=1 --output=prtg
-$PLUGIN_PATH/check_pgbackrest --prefix="sudo -u $PGUSER" --stanza=$STANZA $REPO --service=retention --retention-full=1 | cut -f1 -d"|" > $RESULTS_DIR/retention-full.out
 echo
+$PLUGIN_PATH/check_pgbackrest --prefix="sudo -u $PGUSER" --stanza=$STANZA $REPO --service=retention --retention-full=1 | cut -f1 -d"|" > $RESULTS_DIR/retention-full.out
+
+if [ "$PGBR_REPO_TYPE" = "multi" ] && ! $SKIP_REPO2_CLEAR; then
+    # Take an extra backup for repo2 and make sure the global check will see it
+    if [ "$SCRIPT_PROFILE" = "local" ]; then
+        sudo -iu $PGUSER pgbackrest --stanza=$STANZA --repo=2 backup --type=full --log-level-console=warn
+    else
+        sudo -iu $PGUSER ssh ${SSH_ARGS} ${PGBR_USER}@${PGBR_HOST} "pgbackrest --stanza=$STANZA --repo=2 backup --type=full --log-level-console=warn"
+    fi
+
+    $PLUGIN_PATH/check_pgbackrest --prefix="sudo -u $PGUSER" --stanza=$STANZA --service=retention --retention-full=2 | cut -f1 -d"|" > $RESULTS_DIR/retention-full-global.out
+fi
 
 # --service=retention --retention-age
 echo "--service=retention --retention-age"
@@ -120,14 +153,22 @@ $PLUGIN_PATH/check_pgbackrest --prefix="sudo -u $PGUSER" --stanza=$STANZA $REPO 
 
 # --service=archives
 echo "--service=archives"
+if [ "$PGBR_REPO_TYPE" = "multi" ] && ! $SKIP_REPO2_CLEAR; then
+    # repo2 should only have 1 full backup, so only 1 archive in it
+    $PLUGIN_PATH/check_pgbackrest --prefix="sudo -u $PGUSER" --stanza=$STANZA --repo=2 --service=archives  | cut -f1 -d","  > $RESULTS_DIR/archives-repo2-ok.out
+fi
 sudo -iu $PGUSER $PGBIN/psql -h $PGUNIXSOCKET -d $PGDATABASE -c "SELECT pg_create_restore_point('generate WAL');" > /dev/null 2>&1
 sudo -iu $PGUSER $PGBIN/psql -h $PGUNIXSOCKET -d $PGDATABASE -c "SELECT pg_switch_xlog();" > /dev/null 2>&1
 sudo -iu $PGUSER $PGBIN/psql -h $PGUNIXSOCKET -d $PGDATABASE -c "SELECT pg_switch_wal();" > /dev/null 2>&1
 sudo -iu $PGUSER $PGBIN/psql -h $PGUNIXSOCKET -d $PGDATABASE -c "SELECT pg_sleep(1);" > /dev/null 2>&1
 $PLUGIN_PATH/check_pgbackrest --prefix="sudo -u $PGUSER" --stanza=$STANZA $REPO --service=archives --output=human
 $PLUGIN_PATH/check_pgbackrest --prefix="sudo -u $PGUSER" --stanza=$STANZA $REPO --service=archives --output=prtg
-$PLUGIN_PATH/check_pgbackrest --prefix="sudo -u $PGUSER" --stanza=$STANZA $REPO --service=archives | cut -f1 -d"-" > $RESULTS_DIR/archives-ok.out
 echo
+$PLUGIN_PATH/check_pgbackrest --prefix="sudo -u $PGUSER" --stanza=$STANZA $REPO --service=archives | cut -f1 -d"-" > $RESULTS_DIR/archives-ok.out
+
+if [ "$PGBR_REPO_TYPE" = "multi" ] && ! $SKIP_REPO2_CLEAR; then
+    $PLUGIN_PATH/check_pgbackrest --prefix="sudo -u $PGUSER" --stanza=$STANZA --service=archives | cut -f1 -d"-" > $RESULTS_DIR/archives-ok-global.out
+fi
 
 # --service=archives --ignore-archived-before
 echo "--service=archives --ignore-archived-before"
@@ -150,7 +191,12 @@ echo "--service=archives --max-archives-check-number"
 $PLUGIN_PATH/check_pgbackrest --prefix="sudo -u $PGUSER" --stanza=$STANZA $REPO --service=archives --max-archives-check-number=1 > $RESULTS_DIR/archives-max-archives-check-ko.out 2>&1
 
 ## Results
-diff -abB expected/ $RESULTS_DIR/ > /tmp/regression.diffs
+if [ "$PGBR_REPO_TYPE" = "multi" ] && ! $SKIP_REPO2_CLEAR; then
+    diff -abB expected/ $RESULTS_DIR/ > /tmp/regression.diffs
+else
+    diff -abB -x '*repo2*' -x '*-global.out' expected/ $RESULTS_DIR/ > /tmp/regression.diffs
+fi
+
 if [ $(wc -l < /tmp/regression.diffs) -gt 0 ]; then
      cat /tmp/regression.diffs
      exit 1
