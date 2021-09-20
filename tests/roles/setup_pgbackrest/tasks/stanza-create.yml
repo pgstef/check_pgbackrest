@@ -25,4 +25,4 @@
     pgbackrest check --stanza="{{ cluster_name }}"
   become_user: "{{ postgres_user }}"
   become: yes
-  when: (not repository_server|length > 0) and (inventory_hostname in pgbackrest_servers) and ('primary' in group_names)  
+  when: (not repository_server|length > 0) and (inventory_hostname in pgbackrest_servers) and ('primary' in group_names)

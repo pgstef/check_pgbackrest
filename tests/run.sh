@@ -69,6 +69,9 @@ if $INIT_ONLY; then
     ansible-galaxy collection install edb_devops.edb_postgres
     ansible-galaxy collection install t_systems_mms.icinga_director
     echo '--------------------'
+    echo 'Install MinIO Python SDK'
+    pip install minio
+    echo '--------------------'
     echo 'Install Azure Storage Blobs client library for Python'
     pip install azure-storage-blob
 

@@ -11,7 +11,6 @@
   loop:
     - "minio"
     - "minio/data"
-    - "minio/data/bucket"
   when: >
     cluster_vars.pgbackrest_repo_type is defined and
     (cluster_vars.pgbackrest_repo_type == "s3" or cluster_vars.pgbackrest_repo_type == "multi")
@@ -35,8 +34,23 @@
     network_mode: default
     container_default_behavior: compatibility
     env:
-      MINIO_ACCESS_KEY: "accessKey"
-      MINIO_SECRET_KEY: "superSECRETkey"
+      MINIO_ROOT_USER: "accessKey"
+      MINIO_ROOT_PASSWORD: "superSECRETkey"
+  register: minio_docker_container_register
+  when: >
+    cluster_vars.pgbackrest_repo_type is defined and
+    (cluster_vars.pgbackrest_repo_type == "s3" or cluster_vars.pgbackrest_repo_type == "multi")
+
+- name: MinIO Python Client API - create bucket
+  command: "python3 {{ playbook_dir }}/minio/create-bucket.py -b bucket"
+  vars:
+    dc: "{{ minio_docker_container_register.container }}"
+    nw: "{{ dc.NetworkSettings }}"
+    nw_name: "network_{{ cluster_name }}"
+  environment:
+    MINIO_ENDPOINT: "{{nw.Networks[nw_name].IPAddress}}"
+    MINIO_ROOT_USER: "accessKey"
+    MINIO_ROOT_PASSWORD: "superSECRETkey"
   when: >
     cluster_vars.pgbackrest_repo_type is defined and
     (cluster_vars.pgbackrest_repo_type == "s3" or cluster_vars.pgbackrest_repo_type == "multi")
