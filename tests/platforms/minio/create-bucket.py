@@ -1,5 +1,5 @@
 #!/usr/bin/python
-import argparse, os, urllib3, ssl
+import argparse, os, urllib3
 from minio import Minio
 from minio.error import S3Error
 
@@ -12,15 +12,13 @@ def main():
     args = parser.parse_args()
 
     # Create HTTPS client connection without certificate verification
-    cert_reqs = ssl.CERT_NONE
     urllib3.disable_warnings()
-    http_client = urllib3.PoolManager(cert_reqs = cert_reqs)
     client = Minio(
         os.getenv('MINIO_ENDPOINT'),
         os.getenv('MINIO_ROOT_USER'),
         os.getenv('MINIO_ROOT_PASSWORD'),
         secure=True,
-        http_client=http_client
+        http_client=urllib3.PoolManager(cert_reqs='CERT_NONE')
     )
 
     # Create the container

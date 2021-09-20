@@ -41,6 +41,19 @@
     cluster_vars.pgbackrest_repo_type is defined and
     (cluster_vars.pgbackrest_repo_type == "s3" or cluster_vars.pgbackrest_repo_type == "multi")
 
+- name: Waits for MinIO
+  wait_for:
+    host: "{{nw.Networks[nw_name].IPAddress}}"
+    port: 443
+    delay: 5
+  vars:
+    dc: "{{ minio_docker_container_register.container }}"
+    nw: "{{ dc.NetworkSettings }}"
+    nw_name: "network_{{ cluster_name }}"
+  when: >
+    cluster_vars.pgbackrest_repo_type is defined and
+    (cluster_vars.pgbackrest_repo_type == "s3" or cluster_vars.pgbackrest_repo_type == "multi")
+
 - name: MinIO Python Client API - create bucket
   command: "python3 {{ playbook_dir }}/minio/create-bucket.py -b bucket"
   vars:
