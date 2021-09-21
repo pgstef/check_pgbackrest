@@ -61,7 +61,7 @@ undef @path;
 # Reference to the output sub
 my $output_fmt;
 
-$VERSION = '2.1dev';
+$VERSION = '2.1';
 $PROGRAM = 'check_pgbackrest';
 $PGBR_SUPPORT = '2.33';
 $INIT_TIME = time();
@@ -1228,7 +1228,7 @@ check_pgbackrest is an open project. Any contribution to improve it is welcome.
 
 =head1 VERSION
 
-check_pgbackrest version 2.0, released on Wed Feb 10 2021.
+check_pgbackrest version 2.1, released on Tue Sep 21 2021.
 
 =head1 LICENSING
 

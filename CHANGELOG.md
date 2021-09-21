@@ -1,7 +1,7 @@
 Changelog
 =========
 
-2021-xx-xx v2.1:
+2021-09-21 v2.1:
 
   - Only support pgBackRest **2.33** and above in order to add support for the
   multi-repository feature.
@@ -15,7 +15,6 @@ Changelog
   This is intended to use in case of timeline switch and when boundary WAL can't
   be detected properly, in order to prevent infinite WAL archives check.
   - Add `prtg` output format (Hans-Peter Zahno).
-  - ...
 
 2021-02-10 v2.0:
 

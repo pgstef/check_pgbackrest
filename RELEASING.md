@@ -9,8 +9,6 @@ Use date format `LC_TIME=C date +"%a %b %d %Y"`.
 
 Update the `CHANGELOG.md` file too.
 
-Update the tests results `tests/common/regress/expected/version.out`.
-
 ## Documentation
 
 Generate updated documentation:
@@ -46,10 +44,6 @@ git archive --prefix=check_pgbackrest-$TAG/ -o /tmp/check_pgbackrest-2.1.tar.gz 
   - Upload the tar file
   - Save
   - Check or update https://github.com/pgstef/check_pgbackrest/releases
-
-## Building the RPM file
-
-The RPM file is provided by the PGDG community.
 
 ## Community
 

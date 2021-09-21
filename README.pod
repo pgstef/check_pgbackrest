@@ -155,7 +155,7 @@ check_pgbackrest is an open project. Any contribution to improve it is welcome.
 
 =head1 VERSION
 
-check_pgbackrest version 2.0, released on Wed Feb 10 2021.
+check_pgbackrest version 2.1, released on Tue Sep 21 2021.
 
 =head1 LICENSING
 
