@@ -1,6 +1,12 @@
 Changelog
 =========
 
+2021-xx-xx v2.2:
+
+  - ...
+  - ...
+
+
 2021-09-21 v2.1:
 
   - Only support pgBackRest **2.33** and above in order to add support for the

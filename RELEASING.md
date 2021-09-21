@@ -21,18 +21,18 @@ podselect check_pgbackrest > README.pod
 ## Tagging and building tar file
 
 ```bash
-TAG=REL2_1
+TAG=REL2_2
 git tag -a $TAG -m "Release $TAG"
 git tag
 git push --tags
-git archive --prefix=check_pgbackrest-$TAG/ -o /tmp/check_pgbackrest-2.1.tar.gz $TAG
+git archive --prefix=check_pgbackrest-$TAG/ -o /tmp/check_pgbackrest-2.2.tar.gz $TAG
 ```
 
 ## Release on github
 
   - Go to https://github.com/pgstef/check_pgbackrest/releases
   - Edit the release notes for the new tag
-  - Set "check_pgbackrest $VERSION" as title, eg. "check_pgbackrest 2.1"
+  - Set "check_pgbackrest $VERSION" as title, eg. "check_pgbackrest 2.2"
   - Here is the format of the release node itself:
     YYYY-MM-DD - Version X.Y
     
@@ -49,7 +49,7 @@ git archive --prefix=check_pgbackrest-$TAG/ -o /tmp/check_pgbackrest-2.1.tar.gz 
 
 ### Submit a news on postgresql.org
 
-* Title: "check_pgbackrest 2.1 has been released"
+* Title: "check_pgbackrest 2.2 has been released"
 * Content:
   
 ```
@@ -62,7 +62,7 @@ backups from Nagios, relying on the status information given by the
 It allows to monitor the backups retention and the consistency of the archived 
 WAL segments.
 
-Changes in check_pgbackrest 2.1
+Changes in check_pgbackrest 2.2
 ------------------------------------------------------------------------------
 
   * ...
@@ -75,8 +75,8 @@ Any contribution to improve it is welcome.
 
 Links:
 
-  * [Download]: https://github.com/pgstef/check_pgbackrest/releases
-  * [Support]: https://github.com/pgstef/check_pgbackrest/issues
+  * Download: https://github.com/pgstef/check_pgbackrest/releases
+  * Support: https://github.com/pgstef/check_pgbackrest/issues
 ```
   
 * check "Related Open Source"
