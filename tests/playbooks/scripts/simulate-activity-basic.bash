@@ -3,14 +3,16 @@ set -o errexit
 set -o nounset
 cd "$(dirname "$0")"
 
+EXTENDED_ACTIVITY=false
 usage() { 
     echo "Usage:"
     echo "    -s <scale>"
     echo "    -a <activity_time>"
     echo "    -p <local|remote>"
+    echo "    -e (extended activity)"
 }
 
-while getopts "s:a:p:" o; do
+while getopts "s:a:p:e" o; do
     case "${o}" in
         s)
             SCALE=${OPTARG}
@@ -20,6 +22,9 @@ while getopts "s:a:p:" o; do
             ;;
         p)
             SCRIPT_PROFILE=${OPTARG}
+            ;;
+        e)
+            EXTENDED_ACTIVITY=true
             ;;
         *)
             usage 1>&2
@@ -156,4 +161,23 @@ sudo -iu $PGUSER $PGBIN/psql -h $PGUNIXSOCKET -d $PGDATABASE -x -c "SELECT * FRO
 echo "--Simulate $ACTIVITY_TIME sec activity to get archives on different time-lines"
 sudo -iu $PGUSER $PGBIN/pgbench -h $PGUNIXSOCKET -T $ACTIVITY_TIME bench
 sudo -iu $PGUSER pgbackrest --stanza=$STANZA $REPO info
+
+if $EXTENDED_ACTIVITY; then
+    echo "--Create test-checksums setup"
+    sudo -iu $PGUSER $PGBIN/dropdb -h $PGUNIXSOCKET --if-exists test-checksums
+    sudo -iu $PGUSER $PGBIN/createdb -h $PGUNIXSOCKET test-checksums
+    sudo -iu $PGUSER $PGBIN/psql -h $PGUNIXSOCKET -d test-checksums -c "CREATE TABLE t1 (id int);INSERT INTO t1 VALUES (1);"
+    sudo -iu $PGUSER $PGBIN/psql -h $PGUNIXSOCKET -d $PGDATABASE -c "CHECKPOINT;"
+    FILE_TO_EDIT=`sudo -iu $PGUSER $PGBIN/psql -h $PGUNIXSOCKET -d test-checksums -A -t -c "SELECT current_setting('data_directory') || '/' || pg_relation_filepath('t1');"`
+    echo "FILE_TO_EDIT=$FILE_TO_EDIT"
+    echo "33" |xxd > $FILE_TO_EDIT
+
+    echo "--Take an incremental backup"
+    if [ "$SCRIPT_PROFILE" = "local" ]; then
+        sudo -iu $PGUSER pgbackrest --stanza=$STANZA $REPO --type=incr backup
+    else
+        sudo -iu $PGUSER ssh ${SSH_ARGS} ${PGBR_USER}@${PGBR_HOST} "pgbackrest --stanza=$STANZA $REPO --type=incr backup"
+    fi
+    sudo -iu $PGUSER pgbackrest --stanza=$STANZA $REPO info
+fi
 echo "-------------------PROCESS END-------------------"
