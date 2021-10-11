@@ -4,7 +4,7 @@ pgbackrest_configuration_file: "/etc/pgbackrest.conf"
 pgbackrest_excpected_release: ""
 pgbackrest_force_backup: false
 pgbackrest_git_url: "https://github.com/pgbackrest/pgbackrest.git"
-pgbackrest_git_branch: "master"
+pgbackrest_git_branch: "main"
 pgbackrest_repo_path: "/var/lib/pgbackrest"
 pgbackrest_repo_retention_full: 1
 pgbackrest_repo_type: "posix"
