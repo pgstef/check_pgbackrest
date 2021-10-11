@@ -18,6 +18,14 @@
           - lookup('env', 'EDB_REPO_PASSWORD') != ''
       run_once: true
 
+    # temp fix waiting for edb-ansible 3.6.6
+    - name: Update the ca-certificates package
+      ansible.builtin.yum:
+        name: ca-certificates
+        state: latest
+      become: true
+      when: "'icinga2' not in group_names and ansible_os_family == 'RedHat'"
+
     # Install PGDG and EDB repositories
     - include_role:
         name: edb_devops.edb_postgres.setup_repo
