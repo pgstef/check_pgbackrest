@@ -17,7 +17,7 @@ jobs:
         include:
           - DOCKERI: centos:7
             DBTYPE: PG
-            DBVERSION: 13
+            DBVERSION: 14
             CLNAME: c7pg
             EXTRA_VARS: "pgbackrest_excpected_release=2.35 check_pgbackrest_build=true"
 

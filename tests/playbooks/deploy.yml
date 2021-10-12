@@ -18,7 +18,7 @@
           - lookup('env', 'EDB_REPO_PASSWORD') != ''
       run_once: true
 
-    # temp fix waiting for edb-ansible 3.6.6
+    # temp fix waiting for edb-ansible update
     - name: Update the ca-certificates package
       ansible.builtin.yum:
         name: ca-certificates
@@ -44,6 +44,16 @@
       when: "'icinga2' not in group_names"
 
     # Install db server and setup replication
+    - set_fact:
+        supported_pg_version:
+          - 10
+          - 11
+          - 12
+          - 13
+          - 14
+        pg_initdb_options: "-k --encoding=UTF-8 --locale=en_US.UTF-8"
+      when: "ansible_os_family == 'RedHat'"                                     # temp fix waiting for edb-ansible update
+
     - include_role:
         name: edb_devops.edb_postgres.install_dbserver
       when: "'primary' in group_names or 'standby' in group_names"

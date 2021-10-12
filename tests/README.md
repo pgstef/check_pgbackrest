@@ -21,7 +21,7 @@ It tends to support the following situations:
 ## GitHub Actions
 
 [GitHub Actions](../.github/workflows/main.yml) are testing:
-  * Use-Case 1: PG 13, CentOS 7, using pgBackRest PGDG packages
+  * Use-Case 1: PG 14, CentOS 7, using pgBackRest PGDG packages
   * Use-Case 2: PG 13, Ubuntu 20.04, using pgBackRest PGDG packages
 
 ---
