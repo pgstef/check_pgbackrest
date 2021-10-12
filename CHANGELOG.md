@@ -3,7 +3,8 @@ Changelog
 
 2021-xx-xx v2.2:
 
-  - ...
+  - The retention service will check if any error was detected during the backup
+  (reported since pgBackRest 2.36)
   - ...
 
 

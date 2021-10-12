@@ -671,6 +671,11 @@ sub check_retention {
                         $backups_dir_content[$repo_key]->{$backup_label}->{'type'} eq 'path') {
                 push @crit_msg, "$backup_label directory missing in repo$repo_key";
             }
+
+            # Check if any error was detected during the backup (reported in the json output since pgBackRest 2.36)
+            if(defined $line->{'error'} && $line->{'error'}){
+                push @crit_msg, "error(s) detected during backup $backup_label (repo$repo_key)";
+            }
         }
 
         push @longmsg, "full=".scalar(@full_bck);
