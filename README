@@ -28,7 +28,10 @@ DESCRIPTION
 
     -O, --output OUTPUT_FORMAT
         The output format. Supported outputs are: "human", "json", "nagios"
-        (default) and "prtg".
+        (default), "nagios_strict" and "prtg".
+
+        The "nagios_strict" output format will filter out unsupported types
+        of values from the performance data.
 
     -C, --command FILE
         pgBackRest executable file (default: "pgbackrest").

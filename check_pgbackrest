@@ -109,8 +109,11 @@ sanity of each repository separately.
 
 =item B<-O>, B<--output> OUTPUT_FORMAT
 
-The output format. Supported outputs are: C<human>, C<json>, C<nagios> (default)
-and C<prtg>.
+The output format. Supported outputs are: C<human>, C<json>, C<nagios> (default),
+C<nagios_strict> and C<prtg>.
+
+The C<nagios_strict> output format will filter out unsupported types of values
+from the performance data.
 
 =item B<-C>, B<--command> FILE
 
@@ -187,6 +190,11 @@ sub list_services {
 
 # Handle output formats
 #-----------------------------------------------------------------------------
+
+# Define which @longmsg keys will use TimeSeconds or Count units.
+my @TimeKeys = ("latest_bck_age", "latest_full_age", "latest_archive_age");
+my @CountKeys = ("full", "diff", "incr", "num_unique_archives", "num_missing_archives");
+
 sub dprint {
     return unless $args{'debug'};
     foreach (@_) {
@@ -285,12 +293,44 @@ sub nagios_output ($$;$$) {
     return $rc;
 }
 
+sub nagios_strict_output ($$;$$) {
+    my $rc  = shift;
+    my $service = shift;
+    my @msg;
+    my @longmsg;
+
+    @msg      = @{ $_[0] } if defined $_[0];
+    @longmsg  = @{ $_[1] } if defined $_[1];
+
+    # Generate TEXT message
+    my $text;
+    $text .= $service . " OK"       if $rc == 0;
+    $text .= $service . " WARNING"  if $rc == 1;
+    $text .= $service . " CRITICAL" if $rc == 2;
+    $text .= $service . " UNKNOWN"  if $rc == 3;
+    $text .= " - ". join( ', ', @msg )  if @msg;
+
+    # Enforce Nagios strict specs, filter out some keys
+    my @longmsg_strict;
+    foreach my $msg_to_split (@longmsg) {
+        my ($key, $value) = split(/=/, $msg_to_split);
+
+        if ( grep /^$key$/, @TimeKeys or grep /^$key$/, @CountKeys ) {
+            push @longmsg_strict, $msg_to_split;
+        }
+    }
+
+    $text .= " | ". join( ' ', @longmsg_strict ) if @longmsg_strict;
+    print $text;
+    return $rc;
+}
+
 sub prtg_output ($$;$$) {
     my $rc  = shift;
     my $service = shift;
-    my $ret;
     my @msg;
     my @longmsg;
+    my @textmsg;
 
     @msg      = @{ $_[0] } if defined $_[0];
     @longmsg  = @{ $_[1] } if defined $_[1];
@@ -309,12 +349,6 @@ sub prtg_output ($$;$$) {
     $results .= "<LimitMaxError>1</LimitMaxError>";
     $results .= "<LimitMode>1</LimitMode></result>";
     
-    # Define which @longmsg keys will use TimeSeconds or Count units.
-    # Otherwise, it will be added to TEXT message.
-    my @TimeKeys = ("latest_age", "latest_full_age", "latest_archive_age");
-    my @CountKeys = ("full", "diff", "incr", "num_unique_archives", "num_missing_archives");
-    my @textmsg;
-
     foreach my $msg_to_split (@longmsg) {
         my ($key, $value) = split(/=/, $msg_to_split);
 
@@ -326,6 +360,7 @@ sub prtg_output ($$;$$) {
             $results .= "<result><channel>$key</channel><value>$value</value><Unit>Count</Unit></result>";
 
         } else {
+            # Add extra keys to the text message
             push @textmsg, $msg_to_split;
         }
     }
@@ -684,15 +719,16 @@ sub check_retention {
 
         # Check retention
         if(defined $args{'retention-full'} and scalar(@full_bck) < $args{'retention-full'}) {
-            push @crit_msg, "not enough full backups, ".$args{'retention-full'}." required";
+            push @crit_msg, "not enough full backups: ".$args{'retention-full'}." required";
         }
 
         # Check latest age
         # Backup age considered at pg_stop_backup
         my $latest_bck = @{$backups_info->{'backup'}}[-1];
         my $latest_bck_age = time() - $latest_bck->{'timestamp'}->{'stop'};
-        push @longmsg, "latest=".$latest_bck->{'type'}.",".$latest_bck->{'label'};
-        push @longmsg, "latest_age=".to_interval_output_dependent($latest_bck_age);
+        push @longmsg, "latest_bck=".$latest_bck->{'label'};
+        push @longmsg, "latest_bck_type=".$latest_bck->{'type'};
+        push @longmsg, "latest_bck_age=".to_interval_output_dependent($latest_bck_age);
 
         if(defined $args{'retention-age'}){
             my $bck_age_limit = get_time($args{'retention-age'} );
@@ -1002,6 +1038,7 @@ sub check_wal_archives {
         push @human_only_longmsg, "max_wal=$max_wal" if $max_wal;
         push @human_only_longmsg, "latest_archive=".$filelist{$last_wal_in_list}[0];
         push @human_only_longmsg, "latest_bck_archive_start=".$latest_bck_archive_start;
+        push @human_only_longmsg, "latest_bck=".$latest_bck->{'label'};
         push @human_only_longmsg, "latest_bck_type=".$latest_bck->{'type'};
         push @human_only_longmsg, "oldest_archive=".$filelist{$first_wal_in_list}[0];
         push @human_only_longmsg, "oldest_bck_archive_start=".$oldest_bck_archive_start;
@@ -1211,10 +1248,11 @@ pod2usage(
 
 # Output format
 for ( $args{'output'} ) {
-       if ( /^human$/         ) { $output_fmt = \&human_output  }
-    elsif ( /^json$/        ) { $output_fmt = \&json_output }
-    elsif ( /^nagios$/        ) { $output_fmt = \&nagios_output }
-    elsif ( /^prtg$/        ) { $output_fmt = \&prtg_output }
+       if ( /^human$/         ) { $output_fmt = \&human_output          }
+    elsif ( /^json$/          ) { $output_fmt = \&json_output           }
+    elsif ( /^nagios$/        ) { $output_fmt = \&nagios_output         }
+    elsif ( /^nagios_strict$/ ) { $output_fmt = \&nagios_strict_output  }
+    elsif ( /^prtg$/          ) { $output_fmt = \&prtg_output           }
     else {
         pod2usage(
             -message => "FATAL: unrecognized output format \"$_\" (see \"--output\")",

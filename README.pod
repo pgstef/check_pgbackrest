@@ -34,8 +34,11 @@ sanity of each repository separately.
 
 =item B<-O>, B<--output> OUTPUT_FORMAT
 
-The output format. Supported outputs are: C<human>, C<json>, C<nagios> (default)
-and C<prtg>.
+The output format. Supported outputs are: C<human>, C<json>, C<nagios> (default),
+C<nagios_strict> and C<prtg>.
+
+The C<nagios_strict> output format will filter out unsupported types of values
+from the performance data.
 
 =item B<-C>, B<--command> FILE
 

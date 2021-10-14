@@ -4,7 +4,9 @@ Changelog
 2021-xx-xx v2.2:
 
   - The retention service will check if any error was detected during the backup
-  (reported since pgBackRest 2.36)
+  (reported since pgBackRest 2.36).
+  - Add nagios_strict output format to filter out unsupported types of values
+  from performance data. (Reported by netphantm and Adrien Nayrat)
   - ...
 
 
