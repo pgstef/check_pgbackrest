@@ -425,7 +425,7 @@ sub to_interval_output_dependent($) {
 
     return $val if $val =~ /^-?inf/i;
     $val = int($val);
-    return to_interval($val) unless $args{'output'} =~ /^(nagios|prtg)$/;
+    return to_interval($val) unless $args{'output'} =~ /^(nagios|nagios_strict|prtg)$/;
     return "${val}s";
 }
 
