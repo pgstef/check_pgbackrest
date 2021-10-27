@@ -7,6 +7,8 @@ Changelog
   (reported since pgBackRest 2.36).
   - Add nagios_strict output format to filter out unsupported types of values
   from performance data. (Reported by netphantm and Adrien Nayrat)
+  - Support uncompressed files in the archives service. (Suggested by
+  Jean-Philippe Guérard)
   - ...
 
 

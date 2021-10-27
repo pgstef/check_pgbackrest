@@ -99,9 +99,6 @@ Arguments are not mandatory to only show some information.
 Check if all archived WALs exist between the oldest and the latest 
 WAL needed for the recovery.
 
-Archives must be compressed. If needed, use "compress-level=0"
-instead of "compress=n".
-
 Use the C<--wal-segsize> argument to set the WAL segment size.
 
 The following units are accepted (not case sensitive):

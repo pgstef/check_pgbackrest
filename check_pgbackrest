@@ -764,9 +764,6 @@ sub check_retention {
 Check if all archived WALs exist between the oldest and the latest 
 WAL needed for the recovery.
 
-Archives must be compressed. If needed, use "compress-level=0"
-instead of "compress=n".
-
 Use the C<--wal-segsize> argument to set the WAL segment size.
 
 The following units are accepted (not case sensitive):
@@ -817,7 +814,7 @@ sub get_archived_wal_list {
     my $args_ref = shift;
     my %args = %{ $args_ref };
     my $archives_dir = shift;
-    my $suffix = "\.(gz|lz4|zst|xz|bz2)";
+    my $suffix = "(\.(gz|lz4|zst|xz|bz2))?";
 
     my %filelist;
     my @branch_wals;
