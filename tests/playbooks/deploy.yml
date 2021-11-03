@@ -18,14 +18,6 @@
           - lookup('env', 'EDB_REPO_PASSWORD') != ''
       run_once: true
 
-    # temp fix waiting for edb-ansible update
-    - name: Update the ca-certificates package
-      ansible.builtin.yum:
-        name: ca-certificates
-        state: latest
-      become: true
-      when: "'icinga2' not in group_names and ansible_os_family == 'RedHat'"
-
     # Install PGDG and EDB repositories
     - include_role:
         name: edb_devops.edb_postgres.setup_repo
@@ -45,31 +37,20 @@
 
     # Install db server and setup replication
     - set_fact:
-        supported_pg_version:
-          - 10
-          - 11
-          - 12
-          - 13
-          - 14
-        pg_initdb_options: "-k --encoding=UTF-8 --locale=en_US.UTF-8"
-      when: "ansible_os_family == 'RedHat'"                                     # temp fix waiting for edb-ansible update
+        pg_instance_name: "main"
+        use_replication_slots: false
+        use_hostname: false
 
     - include_role:
         name: edb_devops.edb_postgres.install_dbserver
       when: "'primary' in group_names or 'standby' in group_names"
-    
+
     - include_role:
         name: edb_devops.edb_postgres.init_dbserver
-      vars:
-        use_replication_slots: false
-        use_hostname: false
       when: "'primary' in group_names"
 
     - include_role:
         name: edb_devops.edb_postgres.setup_replication
-      vars:
-        use_replication_slots: false
-        use_hostname: false
       when: "'standby' in group_names"
 
     # Install pgBackRest and check_pgbackrest
