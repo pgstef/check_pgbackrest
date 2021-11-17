@@ -82,6 +82,9 @@ Descriptions and parameters of available services.
 Fail when the number of full backups is less than the 
 C<--retention-full> argument.
 
+Fail when the number of incremental backups is less than the
+C<--retention-incr> argument.
+
 Fail when the newest backup is older than the C<--retention-age> 
 argument.
 

@@ -653,6 +653,9 @@ Descriptions and parameters of available services.
 Fail when the number of full backups is less than the 
 C<--retention-full> argument.
 
+Fail when the number of incremental backups is less than the
+C<--retention-incr> argument.
+
 Fail when the newest backup is older than the C<--retention-age> 
 argument.
 
@@ -717,9 +720,14 @@ sub check_retention {
         push @longmsg, "diff=".scalar(@diff_bck);
         push @longmsg, "incr=".scalar(@incr_bck);
 
-        # Check retention
+        # Check retention-full
         if(defined $args{'retention-full'} and scalar(@full_bck) < $args{'retention-full'}) {
             push @crit_msg, "not enough full backups: ".$args{'retention-full'}." required";
+        }
+
+        # Check retention-incr
+        if(defined $args{'retention-incr'} and scalar(@incr_bck) < $args{'retention-incr'}) {
+            push @crit_msg, "not enough incremental backups: ".$args{'retention-incr'}." required";
         }
 
         # Check latest age
@@ -1191,6 +1199,7 @@ GetOptions(
         'retention-age=s',
         'retention-age-to-full=s',
         'retention-full=i',
+        'retention-incr=i',
         'service|s=s',
         'stanza|S=s',
         'target-version=s',
@@ -1219,9 +1228,9 @@ pod2usage(
 
 # Check "retention" specific args --retention-age, --retention-age-to-full and --retention-full
 pod2usage(
-    -message => 'FATAL: "retention-age", "retention-age-to-full" and "retention-full" are only allowed with "retention" service.',
+    -message => 'FATAL: "retention-age", "retention-age-to-full" and "retention-full" and "retention-incr" are only allowed with "retention" service.',
     -exitval => 127
-) if ( $args{'retention-age'} or $args{'retention-age-to-full'} or $args{'retention-full'} )
+) if ( $args{'retention-age'} or $args{'retention-age-to-full'} or $args{'retention-full'} or $args{'retention-incr'} )
     and $args{'service'} ne 'retention';
 
 # Check "archives" specific args --extended-check, --ignore-archived-after, --ignore-archived-before, --latest-archive-age-alert and --max-archives-check-number
