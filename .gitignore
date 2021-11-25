@@ -2,3 +2,4 @@
 vagrant.yml
 tests/validation.sh
 tests/validation.log
+tests/test.sh

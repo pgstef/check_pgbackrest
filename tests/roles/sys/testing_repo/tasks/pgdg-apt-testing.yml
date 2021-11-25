@@ -1,0 +1,11 @@
+---
+- name: Add testing PG apt repo
+  apt_repository:
+    repo: "deb http://apt.postgresql.org/pub/repos/apt/ {{ ansible_distribution_release }}-pgdg-testing main {{ pg_version }}"
+    state: present
+    filename: "pgdg"
+
+- name: Add apt pin preferences
+  template:
+    src: "pin-pgdg.pref.j2"
+    dest: '/etc/apt/preferences.d/pgdg.pref'

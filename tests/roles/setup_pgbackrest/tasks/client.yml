@@ -6,7 +6,7 @@
     owner: "{{ postgres_user }}"
     group: "{{ postgres_user }}"
     mode: 0640
-  become: true
+  become: yes
   register: pgbackrest_config
 
 - name: Record if a new backup is needed
