@@ -54,7 +54,7 @@ jobs:
         include:
           - DOCKERI: ubuntu:20.04
             DBTYPE: PG
-            DBVERSION: 13
+            DBVERSION: 14
             CLNAME: u20pg
             EXTRA_VARS: "pgbackrest_excpected_release=2.36 check_pgbackrest_build=true"
 

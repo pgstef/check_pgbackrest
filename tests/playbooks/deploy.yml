@@ -56,9 +56,10 @@
         name: sys/testing_repo
         tasks_from: edb-staging
       vars:
+        pg_type: "EPAS"
         repo_username: "{{ lookup('env', 'EDB_REPO_USERNAME') }}"
         repo_password: "{{ lookup('env', 'EDB_REPO_PASSWORD') }}"
-      when: "pg_type == 'EPAS' and pg_version|int >= 14"
+      when: "pg_version|int >= 14"
 
     # Setup PG apt testing repositories for pgBackRest
     - include_role:
@@ -80,6 +81,12 @@
       when: >
         ansible_os_family == 'RedHat' and
         ansible_distribution_major_version == "7"
+
+    - set_fact:
+        pg_ssl: false   # temporary fix until sslutils is available
+      when: >
+        ansible_os_family == 'Debian' and
+        pg_version|int >= 14
 
     - include_role:
         name: install_dbserver

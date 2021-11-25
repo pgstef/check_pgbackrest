@@ -8,10 +8,17 @@
       - postgresql-{{ pg_version }}
       - postgresql-{{ pg_version }}
       - postgresql-server-dev-{{ pg_version }}
-      - postgresql-{{ pg_version }}-sslutils
     state: present
     update_cache: yes
   register: install_package
+  become: true
+
+- name: Install dependencies PG < 14
+  package:
+    name:
+      - postgresql-{{ pg_version }}-sslutils
+    state: present
+  when: pg_version|int < 14
   become: true
 
 - name: Install python-psycopg2

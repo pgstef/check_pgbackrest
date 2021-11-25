@@ -25,6 +25,7 @@
 - name: Install require python package
   package:
     name:
+      - python3-pip
       - python3-pycurl
       - python3-libselinux
       - python3-psycopg2

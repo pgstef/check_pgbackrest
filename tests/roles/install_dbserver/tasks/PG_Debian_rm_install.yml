@@ -14,9 +14,16 @@
       - postgresql-{{ pg_version }}
       - postgresql-{{ pg_version }}
       - postgresql-server-dev-{{ pg_version }}
-      - postgresql-{{ pg_version }}-sslutils
     state: absent
     update_cache: yes
+  become: true
+
+- name: Remove PG < 14 packages
+  package:
+    name:
+      - postgresql-{{ pg_version }}-sslutils
+    state: absent
+  when: pg_version|int < 14
   become: true
 
 - name: Remove python-psycopg2
