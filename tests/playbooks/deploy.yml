@@ -56,10 +56,9 @@
         name: sys/testing_repo
         tasks_from: edb-staging
       vars:
-        pg_type: "EPAS"
         repo_username: "{{ lookup('env', 'EDB_REPO_USERNAME') }}"
         repo_password: "{{ lookup('env', 'EDB_REPO_PASSWORD') }}"
-      when: "pg_version|int >= 14"
+      when: "pg_type == 'EPAS' and pg_version|int >= 14"
 
     # Setup PG apt testing repositories for pgBackRest
     - include_role:
