@@ -653,6 +653,12 @@ Descriptions and parameters of available services.
 Fail when the number of full backups is less than the 
 C<--retention-full> argument.
 
+Fail when the number of differential backups is less than the
+C<--retention-diff> argument.
+
+Fail when the number of incremental backups is less than the
+C<--retention-incr> argument.
+
 Fail when the newest backup is older than the C<--retention-age> 
 argument.
 
@@ -717,9 +723,19 @@ sub check_retention {
         push @longmsg, "diff=".scalar(@diff_bck);
         push @longmsg, "incr=".scalar(@incr_bck);
 
-        # Check retention
+        # Check retention-full
         if(defined $args{'retention-full'} and scalar(@full_bck) < $args{'retention-full'}) {
             push @crit_msg, "not enough full backups: ".$args{'retention-full'}." required";
+        }
+
+        # Check retention-diff
+        if(defined $args{'retention-diff'} and scalar(@diff_bck) < $args{'retention-diff'}) {
+            push @crit_msg, "not enough differential backups: ".$args{'retention-diff'}." required";
+        }
+
+        # Check retention-incr
+        if(defined $args{'retention-incr'} and scalar(@incr_bck) < $args{'retention-incr'}) {
+            push @crit_msg, "not enough incremental backups: ".$args{'retention-incr'}." required";
         }
 
         # Check latest age
@@ -1190,7 +1206,9 @@ GetOptions(
         'repo=s',
         'retention-age=s',
         'retention-age-to-full=s',
+        'retention-diff=i',
         'retention-full=i',
+        'retention-incr=i',
         'service|s=s',
         'stanza|S=s',
         'target-version=s',
@@ -1217,19 +1235,23 @@ pod2usage(
     -exitval => 127
 ) if defined $args{'service'} and $services{$args{'service'}}{'stanza-arg'} and not defined $args{'stanza'};
 
-# Check "retention" specific args --retention-age, --retention-age-to-full and --retention-full
-pod2usage(
-    -message => 'FATAL: "retention-age", "retention-age-to-full" and "retention-full" are only allowed with "retention" service.',
-    -exitval => 127
-) if ( $args{'retention-age'} or $args{'retention-age-to-full'} or $args{'retention-full'} )
-    and $args{'service'} ne 'retention';
+# Check "retention" specific args
+my @specific_args = ('retention-age', 'retention-age-to-full', 'retention-diff', 'retention-full', 'retention-incr');
+foreach( @specific_args ){
+    pod2usage(
+        -message => "FATAL: \"$_\" is only allowed with \"retention\" service.",
+        -exitval => 127
+    ) if ( $args{$_} and $args{'service'} ne 'retention' );
+}
 
-# Check "archives" specific args --extended-check, --ignore-archived-after, --ignore-archived-before, --latest-archive-age-alert and --max-archives-check-number
-pod2usage(
-    -message => 'FATAL: "extended-check", "ignore-archived-after", "ignore-archived-before", "latest-archive-age-alert" and "max-archives-check-number" are only allowed with "archives" service.',
-    -exitval => 127
-) if ( $args{'extended-check'} or $args{'ignore-archived-after'} or $args{'ignore-archived-before'} or $args{'latest-archive-age-alert'} or $args{'max-archives-check-number'} )
-    and $args{'service'} ne 'archives';
+# Check "archives" specific args
+@specific_args = ('extended-check', 'ignore-archived-after', 'ignore-archived-before', 'latest-archive-age-alert', 'max-archives-check-number');
+foreach( @specific_args ){
+    pod2usage(
+        -message => "FATAL: \"$_\" is only allowed with \"archives\" service.",
+        -exitval => 127
+    ) if ( $args{$_} and $args{'service'} ne 'archives' );
+}
 
 # Check "archives" specific arg --list-archives
 pod2usage(

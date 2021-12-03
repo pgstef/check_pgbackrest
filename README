@@ -62,6 +62,12 @@ DESCRIPTION
         Fail when the number of full backups is less than the
         "--retention-full" argument.
 
+        Fail when the number of differential backups is less than the
+        "--retention-diff" argument.
+
+        Fail when the number of incremental backups is less than the
+        "--retention-incr" argument.
+
         Fail when the newest backup is older than the "--retention-age"
         argument.
 
