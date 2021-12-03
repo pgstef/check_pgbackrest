@@ -9,8 +9,10 @@ Changelog
   from performance data. (Reported by netphantm and Adrien Nayrat)
   - Support uncompressed files in the archives service. (Suggested by
   Jean-Philippe Guérard)
-  - Add `retention-diff` and `retention-incr` options in the retention service
-  (devopstales).
+  - Add `retention-diff` and `retention-incr` options in the retention service.
+  (Contributed by devopstales).
+  - Add `retention-age-to-oldest` option in the retention service. (Suggested by
+  Hendrik Schöffmann)
   - ...
 
 

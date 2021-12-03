@@ -74,6 +74,9 @@ DESCRIPTION
         Fail when the newest full backup is older than the
         "--retention-age-to-full" argument.
 
+        Fail when the oldest backup is newer than the
+        "--retention-age-to-oldest" argument.
+
         The following units are accepted (not case sensitive): s (second), m
         (minute), h (hour), d (day). You can use more than one unit per
         given value.

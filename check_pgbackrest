@@ -192,7 +192,7 @@ sub list_services {
 #-----------------------------------------------------------------------------
 
 # Define which @longmsg keys will use TimeSeconds or Count units.
-my @TimeKeys = ("latest_bck_age", "latest_full_age", "latest_archive_age");
+my @TimeKeys = ("latest_bck_age", "latest_full_age", "latest_archive_age", "oldest_bck_age");
 my @CountKeys = ("full", "diff", "incr", "num_unique_archives", "num_missing_archives");
 
 sub dprint {
@@ -665,6 +665,9 @@ argument.
 Fail when the newest full backup is older than the 
 C<--retention-age-to-full> argument.
 
+Fail when the oldest backup is newer than the
+C<--retention-age-to-oldest> argument.
+
 The following units are accepted (not case sensitive): s (second), m 
 (minute), h (hour), d (day). You can use more than one unit per 
 given value.
@@ -760,6 +763,17 @@ sub check_retention {
 
             my $bck_age_limit = get_time($args{'retention-age-to-full'} );
             push @crit_msg, "full backups are too old" if $latest_full_bck_age >= $bck_age_limit;
+        }
+
+        # Check oldest age
+        my $oldest_bck = @{$backups_info->{'backup'}}[0];
+        my $oldest_bck_age = time() - $oldest_bck->{'timestamp'}->{'stop'};
+        push @longmsg, "oldest_bck=".$oldest_bck->{'label'};
+        push @longmsg, "oldest_bck_age=".to_interval_output_dependent($oldest_bck_age);
+
+        if(defined $args{'retention-age-to-oldest'}){
+            my $bck_age_limit = get_time($args{'retention-age-to-oldest'} );
+            push @crit_msg, "backups are too young" if $oldest_bck_age < $bck_age_limit;
         }
 
     }else{
@@ -1206,6 +1220,7 @@ GetOptions(
         'repo=s',
         'retention-age=s',
         'retention-age-to-full=s',
+        'retention-age-to-oldest=s',
         'retention-diff=i',
         'retention-full=i',
         'retention-incr=i',
@@ -1236,7 +1251,7 @@ pod2usage(
 ) if defined $args{'service'} and $services{$args{'service'}}{'stanza-arg'} and not defined $args{'stanza'};
 
 # Check "retention" specific args
-my @specific_args = ('retention-age', 'retention-age-to-full', 'retention-diff', 'retention-full', 'retention-incr');
+my @specific_args = ('retention-age', 'retention-age-to-full', 'retention-age-to-oldest', 'retention-diff', 'retention-full', 'retention-incr');
 foreach( @specific_args ){
     pod2usage(
         -message => "FATAL: \"$_\" is only allowed with \"retention\" service.",

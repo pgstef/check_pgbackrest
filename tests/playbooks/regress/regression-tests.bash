@@ -156,6 +156,14 @@ echo
 $PLUGIN_PATH/check_pgbackrest --prefix="sudo -u $PGUSER" --stanza=$STANZA $REPO --service=retention --retention-age-to-full=1h --output=human
 $PLUGIN_PATH/check_pgbackrest --prefix="sudo -u $PGUSER" --stanza=$STANZA $REPO --service=retention --retention-age-to-full=1h | cut -f1 -d"|" > $RESULTS_DIR/retention-age-to-full.out
 
+# --service=retention --retention-age-to-oldest
+# check if the oldest backup is too young
+echo "--service=retention --retention-age-to-oldest fail"
+$PLUGIN_PATH/check_pgbackrest --prefix="sudo -u $PGUSER" --stanza=$STANZA $REPO --service=retention --retention-age-to-oldest=1h --output=nagios_strict
+echo
+$PLUGIN_PATH/check_pgbackrest --prefix="sudo -u $PGUSER" --stanza=$STANZA $REPO --service=retention --retention-age-to-oldest=1h --output=human
+$PLUGIN_PATH/check_pgbackrest --prefix="sudo -u $PGUSER" --stanza=$STANZA $REPO --service=retention --retention-age-to-oldest=1h | cut -f1 -d"|" > $RESULTS_DIR/retention-age-to-oldest-fail.out
+
 # --service=retention fail
 echo "--service=retention fail"
 sudo -iu $PGUSER $PGBIN/psql -h $PGUNIXSOCKET -d $PGDATABASE -c "SELECT pg_sleep(2);" > /dev/null 2>&1
