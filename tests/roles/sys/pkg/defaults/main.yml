@@ -14,3 +14,4 @@ default_packages:
     - openssh-clients
     - iproute
     - vim-common
+    - yum-utils

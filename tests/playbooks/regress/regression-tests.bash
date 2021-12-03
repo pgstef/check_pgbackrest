@@ -87,7 +87,10 @@ if [ "$PGBR_REPO_TYPE" = "multi" ]; then
 fi
 
 if [ ! -d $RESULTS_DIR ]; then
-     mkdir $RESULTS_DIR
+    mkdir $RESULTS_DIR
+else
+    rmdir $RESULTS_DIR
+    mkdir $RESULTS_DIR
 fi
 
 ## Tests
@@ -162,8 +165,7 @@ $PLUGIN_PATH/check_pgbackrest --prefix="sudo -u $PGUSER" --stanza=$STANZA $REPO 
 # --service=archives
 echo "--service=archives"
 if [ "$PGBR_REPO_TYPE" = "multi" ] && ! $SKIP_REPO2_CLEAR; then
-    # repo2 should only have 1 full backup, so only 1 archive in it
-    $PLUGIN_PATH/check_pgbackrest --prefix="sudo -u $PGUSER" --stanza=$STANZA --repo=2 --service=archives  | cut -f1 -d","  > $RESULTS_DIR/archives-repo2-ok.out
+    $PLUGIN_PATH/check_pgbackrest --prefix="sudo -u $PGUSER" --stanza=$STANZA --repo=2 --service=archives | cut -f1 -d"-" > $RESULTS_DIR/archives-repo2-ok.out
 fi
 sudo -iu $PGUSER $PGBIN/psql -h $PGUNIXSOCKET -d $PGDATABASE -c "SELECT pg_create_restore_point('generate WAL');" > /dev/null 2>&1
 sudo -iu $PGUSER $PGBIN/psql -h $PGUNIXSOCKET -d $PGDATABASE -c "SELECT pg_switch_xlog();" > /dev/null 2>&1

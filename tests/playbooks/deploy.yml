@@ -19,6 +19,22 @@
       run_once: true
 
     # Install PGDG and EDB repositories
+    - set_fact:
+        supported_pg_version:
+          - 10
+          - 11
+          - 12
+          - 13
+          - 14
+        supported_os:
+          - CentOS7
+          - CentOS8
+          - Rocky8      # still experimental!
+          - Ubuntu18
+          - Ubuntu20
+          - Debian9
+          - Debian10
+
     - include_role:
         name: edb_devops.edb_postgres.setup_repo
       vars:
@@ -35,14 +51,45 @@
         repo_password: "{{ lookup('env', 'EDB_REPO_PASSWORD') }}"
       when: "'icinga2' not in group_names"
 
+    # Setup testing repositories for EPAS testing
+    - include_role:
+        name: sys/testing_repo
+        tasks_from: edb-staging
+      vars:
+        repo_username: "{{ lookup('env', 'EDB_REPO_USERNAME') }}"
+        repo_password: "{{ lookup('env', 'EDB_REPO_PASSWORD') }}"
+      when: "pg_type == 'EPAS' and pg_version|int >= 14"
+
+    # Setup PG apt testing repositories for pgBackRest
+    - include_role:
+        name: sys/testing_repo
+        tasks_from: pgdg-apt-testing
+      when: >
+        ansible_os_family == 'Debian' and
+        'icinga2' not in group_names
+
     # Install db server and setup replication
     - set_fact:
         pg_instance_name: "main"
         use_replication_slots: false
         use_hostname: false
+        pg_initdb_options: "-k --encoding=UTF-8 --locale=C.UTF-8"
+
+    - set_fact:
+        pg_initdb_options: "-k --encoding=UTF-8 --locale=en_US.UTF-8"
+      when: >
+        ansible_os_family == 'RedHat' and
+        ansible_distribution_major_version == "7"
+
+    - set_fact:
+        pg_ssl: false   # temporary fix until sslutils is available
+      when: >
+        ansible_os_family == 'Debian' and
+        pg_version|int >= 14
 
     - include_role:
-        name: edb_devops.edb_postgres.install_dbserver
+        name: install_dbserver
+        # name: edb_devops.edb_postgres.install_dbserver
       when: "'primary' in group_names or 'standby' in group_names"
 
     - include_role:

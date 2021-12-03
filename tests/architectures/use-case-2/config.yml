@@ -14,24 +14,24 @@ cluster_vars:
   disable_logging: false
 
 instances:
-- name: backup
+- name: bck-host
   ansible_group: pgbackrest_repo_host
 
 - name: pg1
   ansible_group: primary
   pgbackrest: true
-  pgbackrest_repo_host: backup
+  pgbackrest_repo_host: bck-host
 
 - name: pg2
   ansible_group: standby
   upstream: pg1
   replication_type: asynchronous
   pgbackrest: true
-  pgbackrest_repo_host: backup
+  pgbackrest_repo_host: bck-host
 
 - name: pg3
   ansible_group: standby
   upstream: pg1
   replication_type: asynchronous
   pgbackrest: true
-  pgbackrest_repo_host: backup
+  pgbackrest_repo_host: bck-host

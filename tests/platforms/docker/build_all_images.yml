@@ -19,3 +19,4 @@
         - { base: 'ubuntu', tag: '20.04' }
         - { base: 'centos', tag: '7'     }
         - { base: 'centos', tag: '8'     }
+        - { base: 'rockylinux', tag: '8' }
