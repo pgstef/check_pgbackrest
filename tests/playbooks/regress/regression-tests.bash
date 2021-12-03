@@ -116,18 +116,20 @@ $PLUGIN_PATH/check_pgbackrest --list | tee $RESULTS_DIR/list.out
 echo "--version"
 $PLUGIN_PATH/check_pgbackrest --version
 
-# --service=retention --retention-full
-echo "--service=retention --retention-full"
+# --service=retention --retention-full, --retention-diff, --retention-incr
+echo "--service=retention --retention-full, --retention-diff, --retention-incr"
 if [ "$PGBR_REPO_TYPE" = "multi" ] && ! $SKIP_REPO2_CLEAR; then
     # repo2 should be empty, the service should then fail
     $PLUGIN_PATH/check_pgbackrest --prefix="sudo -u $PGUSER" --stanza=$STANZA --service=retention --retention-full=1 > $RESULTS_DIR/retention-full-repo2-ko.out
 fi
-$PLUGIN_PATH/check_pgbackrest --prefix="sudo -u $PGUSER" --stanza=$STANZA $REPO --service=retention --retention-full=1 --output=nagios_strict
+$PLUGIN_PATH/check_pgbackrest --prefix="sudo -u $PGUSER" --stanza=$STANZA $REPO --service=retention --retention-full=1 --retention-diff=1 --retention-incr=1 --output=nagios_strict
 echo
-$PLUGIN_PATH/check_pgbackrest --prefix="sudo -u $PGUSER" --stanza=$STANZA $REPO --service=retention --retention-full=1 --output=human
-$PLUGIN_PATH/check_pgbackrest --prefix="sudo -u $PGUSER" --stanza=$STANZA $REPO --service=retention --retention-full=1 --output=prtg
+$PLUGIN_PATH/check_pgbackrest --prefix="sudo -u $PGUSER" --stanza=$STANZA $REPO --service=retention --retention-full=1 --retention-diff=1 --retention-incr=1 --output=human
+$PLUGIN_PATH/check_pgbackrest --prefix="sudo -u $PGUSER" --stanza=$STANZA $REPO --service=retention --retention-full=1 --retention-diff=1 --retention-incr=1 --output=prtg
 echo
 $PLUGIN_PATH/check_pgbackrest --prefix="sudo -u $PGUSER" --stanza=$STANZA $REPO --service=retention --retention-full=1 | cut -f1 -d"|" > $RESULTS_DIR/retention-full.out
+$PLUGIN_PATH/check_pgbackrest --prefix="sudo -u $PGUSER" --stanza=$STANZA $REPO --service=retention --retention-diff=1 | cut -f1 -d"|" > $RESULTS_DIR/retention-diff.out
+$PLUGIN_PATH/check_pgbackrest --prefix="sudo -u $PGUSER" --stanza=$STANZA $REPO --service=retention --retention-incr=1 | cut -f1 -d"|" > $RESULTS_DIR/retention-incr.out
 
 if [ "$PGBR_REPO_TYPE" = "multi" ] && ! $SKIP_REPO2_CLEAR; then
     # Take an extra backup for repo2 and make sure the global check will see it
