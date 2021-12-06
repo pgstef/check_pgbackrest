@@ -1,7 +1,7 @@
 Changelog
 =========
 
-2021-xx-xx v2.2:
+2021-12-06 v2.2:
 
   - The retention service will check if any error was detected during the backup
   (reported since pgBackRest 2.36).
@@ -13,8 +13,6 @@ Changelog
   (Contributed by devopstales).
   - Add `retention-age-to-oldest` option in the retention service. (Suggested by
   Hendrik Schöffmann)
-  - ...
-
 
 2021-09-21 v2.1:
 

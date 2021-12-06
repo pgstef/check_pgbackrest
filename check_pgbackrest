@@ -20,7 +20,7 @@ check_pgbackrest - pgBackRest backup check plugin for Nagios
 
 =head1 DESCRIPTION
 
-check_pgbackrest is designed to monitor pgBackRest (2.32 and above) backups from Nagios.
+check_pgbackrest is designed to monitor pgBackRest (2.33 and above) backups from Nagios.
 
 =cut
 
@@ -61,7 +61,7 @@ undef @path;
 # Reference to the output sub
 my $output_fmt;
 
-$VERSION = '2.2dev';
+$VERSION = '2.2';
 $PROGRAM = 'check_pgbackrest';
 $PGBR_SUPPORT = '2.33';
 $INIT_TIME = time();
@@ -1305,7 +1305,7 @@ check_pgbackrest is an open project. Any contribution to improve it is welcome.
 
 =head1 VERSION
 
-check_pgbackrest version 2.1, released on Tue Sep 21 2021.
+check_pgbackrest version 2.2, released on Mon Dec 06 2021.
 
 =head1 LICENSING
 
