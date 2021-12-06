@@ -61,7 +61,7 @@ undef @path;
 # Reference to the output sub
 my $output_fmt;
 
-$VERSION = '2.2';
+$VERSION = '2.3dev';
 $PROGRAM = 'check_pgbackrest';
 $PGBR_SUPPORT = '2.33';
 $INIT_TIME = time();

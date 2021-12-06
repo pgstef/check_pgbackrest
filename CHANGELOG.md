@@ -1,6 +1,11 @@
 Changelog
 =========
 
+202X-XX-XX v2.3:
+
+  - ...
+  - ...
+
 2021-12-06 v2.2:
 
   - The retention service will check if any error was detected during the backup
