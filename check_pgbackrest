@@ -836,6 +836,9 @@ find the switch point and define the boundary WAL.
 Use the C<--max-archives-check-number> to prevent infinite WAL archives check
 when boundary WAL can't be defined properly.
 
+In case of pgBackRest db history change (after a successful stanza-upgrade),
+only the latest db system/version will be checked.
+
 =cut
 
 sub get_archived_wal_list {
@@ -978,21 +981,54 @@ sub check_wal_archives {
     die("Can't get pgBackRest info.\n") unless (defined $backups_info);
     dprint("!> pgBackRest info took ".(time() - $start_time)."s\n");
 
-    if($backups_info->{'status'}->{'code'} == 0) {
+    if ( $backups_info->{'status'}->{'code'} == 0 ) {
         my %archives_dir;
         my $min_wal;
         my $max_wal;
 
-        foreach my $line (@{$backups_info->{'archive'}}) {
-            my $repo_key = $line->{'database'}->{'repo-key'};
-            $archives_dir{$repo_key} = "archive/".$args{'stanza'}."/".$line->{'id'}; # Relative path inside repository
-            $min_wal = $line->{'min'} if(not $min_wal or $line->{'min'} lt $min_wal);
-            $max_wal = $line->{'max'} if(not $max_wal or $line->{'max'} gt $max_wal);
+        # The latest PG system and version must match across repos for the stanza
+        my %latest_db;
+        foreach my $db (@{$backups_info->{'db'}}) {
+            my $repo_key = $db->{'repo-key'};
+            if ( not $latest_db{$repo_key}{'id'} or $latest_db{$repo_key}{'id'} lt $db->{'id'} ) {
+                $latest_db{$repo_key}{'id'} = $db->{'id'};
+                $latest_db{$repo_key}{'system-id'} = $db->{'system-id'};
+                $latest_db{$repo_key}{'version'} = $db->{'version'};
+            }
         }
 
-        # Get the oldest backup info
-        my $oldest_bck = @{$backups_info->{'backup'}}[0];
+        my @repo_keys = sort(keys %latest_db);
+        for(my $i = $repo_keys[0]; $i < $repo_keys[-1]; $i++){
+            if ( $latest_db{$i}{'system-id'} ne $latest_db{$i+1}{'system-id'} ||
+                 $latest_db{$i}{'version'} ne $latest_db{$i+1}{'version'} ) {
+                return critical $me, ['database mismatch across repos'];
+            }
+        }
+
+        # Only look at the latest PG system/version archives
+        foreach my $line (@{$backups_info->{'archive'}}) {
+            my $repo_key = $line->{'database'}->{'repo-key'};
+            if ( $latest_db{$repo_key}{'id'} == $line->{'database'}->{'id'} ) {
+                $archives_dir{$repo_key} = "archive/".$args{'stanza'}."/".$line->{'id'}; # Relative path inside repository
+                $min_wal = $line->{'min'} if(not $min_wal or $line->{'min'} lt $min_wal);
+                $max_wal = $line->{'max'} if(not $max_wal or $line->{'max'} gt $max_wal);
+            }else{
+                dprint ("ignoring archives for db id ".$line->{'database'}->{'id'}." in repo ".$repo_key."\n");
+            }
+        }
+
+        # Get the oldest and latest backup info (ordered by backup-timestamp-stop) for the latest PG system/version
+        my @current_db_backups;
+        foreach my $line (@{$backups_info->{'backup'}}) {
+            my $repo_key = $line->{'database'}->{'repo-key'};
+            if ( $latest_db{$repo_key}{'id'} == $line->{'database'}->{'id'} ) {
+                push(@current_db_backups, $line);
+            }
+        }
+        my $oldest_bck = $current_db_backups[0];
         my $oldest_bck_archive_start = $oldest_bck->{'archive'}->{'start'};
+        my $latest_bck = $current_db_backups[-1];
+        my $latest_bck_archive_start = $latest_bck->{'archive'}->{'start'};
 
         # Change min_wal to oldest_bck_archive_start
         if ( $min_wal lt $oldest_bck_archive_start ) {
@@ -1056,10 +1092,6 @@ sub check_wal_archives {
         my @needed_wal_archives_list=&generate_needed_wal_archives_list($min_wal, $max_wal, \@branch_wals, $seg_per_wal, \%args);
         dprint("!> Get all the needed WAL archives took ".(time() - $start_time)."s\n");
 
-        # Get the latest backup info
-        my $latest_bck = @{$backups_info->{'backup'}}[-1];
-        my $latest_bck_archive_start = $latest_bck->{'archive'}->{'start'};
-
         # Print human_only_longmsg
         push @human_only_longmsg, "min_wal=$min_wal" if $min_wal;
         push @human_only_longmsg, "max_wal=$max_wal" if $max_wal;
@@ -1069,6 +1101,7 @@ sub check_wal_archives {
         push @human_only_longmsg, "latest_bck_type=".$latest_bck->{'type'};
         push @human_only_longmsg, "oldest_archive=".$filelist{$first_wal_in_list}[0];
         push @human_only_longmsg, "oldest_bck_archive_start=".$oldest_bck_archive_start;
+        push @human_only_longmsg, "oldest_bck=".$oldest_bck->{'label'};
         push @human_only_longmsg, "oldest_bck_type=".$oldest_bck->{'type'};
 
         my @warn_missing_files;
@@ -1088,7 +1121,7 @@ sub check_wal_archives {
 
         # Go through each backup to check their needed WAL archives
         $start_time = time();
-        foreach my $line (@{$backups_info->{'backup'}}){
+        foreach my $line (@current_db_backups){
             dprint("Get all the needed WAL archives for ".$line->{'label'}."...\n");
 
             # Ignore backups if archives are ignored
