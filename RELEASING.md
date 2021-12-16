@@ -53,7 +53,7 @@ git archive --prefix=check_pgbackrest-$TAG/ -o /tmp/check_pgbackrest-2.3.tar.gz 
 * Content:
   
 ```
-_Town, Country, Month xx, 2021_
+_Town, Country, Month xx, 2022_
 
 `check_pgbackrest` is designed to monitor [pgBackRest](https://pgbackrest.org) 
 backups from Nagios, relying on the status information given by the 
