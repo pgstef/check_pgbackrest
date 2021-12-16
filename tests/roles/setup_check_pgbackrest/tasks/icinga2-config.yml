@@ -367,4 +367,4 @@
 
 - name: Check Icinga2 services
   include_tasks: icinga2-check.yml
-  when: "'icinga2' in group_names"
+  when: "'icinga2' in group_names and not skip_check_icinga2|bool"

@@ -1,6 +1,7 @@
 ---
 check_pgbackrest_build: false
 deploy_icinga2: false
+skip_check_icinga2: false
 reschedule_check_icinga2: false
 
 build_packages:
