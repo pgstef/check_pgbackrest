@@ -150,6 +150,9 @@ find the switch point and define the boundary WAL.
 Use the C<--max-archives-check-number> to prevent infinite WAL archives check
 when boundary WAL can't be defined properly.
 
+In case of pgBackRest db history change (after a successful stanza-upgrade),
+only the latest db system/version will be checked.
+
 =item B<check_pgb_version>
 
 Check if this script is running a given version.
@@ -177,5 +180,5 @@ Author: Stefan Fercot.
 
 Logo: Damien Cazeils (www.damiencazeils.com).
 
-Copyright: (c) 2018-2020, Dalibo / 2020-2021, Stefan Fercot.
+Copyright: (c) 2018-2020, Dalibo / 2020-2022, Stefan Fercot.
 

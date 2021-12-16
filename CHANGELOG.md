@@ -3,7 +3,9 @@ Changelog
 
 202X-XX-XX v2.3:
 
-  - ...
+  - In case of pgBackRest db history change (after a successful `stanza-upgrade`),
+  only the latest database system/version will be checked.
+  (Reported by Hendrik Schöffmann)
   - ...
 
 2021-12-06 v2.2:
