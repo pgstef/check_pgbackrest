@@ -20,7 +20,7 @@ my $dbTypes = {
     'EPAS' => ['10', '11', '12', '13', '14']
 };
 
-my @supportedDockerImages = ('debian:9', 'debian:10', 'ubuntu:18.04', 'ubuntu:20.04', 'centos:7', 'centos:8', 'rockylinux:8');
+my @supportedDockerImages = ('debian:9', 'debian:10', 'ubuntu:18.04', 'ubuntu:20.04', 'centos:7', 'rockylinux:8');
 
 ####################################################################################################################################
 # Usage

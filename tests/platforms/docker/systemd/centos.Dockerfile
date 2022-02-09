@@ -3,6 +3,8 @@ FROM ${BASE_IMAGE}
 
 ENV container docker
 
+RUN yum -y install centos-release-scl
+
 RUN cd /lib/systemd/system/sysinit.target.wants/; \
     for i in *; do [ $i = systemd-tmpfiles-setup.service ] || rm -f $i; done
 

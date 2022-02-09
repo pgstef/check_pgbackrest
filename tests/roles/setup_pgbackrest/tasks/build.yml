@@ -11,7 +11,7 @@
 
 - name: Install PG devel package
   package:
-    name: "postgresql-devel"
+    name: "postgresql{{ pg_version }}-devel"
     state: latest
   when: pg_type == 'PG' and ansible_os_family == 'RedHat'
 
@@ -46,6 +46,10 @@
 
 - name: Ensure build directory exists
   file: state=directory path="{{ pgbackrest_build_dir }}"
+
+- set_fact:
+    cppflags: "CPPFLAGS='-I /usr/pgsql-{{ pg_version }}/include' LDFLAGS='-L/usr/pgsql-{{ pg_version }}/lib'"
+  when: pg_type == 'PG'
 
 - set_fact:
     cppflags: "CPPFLAGS='-I /usr/edb/as{{ pg_version }}/include' LDFLAGS='-L/usr/edb/as{{ pg_version }}/lib'"

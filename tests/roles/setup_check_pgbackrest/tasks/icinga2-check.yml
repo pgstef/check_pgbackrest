@@ -19,6 +19,11 @@
   when: >
     'icinga2' in group_names and reschedule_check_icinga2
 
+- wait_for:
+    timeout: 30
+  when: >
+    'icinga2' in group_names and reschedule_check_icinga2
+
 - name: Get services status
   uri:
     url: "{{ icinga_api_url }}/objects/services"

@@ -22,11 +22,11 @@ uc2_light:
 	ACTIVITY=$(ACTIVITY) ARCH='use-case-2' EXTRA="$(EXTRA)" PGBR_BUILD='false' PGBR_REPO_TYPE=$(PGBR_REPO_TYPE) PROFILE=$(PROFILE) vagrant up --provision-with=exec-ci
 
 ### Setup
+build_all_docker_images:
+	vagrant ssh -c "ansible-playbook /vagrant/platforms/docker/build_all_images.yml"
+
 clean_ci:
 	PROFILE=$(PROFILE) vagrant up --provision-with=clean-ci
-
-clean_docker:
-	vagrant ssh -c "docker rm -f $(docker ps -a -q)"
 
 clean_git:
 	git clean -f -dX --dry-run

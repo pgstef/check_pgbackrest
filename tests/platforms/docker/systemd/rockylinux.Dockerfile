@@ -1,9 +1,11 @@
 ARG BASE_IMAGE
-FROM rockylinux/${BASE_IMAGE}
+FROM ${BASE_IMAGE}
 
 ENV container docker
 
-RUN yum install -y procps net-tools yum-utils
+RUN dnf install -y procps net-tools yum-utils python3 glibc-langpack-en
+RUN dnf config-manager --set-enabled powertools
+RUN dnf update -y
 
 RUN cd /lib/systemd/system/sysinit.target.wants/; \
     for i in *; do [ $i = systemd-tmpfiles-setup.service ] || rm -f $i; done

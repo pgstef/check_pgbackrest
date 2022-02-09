@@ -9,7 +9,6 @@
       - 'ubuntu:18.04'
       - 'ubuntu:20.04'
       - 'centos:7'
-      - 'centos:8'
       - 'rockylinux:8'
 
 - name: Build systemd image {{ docker.image_name }}
