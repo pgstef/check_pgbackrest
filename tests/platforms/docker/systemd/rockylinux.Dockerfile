@@ -5,6 +5,7 @@ ENV container docker
 
 RUN dnf install -y procps net-tools yum-utils python3 glibc-langpack-en
 RUN dnf config-manager --set-enabled powertools
+RUN dnf -qy module disable postgresql
 RUN dnf update -y
 
 RUN cd /lib/systemd/system/sysinit.target.wants/; \
