@@ -1081,6 +1081,19 @@ sub check_wal_archives {
         push @msg, "$num_archives unique WAL archived";
         push @msg, "latest archived since ". to_interval($latest_archive_age);
 
+        # Check if boundary WALs could be defined from history files
+        dprint("List timeline switches and check boundary WALs...\n");
+        $start_time = time();
+        my $check_tl = hex(substr($min_wal, 0, 8));
+        my $end_tl   = hex(substr($max_wal, 0, 8));
+        dprint(($end_tl - $check_tl)." timeline switches happened between $min_wal and $max_wal\n");
+        while($check_tl < $end_tl){
+            my $check_tl_string = sprintf("%08X", $check_tl);
+            return critical $me, [$check_tl_string.' boundary WAL not determined'] if(! grep(/^$check_tl_string.{16}$/, @branch_wals));
+            $check_tl++;
+        }
+        dprint("!> List timeline switches and check boundary WALs took ".(time() - $start_time)."s\n");
+
         # Get all the needed WAL archives based on min/max pgBackRest info
         my $wal_segsize = $args{'wal-segsize'};
         my $walsize = '4GB'; # 4 TB -> bytes

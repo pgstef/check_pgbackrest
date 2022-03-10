@@ -6,6 +6,8 @@ Changelog
   - In case of pgBackRest db history change (after a successful `stanza-upgrade`),
   only the latest database system/version will be checked.
   (Reported by Hendrik Schöffmann)
+  - Check if boundary WALs could be defined from history files in case of
+  timeline switches.
   - ...
 
 2021-12-06 v2.2:
