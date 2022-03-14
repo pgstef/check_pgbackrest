@@ -15,7 +15,6 @@
       loop:
         - { base: 'debian', tag: '9'     }
         - { base: 'debian', tag: '10'    }
-        - { base: 'ubuntu', tag: '18.04' }
         - { base: 'ubuntu', tag: '20.04' }
         - { base: 'centos', tag: '7'     }
         - { base: 'rockylinux', tag: '8' }
