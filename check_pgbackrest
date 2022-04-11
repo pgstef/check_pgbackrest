@@ -909,6 +909,7 @@ sub get_archived_wal_list {
                     $line =~ /$line_re/ || next;
                     push @branch_wals =>
                         sprintf("%08d%08s%08X", $1, $2, hex($3)>>24);
+                    dprint("pushed @ ".$branch_wals[-1]." to boundary list\n");
                 }
             }
         }
@@ -945,7 +946,7 @@ sub generate_needed_wal_archives_list {
         );
 
         if ( grep /$curr/, @branch_wals ) {
-            dprint("found a boundary @ '$curr' !\n");
+            dprint("boundary '$curr' reached, jumping to next timeline...\n");
             $timeline++;
             $j--;
             next;
