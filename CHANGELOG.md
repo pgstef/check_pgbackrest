@@ -8,6 +8,9 @@ Changelog
   (Reported by Hendrik Schöffmann)
   - Check if boundary WALs could be defined from history files in case of
   timeline switches.
+  - Fix timeline switch detection from history files. (Reported by martindomeij)
+  - Add `list-boundaries` option to debug print the boundary WALs fetched from
+  the history files.
   - ...
 
 2021-12-06 v2.2:

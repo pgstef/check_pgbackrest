@@ -137,6 +137,9 @@ All the missing archives are only shown in the C<--debug> mode.
 Use C<--list-archives> in addition with C<--debug> to print the list of all the
 archived WAL segments.
 
+Use C<--list-boundaries> in addition with C<--debug> to print the list of all the
+boundary WAL segments fetched from the history files.
+
 By default, all the archives older than the oldest backup start archive 
 or newer than the max_wal returned by the pgBackRest info command 
 are ignored. 
