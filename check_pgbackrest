@@ -823,6 +823,9 @@ All the missing archives are only shown in the C<--debug> mode.
 Use C<--list-archives> in addition with C<--debug> to print the list of all the
 archived WAL segments.
 
+Use C<--list-boudaries> in addition with C<--debug> to print the list of all the
+boundary WAL segments fetched from the history files.
+
 By default, all the archives older than the oldest backup start archive 
 or newer than the max_wal returned by the pgBackRest info command 
 are ignored. 
@@ -905,11 +908,15 @@ sub get_archived_wal_list {
                 my @history_lines = split /\n/, $history_content;
                 foreach my $line ( @history_lines ){
 
-                    my $line_re = qr/^\s*(\d)\t([0-9A-F]+)\/([0-9A-F]+)\t.*$/;
+                    my $line_re = qr/^\s*(\d+)\t([0-9A-F]+)\/([0-9A-F]+)\t.*$/;
                     $line =~ /$line_re/ || next;
                     push @branch_wals =>
-                        sprintf("%08d%08s%08X", $1, $2, hex($3)>>24);
-                    dprint("pushed @ ".$branch_wals[-1]." to boundary list\n");
+                        sprintf("%08X%08s%08X", $1, $2, hex($3)>>24);
+
+                    # DEBUG print all boundaries
+                    if($args{'list-boundaries'}) {
+                        dprint("pushed '".$branch_wals[-1]."' to boundary list\n");
+                    }
                 }
             }
         }
@@ -1087,7 +1094,8 @@ sub check_wal_archives {
         $start_time = time();
         my $check_tl = hex(substr($min_wal, 0, 8));
         my $end_tl   = hex(substr($max_wal, 0, 8));
-        dprint(($end_tl - $check_tl)." timeline switches happened between $min_wal and $max_wal\n");
+        my $nb_tl_switch = $end_tl - $check_tl;
+        dprint("$nb_tl_switch timeline switch(es) happened between $min_wal and $max_wal\n") if($nb_tl_switch gt 0);
         while($check_tl < $end_tl){
             my $check_tl_string = sprintf("%08X", $check_tl);
             return critical $me, [$check_tl_string.' boundary WAL not determined'] if(! grep(/^$check_tl_string.{16}$/, @branch_wals));
@@ -1261,6 +1269,7 @@ GetOptions(
         'latest-archive-age-alert=s',
         'list|l!',
         'list-archives|L!',
+        'list-boundaries!',
         'max-archives-check-number=s',
         'output|O=s',
         'prefix|P=s',
@@ -1315,11 +1324,14 @@ foreach( @specific_args ){
     ) if ( $args{$_} and $args{'service'} ne 'archives' );
 }
 
-# Check "archives" specific arg --list-archives
-pod2usage(
-    -message => 'FATAL: "list-archives" is only allowed with "archives" service and "debug" option.',
-    -exitval => 127
-) if $args{'list-archives'} and ( $args{'service'} ne 'archives' or ! $args{'debug'} );
+# Check "archives" debug specific args
+@specific_args = ('list-archives', 'list-boundaries');
+foreach( @specific_args ){
+    pod2usage(
+        -message => "FATAL: \"$_\" is only allowed with \"archives\" service and \"debug\" option.",
+        -exitval => 127
+    ) if ( $args{$_} and ( $args{'service'} ne 'archives' or ! $args{'debug'} ));
+}
 
 # Check "check_pgb_version" specific arg --target-version
 pod2usage(
