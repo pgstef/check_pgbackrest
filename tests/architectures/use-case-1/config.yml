@@ -15,18 +15,18 @@ cluster_vars:
   pgbackrest_repo_type: s3
 
 instances:
-- name: pg1
+- name: node1
   ansible_group: primary
   pgbackrest: true
 
-- name: pg2
+- name: node2
   ansible_group: standby
-  upstream: pg1
+  upstream: node1
   replication_type: asynchronous
   pgbackrest: true
 
-- name: pg3
+- name: node3
   ansible_group: standby
-  upstream: pg1
+  upstream: node1
   replication_type: asynchronous
   pgbackrest: true

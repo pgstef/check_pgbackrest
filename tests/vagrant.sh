@@ -35,4 +35,10 @@ fi
 
 echo "EXTRA_VARS = '$EXTRA_VARS'"
 echo "CLNAME=$CLNAME"
+
+if [ ! -z "$DBV" ]; then
+    export DBVERSION="$DBV"
+    echo "DBVERSION=$DBVERSION"
+fi
+
 sh ci.sh

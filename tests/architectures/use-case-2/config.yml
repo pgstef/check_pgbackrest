@@ -17,21 +17,21 @@ instances:
 - name: bck-host
   ansible_group: pgbackrest_repo_host
 
-- name: pg1
+- name: node1
   ansible_group: primary
   pgbackrest: true
   pgbackrest_repo_host: bck-host
 
-- name: pg2
+- name: node2
   ansible_group: standby
-  upstream: pg1
+  upstream: node1
   replication_type: asynchronous
   pgbackrest: true
   pgbackrest_repo_host: bck-host
 
-- name: pg3
+- name: node3
   ansible_group: standby
-  upstream: pg1
+  upstream: node1
   replication_type: asynchronous
   pgbackrest: true
   pgbackrest_repo_host: bck-host
