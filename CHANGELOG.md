@@ -11,6 +11,8 @@ Changelog
   - Fix timeline switch detection from history files. (Reported by martindomeij)
   - Add `list-boundaries` option to debug print the boundary WALs fetched from
   the history files.
+  - Eval pgBackRest JSON output in case of invalid config option would trigger
+  warnings. (Reported by Manuel Alonso)
   - ...
 
 2021-12-06 v2.2:

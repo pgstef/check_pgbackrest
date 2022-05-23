@@ -533,11 +533,12 @@ sub pgbackrest_info {
     }
 
     dprint("pgBackRest info command was : '$infocmd'\n");
-    my $json_output = `$infocmd 2>&1 |grep -v ERROR`;
+    my $json_output = `$infocmd 2>&1 |grep -v "^ERROR:"`;
 
     die("Can't get pgBackRest info.\nCommand was '$infocmd'.\n") unless ($? eq 0);
     
-    my $decoded_json = decode_json($json_output);
+    my $decoded_json = eval { decode_json($json_output) };
+    die("pgBackRest output was not valid JSON.\nHINT: does your configuration file contain invalid option?\n") if ($@);
 
     foreach my $line (@{$decoded_json}) {
         return $line if($line->{'name'} eq $args{'stanza'});
@@ -573,11 +574,11 @@ sub pgbackrest_get {
     }
 
     dprint("pgBackRest get command was : '$getcmd'\n");
-    my $history_content = `$getcmd 2>&1 |grep -v ERROR`;
+    my $file_content = `$getcmd 2>&1 |grep -v "^ERROR:" |grep -v "^WARN:"`;
 
     die("Can't get pgBackRest file content.\nCommand was '$getcmd'.\n") unless ($? eq 0);
 
-    return $history_content;
+    return $file_content;
 }
 
 sub pgbackrest_ls {
@@ -611,11 +612,13 @@ sub pgbackrest_ls {
     }
 
     dprint("pgBackRest ls command was : '$lscmd'\n");
-    my $json_output = `$lscmd 2>&1 |grep -v ERROR`;
+    my $json_output = `$lscmd 2>&1 |grep -v "^ERROR:"`;
 
     die("Can't get pgBackRest list.\nCommand was '$lscmd'.\n") unless ($? eq 0);
     
-    return decode_json($json_output);
+    my $decoded_json = eval { decode_json($json_output) };
+    die("pgBackRest output was not valid JSON.\nHINT: does your configuration file contain invalid option?\n") if ($@);
+    return $decoded_json;
 }
 
 sub pgbackrest_version {
