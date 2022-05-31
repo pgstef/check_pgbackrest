@@ -1,6 +1,11 @@
 Changelog
 =========
 
+2022-XX-XX v2.4:
+
+  - ...
+  - ...
+
 2022-05-31 v2.3:
 
   - In case of pgBackRest db history change (after a successful `stanza-upgrade`),
