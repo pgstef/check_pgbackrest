@@ -1,7 +1,7 @@
 Changelog
 =========
 
-202X-XX-XX v2.3:
+2022-05-31 v2.3:
 
   - In case of pgBackRest db history change (after a successful `stanza-upgrade`),
   only the latest database system/version will be checked.
@@ -13,7 +13,6 @@ Changelog
   the history files.
   - Eval pgBackRest JSON output in case of invalid config option would trigger
   warnings. (Reported by Manuel Alonso)
-  - ...
 
 2021-12-06 v2.2:
 

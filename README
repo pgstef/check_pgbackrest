@@ -145,7 +145,7 @@ CONTRIBUTING
     welcome.
 
 VERSION
-    check_pgbackrest version 2.2, released on Mon Dec 06 2021.
+    check_pgbackrest version 2.3, released on Tue May 31 2022.
 
 LICENSING
     This program is open source, licensed under the PostgreSQL license. For

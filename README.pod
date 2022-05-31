@@ -170,7 +170,7 @@ check_pgbackrest is an open project. Any contribution to improve it is welcome.
 
 =head1 VERSION
 
-check_pgbackrest version 2.2, released on Mon Dec 06 2021.
+check_pgbackrest version 2.3, released on Tue May 31 2022.
 
 =head1 LICENSING
 
