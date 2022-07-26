@@ -44,7 +44,17 @@
         repo_password: "{{ lookup('env', 'EDB_REPO_PASSWORD') }}"
       when: "pg_type == 'EPAS' and pg_version|int > 14"
 
-    # Setup PG apt testing repositories for pgBackRest
+    # Enable yum testing repository for PG beta releases
+    - name: Enable PG yum testing repository
+      ansible.builtin.shell: |
+        yum-config-manager --enable pgdg{{ pg_version }}-updates-testing
+        yum updateinfo -y
+      when: >
+        pg_version|int > 14 and
+        ansible_os_family == 'RedHat' and
+        'icinga2' not in group_names
+
+    # Setup PG apt testing repositories for pgBackRest and PG beta releases
     - include_role:
         name: sys/testing_repo
         tasks_from: pgdg-apt-testing
@@ -57,6 +67,14 @@
         use_replication_slots: false
         use_hostname: false
         pg_instance_name: "main"
+
+    # PG 15 beta testing facts
+    - set_fact:
+        pg_ssl: false
+        supported_pg_version:
+        - 15
+      when: >
+        pg_version|int > 14
 
     - include_role:
         name: edb_devops.edb_postgres.install_dbserver
