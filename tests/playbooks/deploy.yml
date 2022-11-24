@@ -50,7 +50,7 @@
         yum-config-manager --enable pgdg{{ pg_version }}-updates-testing
         yum updateinfo -y
       when: >
-        pg_version|int > 14 and
+        pg_version|int > 15 and
         ansible_os_family == 'RedHat' and
         'icinga2' not in group_names
 
