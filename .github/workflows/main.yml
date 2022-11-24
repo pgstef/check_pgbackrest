@@ -9,16 +9,16 @@ on:
 
 jobs:
   use-case-1:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
 
     strategy:
       fail-fast: false
       matrix:
         include:
-          - DOCKERI: centos:7
+          - DOCKERI: rockylinux:8
             DBTYPE: PG
-            DBVERSION: 14
-            CLNAME: c7pg
+            DBVERSION: 15
+            CLNAME: ro8pg
             EXTRA_VARS: "pgbackrest_excpected_release=2.42 check_pgbackrest_build=true"
 
     steps:
@@ -46,7 +46,7 @@ jobs:
         run: cd ${HOME?} && sh ${GITHUB_WORKSPACE?}/check_pgbackrest/tests/ci.sh
 
   use-case-2:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
 
     strategy:
       fail-fast: false
@@ -54,7 +54,7 @@ jobs:
         include:
           - DOCKERI: ubuntu:20.04
             DBTYPE: PG
-            DBVERSION: 14
+            DBVERSION: 15
             CLNAME: u20pg
             EXTRA_VARS: "pgbackrest_excpected_release=2.42 check_pgbackrest_build=true"
 

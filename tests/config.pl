@@ -20,7 +20,7 @@ my $dbTypes = {
     'EPAS' => ['10', '11', '12', '13', '14']
 };
 
-my @supportedDockerImages = ('debian:9', 'debian:10', 'ubuntu:20.04', 'centos:7', 'rockylinux:8');
+my @supportedDockerImages = ('debian:11', 'debian:10', 'ubuntu:20.04', 'centos:7', 'rockylinux:8');
 
 ####################################################################################################################################
 # Usage
@@ -45,7 +45,7 @@ config.pl [options]
    --db-version         version of database
 
  Docker Options:
-   --docker-image       docker base image name ('debian:9', 'debian:10', 'ubuntu:20.04', 'centos:7', 'centos:8', 'rockylinux:8')
+   --docker-image       docker base image name ('debian:10', 'debian:11', 'ubuntu:20.04', 'centos:7', 'rockylinux:8')
 
  General Options:
    --help               display usage and exit

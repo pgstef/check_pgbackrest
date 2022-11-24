@@ -4,8 +4,8 @@
     that: docker.image_name in _available_images
   vars:
     _available_images:
-      - 'debian:9'
       - 'debian:10'
+      - 'debian:11'
       - 'ubuntu:20.04'
       - 'centos:7'
       - 'rockylinux:8'

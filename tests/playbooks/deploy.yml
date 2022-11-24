@@ -18,6 +18,27 @@
           - lookup('env', 'EDB_REPO_PASSWORD') != ''
       run_once: true
 
+    # Set some testing facts
+    - set_fact:
+        use_replication_slots: false
+        use_hostname: false
+        pg_instance_name: "main"
+
+    - set_fact:
+        pg_ssl: false
+        supported_pg_version:
+        - 15
+      when: >
+        pg_version|int > 14
+
+    - set_fact:
+        supported_os:
+          - CentOS7
+          - Ubuntu20
+          - Debian10
+          - Debian11
+          - Rocky8
+
     # Install PGDG and EDB repositories
     - include_role:
         name: edb_devops.edb_postgres.setup_repo
@@ -63,19 +84,6 @@
         'icinga2' not in group_names
 
     # Install db server and setup replication
-    - set_fact:
-        use_replication_slots: false
-        use_hostname: false
-        pg_instance_name: "main"
-
-    # PG 15 beta testing facts
-    - set_fact:
-        pg_ssl: false
-        supported_pg_version:
-        - 15
-      when: >
-        pg_version|int > 14
-
     - include_role:
         name: edb_devops.edb_postgres.install_dbserver
       when: "'primary' in group_names or 'standby' in group_names"
