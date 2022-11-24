@@ -9,13 +9,13 @@ time make init
 ## PostgreSQL
 
 ```bash
-# Use case 1 - CentOS 7 - pgBackRest packages, multi-repositories
-time make ACTIVITY=true PROFILE=c7pg PGBR_REPO_TYPE=multi uc1
-make PROFILE=c7pg clean_ci
+# Use case 1 - Rocky 8 - pgBackRest packages, multi-repositories
+time make ACTIVITY=true PROFILE=ro8pg PGBR_REPO_TYPE=multi uc1
+make PROFILE=ro8pg clean_ci
 
-# Use case 2 - CentOS 7 - pgBackRest packages
-time make ACTIVITY=true PROFILE=c7pg uc2
-make PROFILE=c7pg clean_ci
+# Use case 2 - Rocky 8 - pgBackRest packages
+time make ACTIVITY=true PROFILE=ro8pg uc2
+make PROFILE=ro8pg clean_ci
 
 # Use case 1 - Ubuntu 20.04 - pgBackRest packages
 time make ACTIVITY=true PROFILE=u20pg uc1
@@ -31,12 +31,12 @@ make PROFILE=u20pg clean_ci
 ## EDB Postgres Advanced Server
 
 ```bash
-# Use case 1 - CentOS 7 - pgBackRest packages, multi-repositories
-time make ACTIVITY=true PROFILE=c7epas PGBR_REPO_TYPE=multi uc1
+# Use case 1 - Rocky 8 - pgBackRest packages, multi-repositories
+time make ACTIVITY=true PROFILE=ro8epas PGBR_REPO_TYPE=multi uc1
 make PROFILE=c7epas clean_ci
 
-# Use case 2 - CentOS 7 - pgBackRest packages
-time make ACTIVITY=true PROFILE=c7epas uc2
+# Use case 2 - Rocky 8 - pgBackRest packages
+time make ACTIVITY=true PROFILE=ro8epas uc2
 make PROFILE=c7epas clean_ci
 
 # Use case 1 - Ubuntu 20.04 - pgBackRest packages

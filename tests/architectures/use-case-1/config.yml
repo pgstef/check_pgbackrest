@@ -2,14 +2,14 @@
 cluster_name: use-case-1
 platform: docker
 docker:
-  image_name: centos:7
+  image_name: rockylinux:8
   exposed_ports:
     - '22'
     - '5432'
     - '5444'
 
 cluster_vars:
-  pg_version: 14
+  pg_version: 15
   pg_type: PG
   disable_logging: false
   pgbackrest_repo_type: s3
