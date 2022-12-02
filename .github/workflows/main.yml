@@ -19,7 +19,7 @@ jobs:
             DBTYPE: PG
             DBVERSION: 15
             CLNAME: ro8pg
-            EXTRA_VARS: "pgbackrest_excpected_release=2.42 check_pgbackrest_build=true"
+            EXTRA_VARS: "pgbackrest_excpected_release=2.43 check_pgbackrest_build=true"
 
     steps:
       - uses: actions/checkout@v2
@@ -56,7 +56,7 @@ jobs:
             DBTYPE: PG
             DBVERSION: 15
             CLNAME: u20pg
-            EXTRA_VARS: "pgbackrest_excpected_release=2.42 check_pgbackrest_build=true"
+            EXTRA_VARS: "pgbackrest_excpected_release=2.43 check_pgbackrest_build=true"
 
     steps:
       - uses: actions/checkout@v2
