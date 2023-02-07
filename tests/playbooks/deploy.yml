@@ -23,13 +23,12 @@
         use_replication_slots: false
         use_hostname: false
         pg_instance_name: "main"
+        enable_edb_repo: false
+        pg_ssl: false
 
     - set_fact:
-        pg_ssl: false
-        supported_pg_version:
-        - 15
-      when: >
-        pg_version|int > 14
+        enable_edb_repo: true
+      when: "pg_type == 'EPAS'"
 
     - set_fact:
         supported_os:
@@ -40,21 +39,26 @@
           - Rocky8
 
     # Install PGDG and EDB repositories
-    - include_role:
-        name: edb_devops.edb_postgres.setup_repo
-      vars:
-        pg_type: "PG"
-        repo_username: "{{ lookup('env', 'EDB_REPO_USERNAME') }}"
-        repo_password: "{{ lookup('env', 'EDB_REPO_PASSWORD') }}"
+    - name: Update the ca-certificates package
+      ansible.builtin.package:
+        name: ca-certificates
+        state: latest
       when: "'icinga2' not in group_names"
 
     - include_role:
         name: edb_devops.edb_postgres.setup_repo
       vars:
-        pg_type: "EPAS"
+        pg_type: "PG"
+        enable_edb_repo: false
+      when: "'icinga2' not in group_names"
+
+    - include_role:
+        name: edb_devops.edb_postgres.setup_repo
+      vars:
         repo_username: "{{ lookup('env', 'EDB_REPO_USERNAME') }}"
         repo_password: "{{ lookup('env', 'EDB_REPO_PASSWORD') }}"
-      when: "'icinga2' not in group_names"
+        enable_edb_repo: true
+      when: "pg_type == 'EPAS' and 'icinga2' not in group_names"
 
     # Setup testing repositories for EPAS testing
     - include_role:
