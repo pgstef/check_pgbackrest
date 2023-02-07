@@ -25,6 +25,7 @@
         pg_instance_name: "main"
         enable_edb_repo: false
         pg_ssl: false
+        install_edb_postgres_tuner: false
 
     - set_fact:
         enable_edb_repo: true
