@@ -80,6 +80,9 @@ pg1-path={{ pg_data }}
 pg1-user={{ postgres_user }}
 pg1-port={{ pg_port }}
 pg1-socket-path={{ pg_unix_socket_directories[0] }}
+{% if pg_type == 'EPAS' and pg_version|int >= 15 %}
+pg-version-force={{ pg_version }}
+{% endif %}
 {% if 'standby' in group_names %}
 backup-standby=y
 pg2-host={{ upstream_node_private_ip }}

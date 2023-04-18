@@ -21,8 +21,8 @@ It tends to support the following situations:
 ## GitHub Actions
 
 [GitHub Actions](../.github/workflows/main.yml) are testing:
-  * Use-Case 1: PG 14, CentOS 7, using pgBackRest PGDG packages
-  * Use-Case 2: PG 13, Ubuntu 20.04, using pgBackRest PGDG packages
+  * Use-Case 1: PG 15, Rocky Linux 8, using pgBackRest PGDG packages
+  * Use-Case 2: PG 15, Ubuntu 20.04, using pgBackRest PGDG packages
 
 ---
 
@@ -43,7 +43,7 @@ To install pgBackRest and **check_pgbackrest** using PGDG packages, without depl
 
 Add `PROFILE=xxx` to the make command.
 
-Available profiles: `c7epas`, `c7pg`, `d10epas`, `d10pg`, `u20epas`, `u20pg`.
+Available profiles: `c7epas`, `c7pg`, `d11epas`, `d11pg`, `u20epas`, `u20pg`, `ro8epas`, `ro8pg`.
 
 ### Change the pgBackRest repository type
 

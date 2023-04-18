@@ -16,11 +16,11 @@ use YAML::XS qw(LoadFile DumpFile);
 # Global vars
 ####################################################################################################################################
 my $dbTypes = {
-    'PG' => ['10', '11', '12', '13', '14', '15'],
-    'EPAS' => ['10', '11', '12', '13', '14']
+    'PG' => ['11', '12', '13', '14', '15'],
+    'EPAS' => ['11', '12', '13', '14', '15']
 };
 
-my @supportedDockerImages = ('debian:11', 'debian:10', 'ubuntu:20.04', 'centos:7', 'rockylinux:8');
+my @supportedDockerImages = ('debian:11', 'ubuntu:20.04', 'centos:7', 'rockylinux:8');
 
 ####################################################################################################################################
 # Usage
@@ -45,7 +45,7 @@ config.pl [options]
    --db-version         version of database
 
  Docker Options:
-   --docker-image       docker base image name ('debian:10', 'debian:11', 'ubuntu:20.04', 'centos:7', 'rockylinux:8')
+   --docker-image       docker base image name ('debian:11', 'ubuntu:20.04', 'centos:7', 'rockylinux:8')
 
  General Options:
    --help               display usage and exit

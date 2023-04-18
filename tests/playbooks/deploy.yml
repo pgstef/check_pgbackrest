@@ -68,7 +68,7 @@
       vars:
         repo_username: "{{ lookup('env', 'EDB_REPO_USERNAME') }}"
         repo_password: "{{ lookup('env', 'EDB_REPO_PASSWORD') }}"
-      when: "pg_type == 'EPAS' and pg_version|int > 14"
+      when: "pg_type == 'EPAS' and pg_version|int > 15"
 
     # Enable yum testing repository for PG beta releases
     - name: Enable PG yum testing repository

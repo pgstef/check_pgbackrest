@@ -67,3 +67,6 @@ pg{{ loop.index }}-host-user={{ v.pg_owner }}
 pg{{ loop.index }}-path={{ v.pg_data }}
 pg{{ loop.index }}-socket-path={{ v.pg_unix_socket_directories[0] }}
 {% endfor %}
+{% if pg_type == 'EPAS' and pg_version|int >= 15 %}
+pg-version-force={{ pg_version }}
+{% endif %}
