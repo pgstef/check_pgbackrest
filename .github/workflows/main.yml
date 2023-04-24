@@ -22,7 +22,7 @@ jobs:
             EXTRA_VARS: "pgbackrest_excpected_release=2.45 check_pgbackrest_build=true"
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           path: check_pgbackrest
       - uses: shogo82148/actions-setup-perl@v1
@@ -59,7 +59,7 @@ jobs:
             EXTRA_VARS: "pgbackrest_excpected_release=2.45 check_pgbackrest_build=true"
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           path: check_pgbackrest
       - uses: shogo82148/actions-setup-perl@v1
