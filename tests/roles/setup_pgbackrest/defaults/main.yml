@@ -28,6 +28,7 @@ build_packages:
     - libbz2-dev
     - libz-dev
     - libyaml-dev
+    - libssh2-1-dev
   RedHat:
     - openssl-devel
     - libxml2-devel
@@ -35,3 +36,4 @@ build_packages:
     - libzstd-devel
     - bzip2-devel
     - libyaml-devel
+    - libssh2-devel

@@ -28,6 +28,14 @@
         install_edb_postgres_tuner: false
 
     - set_fact:
+        supported_pg_version:
+          - 12
+          - 13
+          - 14
+          - 15
+          - 16
+
+    - set_fact:
         enable_edb_repo: true
       when: "pg_type == 'EPAS'"
 
@@ -99,6 +107,8 @@
 
     - include_role:
         name: edb_devops.edb_postgres.setup_replication
+      vars:
+        - use_validation: false
       when: "'standby' in group_names"
 
     # Install pgBackRest and check_pgbackrest

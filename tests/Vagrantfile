@@ -25,6 +25,10 @@ Vagrant.configure(2) do |config|
 
     config.vm.provision "shell", inline: <<-SHELL
         #-----------------------------------------------------------------------------------------------------------------------
+        echo 'Extend disk space' && date
+        lvextend -l +100%FREE /dev/ubuntu-vg/ubuntu-lv
+        resize2fs /dev/mapper/ubuntu--vg-ubuntu--lv
+        #-----------------------------------------------------------------------------------------------------------------------
         echo 'Use be ubuntu mirrors' && date
         sed -E -i 's#http://[^\s]*archive\.ubuntu\.com/ubuntu#http://be.archive.ubuntu.com/ubuntu#g' /etc/apt/sources.list
         #-----------------------------------------------------------------------------------------------------------------------

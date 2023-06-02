@@ -9,6 +9,16 @@
       - "{{ build_packages['common'] }}"
       - "{{ build_packages[ansible_os_family] }}"
 
+- name: Install PG devel {{ pg_version }} package
+  ansible.builtin.dnf:
+    name: "postgresql{{ pg_version }}-devel"
+    state: latest
+    disable_gpg_check: true
+  when: >
+    pg_version|int > 15 and
+    ansible_os_family == 'RedHat' and
+    pg_type == 'PG'
+
 - name: Install PG devel package
   package:
     name: "postgresql{{ pg_version }}-devel"

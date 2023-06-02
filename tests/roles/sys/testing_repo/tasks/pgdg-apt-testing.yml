@@ -5,6 +5,12 @@
     state: present
     filename: "pgdg"
 
+- name: Add snapshot PG apt repo
+  apt_repository:
+    repo: "deb http://apt.postgresql.org/pub/repos/apt/ {{ ansible_distribution_release }}-pgdg-snapshot main {{ pg_version }}"
+    state: present
+    filename: "pgdg"
+
 - name: Add apt pin preferences
   template:
     src: "pin-pgdg.pref.j2"
