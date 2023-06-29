@@ -12,8 +12,8 @@ echo "ARCH = '$ARCH'"
 echo "PGBR_BUILD = '$PGBR_BUILD'"
 echo "PGBR_REPO_TYPE = '$PGBR_REPO_TYPE'"
 echo "PROFILE = '$PROFILE'"
-source profile.d/$PROFILE.profile
 source profile.d/vagrant.profile
+source profile.d/$PROFILE.profile
 
 if [ ! -z "$EXTRA" ]; then
     export EXTRA_VARS="$EXTRA_VARS $EXTRA"

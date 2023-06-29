@@ -74,6 +74,12 @@ log-level-console=info
 log-level-file=debug
 delta=y
 process-max=2
+{% if pg_type == 'EPAS' and edb_enable_tde|bool %}
+archive-header-check=n
+{% if repository_server|length == 0 %}
+checksum-page=n
+{% endif %}
+{% endif %}
 
 [{{ cluster_name }}]
 pg1-path={{ pg_data }}

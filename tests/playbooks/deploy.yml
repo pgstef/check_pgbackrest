@@ -47,6 +47,17 @@
           - Debian11
           - Rocky8
 
+    # TDE
+    - set_fact:
+        edb_key_wrap_cmd: "openssl enc -e -pbkdf2 -out %p"
+        edb_key_unwrap_cmd: "openssl enc -d -pbkdf2 -in %p"
+        edb_master_key: "trustno1"
+        edb_secure_master_key: "ThisIsSuperSecret"
+      when:
+        - edb_enable_tde|bool
+        - pg_version|int >= 15
+        - pg_type == 'EPAS'
+
     # Install PGDG and EDB repositories
     - name: Update the ca-certificates package
       ansible.builtin.package:
