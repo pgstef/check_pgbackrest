@@ -74,7 +74,7 @@ log-level-console=info
 log-level-file=debug
 delta=y
 process-max=2
-{% if pg_type == 'EPAS' and edb_enable_tde|bool %}
+{% if pg_type == 'EPAS' and edb_enable_tde is defined and edb_enable_tde|bool %}
 archive-header-check=n
 {% if repository_server|length == 0 %}
 checksum-page=n

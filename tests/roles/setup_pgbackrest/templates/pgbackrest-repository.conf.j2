@@ -58,7 +58,7 @@ log-level-file=debug
 start-fast=y
 delta=y
 process-max=2
-{% if pg_type == 'EPAS' and edb_enable_tde|bool %}
+{% if pg_type == 'EPAS' and edb_enable_tde is defined and edb_enable_tde|bool %}
 checksum-page=n
 {% endif %}
 
