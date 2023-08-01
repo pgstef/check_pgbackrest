@@ -67,7 +67,7 @@ if $INIT_ONLY; then
     pipx inject ansible-core docker-py
     ansible-galaxy collection install community.docker
     ansible-galaxy collection install edb_devops.edb_postgres
-    ansible-galaxy collection install t_systems_mms.icinga_director
+    ansible-galaxy collection install telekom_mms.icinga_director
     echo '--------------------'
     echo 'Install MinIO Python SDK'
     pip install minio
