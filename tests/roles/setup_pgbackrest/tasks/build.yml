@@ -15,8 +15,9 @@
     state: latest
     disable_gpg_check: true
   when: >
-    pg_version|int > 15 and
+    pg_version|int > 16 and
     ansible_os_family == 'RedHat' and
+    os != 'CentOS7' and
     pg_type == 'PG'
 
 - name: Install PG devel package
