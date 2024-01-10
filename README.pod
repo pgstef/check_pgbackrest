@@ -1,6 +1,6 @@
 =head1 NAME
 
-check_pgbackrest - pgBackRest backup check plugin for Nagios
+check_pgbackrest - pgBackRest backup check plugin for Nagios and zabbix
 
 =head1 SYNOPSIS
 

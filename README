@@ -1,5 +1,5 @@
 NAME
-    check_pgbackrest - pgBackRest backup check plugin for Nagios
+    check_pgbackrest - pgBackRest backup check plugin for Nagios and Zabbix (for zabbix integration, see zabbix subfolder)
 
 SYNOPSIS
       check_pgbackrest [-s|--service SERVICE] [-S|--stanza NAME]
@@ -8,7 +8,7 @@ SYNOPSIS
 
 DESCRIPTION
     check_pgbackrest is designed to monitor pgBackRest (2.33 and above)
-    backups from Nagios.
+    backups from Nagios and Zabbix.
 
     -s, --service SERVICE
         The Nagios service to run. See section SERVICES for a description of
