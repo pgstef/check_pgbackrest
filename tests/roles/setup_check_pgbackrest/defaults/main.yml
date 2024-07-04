@@ -14,3 +14,9 @@ build_packages:
     - nagios-plugins
     - perl-JSON
     - perl-Data-Dumper
+    - perl-generators
+  RedHat8:
+    - perl-interpreter
+  RedHat9:
+    - perl-interpreter
+    - perl-FindBin

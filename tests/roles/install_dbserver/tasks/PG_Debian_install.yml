@@ -1,0 +1,28 @@
+---
+- name: Install PostgreSQL
+  ansible.builtin.package:
+    name:
+      - python3-psycopg2
+      - postgresql-{{ pg_version }}
+      - postgresql-{{ pg_version }}
+      - postgresql-server-dev-{{ pg_version }}
+    state: present
+    update_cache: true
+  become: true
+  register: installresult
+
+- name: Stop PG service
+  ansible.builtin.systemd:
+    name: "{{ pg_service }}"
+    state: stopped
+  vars:
+    pg_service: "postgresql@{{ pg_version }}-{{ pg_deb_cluster_name }}"
+  when: installresult.changed
+
+- name: Drop the default PG debian database
+  ansible.builtin.shell: >
+    {{ pg_deb_drop_cluster }} {{ pg_version }} {{ pg_deb_cluster_name }}
+  args:
+    executable: /bin/bash
+  when: installresult.changed
+  changed_when: true

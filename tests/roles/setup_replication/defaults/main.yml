@@ -1,0 +1,5 @@
+---
+pg_instance_name: "main"
+pg_basebackup: "{{ pg_bin_path }}/pg_basebackup -Fp -R -l standby --checkpoint=fast --wal-method=stream"
+pg_basebackup_options: ""
+pg_allow_ip_addresses: []

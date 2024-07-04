@@ -1,0 +1,25 @@
+---
+- name: Define pg_basebackup command.
+  ansible.builtin.set_fact:
+    pg_basebackup: "{{ pg_basebackup + ' -D ' + pg_data }}"
+
+- name: Verify pg_wal and accordingly add the in the pg_basebackup
+  ansible.builtin.set_fact:
+    pg_basebackup: "{{ pg_basebackup + ' --waldir=' + pg_wal }}"
+  when: pg_wal|length > 0  and not pg_data in pg_wal
+
+- name: Set replication user information
+  ansible.builtin.set_fact:
+    pg_basebackup: "{{ pg_basebackup + ' --username=' + pg_replication_user }}"
+  when: pg_replication_user|length > 0
+
+- name: Set host and port
+  ansible.builtin.set_fact:
+    pg_basebackup: "{{ pg_basebackup + ' --host=' + hostvars[inventory_hostname].upstream_node_private_ip + ' --port=' + pg_port | string }}"
+  when:
+    - hostvars[inventory_hostname].upstream_node_private_ip is defined
+
+- name: Use other supplied options if given
+  ansible.builtin.set_fact:
+    pg_basebackup: "{{ pg_basebackup + ' ' + pg_basebackup_options }}"
+  when: pg_basebackup_options|length > 0

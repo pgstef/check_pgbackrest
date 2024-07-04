@@ -1,0 +1,17 @@
+---
+pg_wal: ""
+pg_data: "/var/lib/postgresql/{{ pg_version }}/{{ pg_instance_name }}"
+pg_log: "/var/log/postgresql"
+pg_log_filename: "{{ pg_instance_name }}-postgresql-%a.log"
+pg_service: "postgresql@{{ pg_version }}-{{ pg_instance_name }}"
+pg_bin_path: "/usr/lib/postgresql/{{ pg_version }}/bin"
+pg_initdb: "/usr/bin/pg_createcluster -s {{ pg_unix_socket_directories[0] }} {{ pg_version }} {{ pg_instance_name }} -- ${PGSETUP_INITDB_OPTIONS}"
+pg_initdb_options: "-k -A scram-sha-256 --encoding=UTF-8 --locale=C.UTF-8 --auth-local=peer"
+
+# PG configuration
+pg_port: 5432
+pg_database: "postgres"
+pg_owner: "postgres"
+pg_group: "postgres"
+pg_unix_socket_directories:
+  - "/var/run/postgresql"

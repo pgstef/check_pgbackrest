@@ -5,16 +5,18 @@
     hostname: "{{ item.name }}"
     image: "systemd/{{ docker.image_name }}"
     state: started
-    pull: no
-    detach: yes
+    pull: false
+    detach: true
     exposed_ports: "{{ _exposed_ports }}"
     published_ports: "{{ _exposed_ports }}"
     networks: 
       - name: "network_{{ cluster_name }}"
-    networks_cli_compatible: yes
+    networks_cli_compatible: true
     volumes:
-      - "/sys/fs/cgroup:/sys/fs/cgroup:ro"
+      - "/sys/fs/cgroup:/sys/fs/cgroup:rw"
       - "{{ cluster_dir }}/shared:/shared:z"
+    cgroupns_mode: host
+    privileged: true
     tmpfs:
       - "/tmp"
       - "/run"
@@ -23,7 +25,7 @@
     network_mode: default
     restart_policy: unless-stopped
   vars:
-    _exposed_ports: "{{ docker.exposed_ports|default(['22','5432', '5444']) }}"
+    _exposed_ports: "{{ docker.exposed_ports|default(['22','5432']) }}"
   register: docker_container_register
 
 - set_fact:

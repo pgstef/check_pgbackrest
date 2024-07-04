@@ -1,0 +1,27 @@
+---
+- name: Copy global systemd unit file to /etc/systemd/system
+  ansible.builtin.copy:
+    remote_src: true
+    src: "/usr/lib/systemd/system/postgresql-{{ pg_version }}.service"
+    dest: "/etc/systemd/system/{{ pg_service }}.service"
+    mode: "0600"
+    owner: root
+    group: root
+  become: true
+  when:
+    - ansible_os_family == 'RedHat'
+
+- name: Update systemd unit file
+  ansible.builtin.lineinfile:
+    dest: "/etc/systemd/system/{{ pg_service }}.service"
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    insertafter: "{{ item.insertafter | default(omit) }}"
+  loop:
+    - { regexp: "^Description=.*", line: "Description=Database server PG {{ pg_version }} - Instance: {{ pg_instance_name }}"}
+    - { regexp: "^Environment=PGDATA.*", line: "Environment=PGDATA={{ pg_data }}" }
+    - { regexp: "^PIDFile=.*", line: "PIDFile={{ pg_data }}/postmaster.pid", insertafter: "^\\[Service\\]$" }
+    - { regexp: "^ExecStopPost=.*", line: "ExecStopPost=+/usr/bin/systemctl daemon-reload", insertafter: "^\\[Service\\]$" }
+  become: true
+  when:
+    - ansible_os_family == 'RedHat'

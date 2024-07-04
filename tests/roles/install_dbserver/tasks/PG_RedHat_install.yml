@@ -1,0 +1,29 @@
+---
+- name: Disable builtin postgresql module
+  ansible.builtin.shell: >
+    dnf -qy module disable postgresql
+  args:
+    executable: /bin/bash
+  register: disable_builtin_postgres
+  changed_when: disable_builtin_postgres.rc == 0
+  failed_when: disable_builtin_postgres.rc != 0
+  ignore_errors: true
+  become: true
+  when: ansible_distribution_major_version in ['8', '9']
+
+- name: Install required python package on EL8 and EL9
+  ansible.builtin.package:
+    name:
+      - python3-psycopg2
+    state: present
+  become: true
+  when: ansible_distribution_major_version in ['8', '9']
+
+- name: Install PostgreSQL
+  ansible.builtin.package:
+    name:
+      - postgresql{{ pg_version }}
+      - postgresql{{ pg_version }}-server
+      - postgresql{{ pg_version }}-contrib
+    state: present
+  become: true

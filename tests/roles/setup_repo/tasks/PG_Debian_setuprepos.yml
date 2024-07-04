@@ -1,0 +1,34 @@
+---
+- name: Add PGDG keys
+  ansible.builtin.apt_key:
+    url: "{{ pg_apt_keys }}"
+    state: present
+  become: true
+
+- name: Add PG repo
+  ansible.builtin.apt_repository:
+    repo: "deb {{ pg_apt_repo_url }} {{ ansible_distribution_release }}-pgdg main"
+    state: present
+    filename: "pgdg"
+  become: true
+
+- name: Add testing PG repo
+  apt_repository:
+    repo: "deb {{ pg_apt_repo_url }} {{ ansible_distribution_release }}-pgdg-testing main {{ pg_version }}"
+    state: present
+    filename: "pgdg"
+  become: true
+
+- name: Add snapshot PG repo
+  apt_repository:
+    repo: "deb {{ pg_apt_repo_url }} {{ ansible_distribution_release }}-pgdg-snapshot main {{ pg_version }}"
+    state: present
+    filename: "pgdg"
+  become: true
+  when:
+    - pg_version|int >= pg_next_major_release|int
+
+- name: Add apt pin preferences
+  template:
+    src: "pin-pgdg.pref.j2"
+    dest: '/etc/apt/preferences.d/pgdg.pref'

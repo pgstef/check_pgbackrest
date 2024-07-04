@@ -1,0 +1,18 @@
+---
+# PGDG APT
+pg_apt_repo_url: "http://apt.postgresql.org/pub/repos/apt/"
+pg_apt_keys: "https://www.postgresql.org/media/keys/ACCC4CF8.asc"
+
+# PGDG RPM
+pg_rpm_repo_8_x86_64: "https://download.postgresql.org/pub/repos/yum/reporpms/EL-8-x86_64/pgdg-redhat-repo-latest.noarch.rpm"
+pg_rpm_repo_9_x86_64: "https://download.postgresql.org/pub/repos/yum/reporpms/EL-9-x86_64/pgdg-redhat-repo-latest.noarch.rpm"
+pg_gpg_key_x86_64: "https://download.postgresql.org/pub/repos/yum/keys/PGDG-RPM-GPG-KEY-RHEL"
+
+# EPEL
+epel_repo_8: "https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm"
+epel_repo_9: "https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm "
+epel_gpg_key_8: "https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-8"
+epel_gpg_key_9: "https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-9"
+
+# Enable repositories for beta testing of the PG next major release
+pg_next_major_release: 17

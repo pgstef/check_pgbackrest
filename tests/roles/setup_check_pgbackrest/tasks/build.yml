@@ -1,13 +1,21 @@
 ---
 - name: Install build requirements
   package:
-    name: >
-      {{ query('flattened', package_lists) }}
+    name: "{{ item }}"
     state: latest
+  with_items:
+    - "{{ build_packages['common'] }}"
+    - "{{ build_packages[ansible_os_family] }}"
+
+- name: Install ansible_distribution_major_version specific build requirements
+  package:
+    name: "{{ item }}"
+    state: latest
+  with_items:
+    - "{{ build_packages[os_major_version] }}"
   vars:
-    package_lists:
-      - "{{ build_packages['common'] }}"
-      - "{{ build_packages[ansible_os_family] }}"
+    os_major_version: "{{ ansible_os_family }}{{ ansible_distribution_major_version }}"
+  when: ansible_os_family == 'RedHat'
 
 - name: Check if development file exists on controller
   local_action: stat path="/check_pgbackrest/check_pgbackrest"

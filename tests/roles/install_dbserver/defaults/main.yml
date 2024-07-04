@@ -1,0 +1,4 @@
+---
+# Debian specific variables
+pg_deb_cluster_name: "main"
+pg_deb_drop_cluster: "/usr/bin/pg_dropcluster"

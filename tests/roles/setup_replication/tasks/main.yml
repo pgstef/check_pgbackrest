@@ -1,0 +1,84 @@
+---
+- name: Reference PG variables
+  ansible.builtin.include_vars: "PG_{{ ansible_os_family }}.yml"
+
+- name: Gather service facts
+  ansible.builtin.service_facts:
+
+- name: Firewall open Postgres TCP port {{ pg_port }}
+  ansible.posix.firewalld:
+    port: "{{ pg_port }}/tcp"
+    permanent: true
+    state: enabled
+    immediate: true
+  when:
+    - ansible_facts.services['firewalld.service'] is defined
+    - ansible_facts.services['firewalld.service'].state == 'running'
+    - ansible_facts.services['firewalld.service'].status == 'enabled'
+  become: true
+
+- name: Gather the cluster_nodes information
+  ansible.builtin.set_fact:
+    pg_cluster_nodes: "{{ lookup('pg_sr_cluster_nodes', wantlist=True) }}"
+
+- name: Get the primary information
+  ansible.builtin.set_fact:
+    primary_inventory_hostname: "{{ node.inventory_hostname }}"
+  loop: "{{ pg_cluster_nodes }}"
+  loop_control:
+    loop_var: node
+  when: node.node_type == 'primary'
+  run_once: true
+
+- name: Prepare hba list
+  ansible.builtin.set_fact:
+    pg_allow_ip_addresses: >-
+      {{ pg_allow_ip_addresses | default([]) + [
+        {
+          "contype": "host",
+          "users": pg_replication_user,
+          "source": node.private_ip + "/32",
+          "databases": "replication"
+          },
+          {
+           "contype": "host",
+           "users": pg_replication_user,
+           "source": node.private_ip + "/32",
+           "databases": "postgres"
+           }
+        ] }}
+  loop: "{{ pg_cluster_nodes }}"
+  loop_control:
+    loop_var: node
+  run_once: true
+
+- name: Update primary for replication
+  ansible.builtin.import_tasks: primary_settings.yml
+  run_once: true
+  delegate_to: "{{ primary_inventory_hostname }}"
+
+- name: Call upstream update based on the upstream node
+  ansible.builtin.import_tasks: upstream_node.yml
+  when:
+    - hostvars[inventory_hostname].upstream_node_private_ip is defined
+
+- name: Build standby service check
+  become: true
+  block:
+    - name: Create directories if not exists
+      ansible.builtin.import_tasks: create_directories.yml
+    - name: Take PG base backup
+      ansible.builtin.import_tasks: pg_basebackup.yml
+    - name: Setup systemd file
+      ansible.builtin.import_tasks: pg_setup_systemd.yml
+    - name: Configure standby node
+      ansible.builtin.import_tasks: configure_node.yml
+
+- name: Validate replication setup
+  ansible.builtin.import_tasks: validate_setup_replication.yml
+
+- name: Reset variables
+  ansible.builtin.set_fact:
+    primary_inventory_hostname: ""
+    pg_allow_ip_addresses: []
+  register: output

@@ -3,8 +3,7 @@ FROM ${BASE_IMAGE}
 
 ENV container docker
 
-RUN dnf install -y procps net-tools yum-utils python3 python3-dnf glibc-langpack-en
-RUN dnf config-manager --set-enabled powertools
+RUN dnf install -y systemd procps net-tools yum-utils python3.12 python3.12-setuptools glibc-langpack-en
 RUN dnf -qy module disable postgresql
 RUN dnf update -y
 

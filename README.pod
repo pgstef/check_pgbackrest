@@ -10,7 +10,7 @@ check_pgbackrest - pgBackRest backup check plugin for Nagios
 
 =head1 DESCRIPTION
 
-check_pgbackrest is designed to monitor pgBackRest (2.33 and above) backups from Nagios.
+check_pgbackrest is designed to monitor pgBackRest (2.52 and above) backups from Nagios.
 
 =over
 
@@ -162,6 +162,12 @@ Check if this script is running a given version.
 
 You must provide the expected version using C<--target-version>.
 
+=item B<pgbackrest_version>
+
+Check if pgBackRest is running a given version.
+
+You must provide the expected version using C<--target-version>.
+
 =back
 
 =head1 CONTRIBUTING
@@ -183,5 +189,5 @@ Author: Stefan Fercot.
 
 Logo: Damien Cazeils (www.damiencazeils.com).
 
-Copyright: (c) 2018-2020, Dalibo / 2020-2022, Stefan Fercot.
+Copyright: (c) 2018-2020, Dalibo / 2020-2024, Stefan Fercot.
 

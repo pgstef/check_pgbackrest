@@ -1,0 +1,43 @@
+---
+- name: Generate the pg_replication_user_password
+  ansible.builtin.include_role:
+    name: manage_dbserver
+    tasks_from: generate_password
+  vars:
+    input_user: "{{ pg_replication_user }}"
+    input_password: "{{ pg_replication_user_password }}"
+  when: pg_replication_user_password|length < 1
+
+- name: Set pg_replication_user_password
+  ansible.builtin.set_fact:
+    pg_replication_user_password: "{{ input_password }}"
+  when: pg_replication_user_password|length < 1
+
+- name: Set postgres replication users's database cluster password
+  ansible.builtin.include_role:
+    name: manage_dbserver
+    tasks_from: manage_users
+  vars:
+    pg_users:
+      - name: "{{ pg_replication_user }}"
+        pass: "{{ pg_replication_user_password }}"
+        role_attr_flags: replication
+
+- name: Grant minimum privileges to replication user for rewind
+  ansible.builtin.include_role:
+    name: manage_dbserver
+    tasks_from: manage_privileges
+  vars:
+    pg_grant_privileges:
+      - type: function
+        privileges: execute
+        schema: pg_catalog
+        objects: "pg_ls_dir(text:boolean:boolean),pg_stat_file(text:boolean)"
+        roles: "{{ pg_replication_user }}"
+        database: "{{ pg_database }}"
+      - type: function
+        privileges: execute
+        schema: pg_catalog
+        objects: "pg_read_binary_file(text),pg_read_binary_file(text:bigint:bigint:boolean)"
+        roles: "{{ pg_replication_user }}"
+        database: "{{ pg_database }}"

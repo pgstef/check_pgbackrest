@@ -1,0 +1,19 @@
+---
+- name: Update the pgpass with replication users password
+  ansible.builtin.include_role:
+    name: manage_dbserver
+    tasks_from: manage_pgpass
+  vars:
+    pg_pgpass_values:
+      - user: "{{ pg_replication_user }}"
+        password: "{{ pg_replication_user_password }}"
+        create: true
+  run_once: true
+
+- name: Update hba config
+  ansible.builtin.include_role:
+    name: manage_dbserver
+    tasks_from: manage_hba_conf
+  vars:
+    pg_hba_ip_addresses: "{{ pg_allow_ip_addresses }}"
+  run_once: true

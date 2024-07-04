@@ -1,0 +1,3 @@
+---
+- name: Install PostgreSQL needed repositories
+  ansible.builtin.include_tasks: "PG_{{ ansible_os_family }}_setuprepos.yml"

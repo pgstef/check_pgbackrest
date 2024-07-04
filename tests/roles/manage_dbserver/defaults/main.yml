@@ -1,0 +1,24 @@
+---
+# manage_postgres_params
+pg_postgres_conf_params: []
+params_restart_required: false
+
+# manage_privileges
+pg_grant_privileges: []
+pg_grant_roles: []
+
+# manage_users
+pg_users: []
+
+# generate_password
+pass_dir: "~/.passdir"
+passfile: ""
+input_user: ""
+input_password: ""
+
+# PG configuration
+pg_port: 5432
+pg_database: "postgres"
+pg_owner: "postgres"
+pg_unix_socket_directories:
+  - "/var/run/postgresql"

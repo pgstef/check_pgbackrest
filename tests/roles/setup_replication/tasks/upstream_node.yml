@@ -1,0 +1,14 @@
+---
+- name: Get upstream node info
+  ansible.builtin.set_fact:
+    upstream_inventory_hostname: "{{ node.inventory_hostname }}"
+  when:
+    - hostvars[inventory_hostname].upstream_node_private_ip is defined
+    - node.private_ip == hostvars[inventory_hostname].upstream_node_private_ip
+  loop: "{{ lookup('pg_sr_cluster_nodes', wantlist=True) }}"
+  loop_control:
+    loop_var: node
+
+- name: Update upstream node config
+  ansible.builtin.import_tasks: upstream_node_update.yml
+  delegate_to: "{{ upstream_inventory_hostname }}"

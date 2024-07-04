@@ -8,21 +8,21 @@ on:
   workflow_dispatch:
 
 jobs:
-  use-case-1:
-    runs-on: ubuntu-20.04
+  shared-storage:
+    runs-on: ubuntu-22.04
 
     strategy:
       fail-fast: false
       matrix:
         include:
-          - DOCKERI: rockylinux:8
+          - DOCKERI: rockylinux:9
             DBTYPE: PG
             DBVERSION: 16
-            CLNAME: ro8pg
-            EXTRA_VARS: "pgbackrest_excpected_release=2.47 check_pgbackrest_build=true"
+            CLNAME: ro9pg
+            EXTRA_VARS: "pgbackrest_excpected_release=2.52.1 check_pgbackrest_build=true"
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           path: check_pgbackrest
       - uses: shogo82148/actions-setup-perl@v1
@@ -32,9 +32,7 @@ jobs:
 
       - name: Run CI script
         env:
-          EDB_REPO_USERNAME: ${{ secrets.EDB_REPO_USERNAME }}
-          EDB_REPO_PASSWORD: ${{ secrets.EDB_REPO_PASSWORD }}
-          ARCH: use-case-1
+          ARCH: shared-storage
           CLPATH: /home/runner/clusters
           CLNAME: ${{ matrix.CLNAME }}
           DBTYPE: ${{ matrix.DBTYPE }}
@@ -45,21 +43,21 @@ jobs:
           ACTIVITY: true
         run: cd ${HOME?} && sh ${GITHUB_WORKSPACE?}/check_pgbackrest/tests/ci.sh
 
-  use-case-2:
-    runs-on: ubuntu-20.04
+  with-repo-host:
+    runs-on: ubuntu-22.04
 
     strategy:
       fail-fast: false
       matrix:
         include:
-          - DOCKERI: ubuntu:20.04
+          - DOCKERI: ubuntu:22.04
             DBTYPE: PG
             DBVERSION: 16
-            CLNAME: u20pg
-            EXTRA_VARS: "pgbackrest_excpected_release=2.47 check_pgbackrest_build=true"
+            CLNAME: u22pg
+            EXTRA_VARS: "pgbackrest_excpected_release=2.52.1 check_pgbackrest_build=true"
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           path: check_pgbackrest
       - uses: shogo82148/actions-setup-perl@v1
@@ -69,9 +67,7 @@ jobs:
 
       - name: Run CI script
         env:
-          EDB_REPO_USERNAME: ${{ secrets.EDB_REPO_USERNAME }}
-          EDB_REPO_PASSWORD: ${{ secrets.EDB_REPO_PASSWORD }}
-          ARCH: use-case-2
+          ARCH: with-repo-host
           CLPATH: /home/runner/clusters
           CLNAME: ${{ matrix.CLNAME }}
           DBTYPE: ${{ matrix.DBTYPE }}

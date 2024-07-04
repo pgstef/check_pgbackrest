@@ -1,0 +1,10 @@
+---
+pg_instance_name: "main"
+pg_shared_libraries_list:
+  - "$libdir/pg_stat_statements"
+
+pg_init_conf_params: []
+# example:
+# pg_init_conf_params:
+# - name: "track_io_timing"
+#   value: "on"

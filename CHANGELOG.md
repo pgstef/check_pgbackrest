@@ -1,10 +1,12 @@
 Changelog
 =========
 
-2022-XX-XX v2.4:
+2024-XX-XX v2.4:
 
-  - ...
-  - ...
+  - Only support pgBackRest **2.52** and above to fix issue with new pgBackRest
+  versioning policy since `2.52.1`. (Reported by netphantm)
+  - Add new `pgbackrest_version` service, in order to check for a specific
+  pgBackRest target version.
 
 2022-05-31 v2.3:
 

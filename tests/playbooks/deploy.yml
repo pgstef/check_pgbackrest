@@ -10,121 +10,26 @@
           - cluster_dir is defined and cluster_dir != ''
       run_once: true
 
-    - name: Check EDB repository credentials
-      assert:
-        msg: "Missing credentials"
-        that:
-          - lookup('env', 'EDB_REPO_USERNAME') != ''
-          - lookup('env', 'EDB_REPO_PASSWORD') != ''
-      run_once: true
-
-    # Set some testing facts
+    # Set some global facts
     - set_fact:
-        use_replication_slots: false
-        use_hostname: false
         pg_instance_name: "main"
-        enable_edb_repo: false
-        pg_ssl: false
-        install_edb_postgres_tuner: false
 
-    - set_fact:
-        enable_edb_repo: true
-      when: "pg_type == 'EPAS'"
-
-    - set_fact:
-        # TDE
-        edb_key_wrap_cmd: "openssl enc -e -pbkdf2 -out %p"
-        edb_key_unwrap_cmd: "openssl enc -d -pbkdf2 -in %p"
-        edb_master_key: "trustno1"
-        edb_secure_master_key: "ThisIsSuperSecret"
-      when: edb_enable_tde is defined and edb_enable_tde|bool
-
-    - debug:
-        msg: "EDB Transparent Data Encryption enabled"
-      when: edb_enable_tde is defined and edb_enable_tde|bool
-
-    - set_fact:
-        supported_pg_version:
-          - 12
-          - 13
-          - 14
-          - 15
-          - 16
-
-    - set_fact:
-        supported_os:
-          - CentOS7
-          - Ubuntu20
-          - Ubuntu22
-          - Debian10
-          - Debian11
-          - Rocky8
-        os: "{{ ansible_distribution }}{{ ansible_distribution_major_version }}"
-
-    - set_fact:
-        use_validation: false
-      when: "os in ['Debian11', 'Ubuntu22']"
-
-    # Install PGDG and EDB repositories
-    - name: Update the ca-certificates package
-      ansible.builtin.package:
-        name: ca-certificates
-        state: latest
+    # Install PGDG repositories
+    - include_role:
+        name: setup_repo
       when: "'icinga2' not in group_names"
-
-    - include_role:
-        name: edb_devops.edb_postgres.setup_repo
-      vars:
-        pg_type: "PG"
-        enable_edb_repo: false
-      when: "'icinga2' not in group_names"
-
-    - include_role:
-        name: edb_devops.edb_postgres.setup_repo
-      vars:
-        repo_username: "{{ lookup('env', 'EDB_REPO_USERNAME') }}"
-        repo_password: "{{ lookup('env', 'EDB_REPO_PASSWORD') }}"
-        enable_edb_repo: true
-      when: "pg_type == 'EPAS' and 'icinga2' not in group_names"
-
-    # Setup testing repositories for EPAS testing
-    - include_role:
-        name: sys/testing_repo
-        tasks_from: edb-staging
-      vars:
-        repo_username: "{{ lookup('env', 'EDB_REPO_USERNAME') }}"
-        repo_password: "{{ lookup('env', 'EDB_REPO_PASSWORD') }}"
-      when: "pg_type == 'EPAS' and pg_version|int > 15"
-
-    # Enable yum testing repository for PG beta releases
-    - name: Enable PG yum testing repository
-      ansible.builtin.shell: |
-        yum-config-manager --enable pgdg{{ pg_version }}-updates-testing
-        yum updateinfo -y
-      when: >
-        pg_version|int > 15 and
-        ansible_os_family == 'RedHat' and
-        'icinga2' not in group_names
-
-    # Setup PG apt testing repositories for pgBackRest and PG beta releases
-    - include_role:
-        name: sys/testing_repo
-        tasks_from: pgdg-apt-testing
-      when: >
-        ansible_os_family == 'Debian' and
-        'icinga2' not in group_names
 
     # Install db server and setup replication
     - include_role:
-        name: edb_devops.edb_postgres.install_dbserver
+        name: install_dbserver
       when: "'primary' in group_names or 'standby' in group_names"
 
     - include_role:
-        name: edb_devops.edb_postgres.init_dbserver
+        name: init_dbserver
       when: "'primary' in group_names"
 
     - include_role:
-        name: edb_devops.edb_postgres.setup_replication
+        name: setup_replication
       when: "'standby' in group_names"
 
     # Install pgBackRest and check_pgbackrest
