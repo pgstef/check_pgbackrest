@@ -14,6 +14,7 @@
 - name: Install required python package on EL8 and EL9
   ansible.builtin.package:
     name:
+      - python3-devel
       - python3-psycopg2
     state: present
   become: true

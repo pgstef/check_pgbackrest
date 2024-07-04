@@ -3,3 +3,4 @@ vagrant.yml
 tests/validation.sh
 tests/validation.log
 tests/test.sh
+tests/plugins/lookup/__pycache__/
