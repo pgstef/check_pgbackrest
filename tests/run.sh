@@ -71,7 +71,6 @@ if $INIT_ONLY; then
     ansible-galaxy collection install community.general
     ansible-galaxy collection install community.postgresql
     ansible-galaxy collection install telekom_mms.icinga_director
-    pip install psycopg2
     echo '--------------------'
     echo 'Install MinIO Python SDK'
     pip install minio

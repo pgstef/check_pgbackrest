@@ -7,6 +7,7 @@ all:
 {% for h in instances %}
 {% if h.ansible_group == g %}
         {{ h.name }}:
+          ansible_python_interpreter: /usr/bin/python3
 {% endif%}
 {% endfor %}
 {% endfor %}
