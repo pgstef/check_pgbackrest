@@ -7,7 +7,7 @@ SYNOPSIS
       check_pgbackrest [--help]
 
 DESCRIPTION
-    check_pgbackrest is designed to monitor pgBackRest (2.33 and above)
+    check_pgbackrest is designed to monitor pgBackRest (2.52 and above)
     backups from Nagios.
 
     -s, --service SERVICE
@@ -140,6 +140,11 @@ DESCRIPTION
 
         You must provide the expected version using "--target-version".
 
+    pgbackrest_version
+        Check if pgBackRest is running a given version.
+
+        You must provide the expected version using "--target-version".
+
 CONTRIBUTING
     check_pgbackrest is an open project. Any contribution to improve it is
     welcome.
@@ -156,5 +161,5 @@ AUTHORS
 
     Logo: Damien Cazeils (www.damiencazeils.com).
 
-    Copyright: (c) 2018-2020, Dalibo / 2020-2022, Stefan Fercot.
+    Copyright: (c) 2018-2020, Dalibo / 2020-2024, Stefan Fercot.
 

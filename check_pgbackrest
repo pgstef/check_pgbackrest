@@ -5,7 +5,7 @@
 #
 # Author: Stefan Fercot
 # Copyright: (c) 2018-2020, Dalibo.
-# Copyright: (c) 2020-2022, Stefan Fercot.
+# Copyright: (c) 2020-2024, Stefan Fercot.
 #-----------------------------------------------------------------------------
 
 =head1 NAME
@@ -20,7 +20,7 @@ check_pgbackrest - pgBackRest backup check plugin for Nagios
 
 =head1 DESCRIPTION
 
-check_pgbackrest is designed to monitor pgBackRest (2.33 and above) backups from Nagios.
+check_pgbackrest is designed to monitor pgBackRest (2.52 and above) backups from Nagios.
 
 =cut
 
@@ -63,7 +63,7 @@ my $output_fmt;
 
 $VERSION = '2.4dev';
 $PROGRAM = 'check_pgbackrest';
-$PGBR_SUPPORT = '2.33';
+$PGBR_SUPPORT = '2.52';
 $INIT_TIME = time();
 
 # Available services and descriptions.
@@ -81,8 +81,13 @@ my %services = (
         'stanza-arg' => 1
     },
     'check_pgb_version' => {
-        'sub'  => \&check_pgb_version,
+        'sub'  => \&check_check_pgbackrest_version,
         'desc' => 'Check the version of this check_pgbackrest script.',
+        'stanza-arg' => 0
+    },
+    'pgbackrest_version' => {
+        'sub'  => \&check_pgbackrest_version,
+        'desc' => 'Check the version of pgBackRest.',
         'stanza-arg' => 0
     }
 );
@@ -548,8 +553,6 @@ sub pgbackrest_info {
 }
 
 sub pgbackrest_get {
-    my $args_ref = shift;
-    my %args = %{ $args_ref };
     my $directory = shift;
     my $filename = shift;
     my $repo_key = shift;
@@ -557,7 +560,7 @@ sub pgbackrest_get {
     pod2usage(
         -message => 'FATAL: Unsupported pgBackRest version.',
         -exitval => 127
-    ) if ( pgbackrest_version(\%args) < $PGBR_SUPPORT );
+    ) if ( pgbackrest_version() lt $PGBR_SUPPORT );
 
     my $getcmd = $args{'command'}." repo-get";
     $getcmd .= " --stanza=".$args{'stanza'};
@@ -582,8 +585,6 @@ sub pgbackrest_get {
 }
 
 sub pgbackrest_ls {
-    my $args_ref = shift;
-    my %args = %{ $args_ref };
     my $directory = shift;
     my $repo_key = shift;
     my $recurse = shift;
@@ -591,7 +592,7 @@ sub pgbackrest_ls {
     pod2usage(
         -message => 'FATAL: Unsupported pgBackRest version.',
         -exitval => 127
-    ) if ( pgbackrest_version(\%args) < $PGBR_SUPPORT );
+    ) if ( pgbackrest_version() lt $PGBR_SUPPORT );
 
     my $lscmd = $args{'command'}." repo-ls";
     $lscmd .= " --stanza=".$args{'stanza'};
@@ -622,8 +623,6 @@ sub pgbackrest_ls {
 }
 
 sub pgbackrest_version {
-    my $args_ref = shift;
-    my %args = %{ $args_ref };
     my $version_cmd = $args{'command'}." version";
 
     if(defined $args{'config'}) {
@@ -635,10 +634,11 @@ sub pgbackrest_version {
     }
 
     dprint("pgBackRest version command was : '$version_cmd'\n");
-    my $pgbackrest_version = `$version_cmd | sed -e s/pgBackRest\\ // | sed -e s/dev//`;
+    my $pgbackrest_version = `$version_cmd | sed -e s/pgBackRest\\ //`;
 
     die("Can't get pgBackRest version.\nCommand was '$version_cmd'.\n") unless ($? eq 0);
     
+    chomp($pgbackrest_version);
     return $pgbackrest_version;
 }
 
@@ -698,7 +698,7 @@ sub check_retention {
         foreach my $repo (@{$backups_info->{'repo'}}) {
             my $backups_dir = "backup/".$args{'stanza'}; # Relative path inside repository
             dprint("repo".$repo->{'key'}.", backups_dir: $backups_dir\n");
-            $backups_dir_content[$repo->{'key'}] = pgbackrest_ls(\%args, $backups_dir, $repo->{'key'}, 0);
+            $backups_dir_content[$repo->{'key'}] = pgbackrest_ls($backups_dir, $repo->{'key'}, 0);
         }
 
         # List backups per type and check consistency between backup info and real repository content
@@ -864,7 +864,7 @@ sub get_archived_wal_list {
 
     foreach my $repo_key (keys %{$archives_dir}) {
         dprint("repo$repo_key, archives_dir: ".$archives_dir->{$repo_key}."\n");
-        my $list = pgbackrest_ls(\%args, $archives_dir->{$repo_key}, $repo_key, 1);
+        my $list = pgbackrest_ls($archives_dir->{$repo_key}, $repo_key, 1);
 
         foreach my $key (keys %{$list}) {
             next unless $list->{$key}->{'type'} eq 'file';
@@ -907,7 +907,7 @@ sub get_archived_wal_list {
                 # Look for the last history file if needed
                 dprint("history file to open : ".$archives_dir->{$repo_key}."/$key\n");
 
-                my $history_content = pgbackrest_get(\%args, $archives_dir->{$repo_key}, $filename, $repo_key);
+                my $history_content = pgbackrest_get($archives_dir->{$repo_key}, $filename, $repo_key);
                 my @history_lines = split /\n/, $history_content;
                 foreach my $line ( @history_lines ){
 
@@ -1222,7 +1222,7 @@ You must provide the expected version using C<--target-version>.
 
 =cut
 
-sub check_pgb_version {
+sub check_check_pgbackrest_version {
     my $me             = 'CHECK_PGBACKREST_VERSION';
     my %args           = %{ $_[0] };
     my @msg;
@@ -1238,7 +1238,7 @@ sub check_pgb_version {
     pod2usage(
         -message => "FATAL: given version does not look like a $PROGRAM version!",
         -exitval => 127
-    ) if ( defined $args{'target-version'} and $args{'target-version'} !~ m/^\d\.\d+(?:_?(?:dev|beta|rc)\d*)?$/ );
+    ) if ( defined $args{'target-version'} and $args{'target-version'} !~ m/^\d\.\d+(dev)?$/ );
 
     if (defined $args{'target-version'} and $VERSION ne $args{'target-version'}){
         push @crit_msg, sprintf("%s version should be %s", $PROGRAM, $args{'target-version'});
@@ -1249,6 +1249,45 @@ sub check_pgb_version {
     return warning($me, \@warn_msg, \@longmsg) if @warn_msg;
 
     push @msg, sprintf("%s version %s, Perl %vd", $PROGRAM, $VERSION, $^V);
+    return ok( $me, \@msg, \@longmsg );
+}
+
+=item B<pgbackrest_version>
+
+Check if pgBackRest is running a given version.
+
+You must provide the expected version using C<--target-version>.
+
+=cut
+
+sub check_pgbackrest_version {
+    my $me             = 'PGBACKREST_VERSION';
+    my %args           = %{ $_[0] };
+    my @msg;
+    my @warn_msg;
+    my @crit_msg;
+    my @longmsg;
+
+    pod2usage(
+        -message => 'FATAL: you must provide --target-version.',
+        -exitval => 127
+    ) if not defined $args{'target-version'};
+
+    pod2usage(
+        -message => "FATAL: given version does not look like a pgBackRest version!",
+        -exitval => 127
+    ) if ( defined $args{'target-version'} and $args{'target-version'} !~ m/^\d\.\d+(\.\d+)?(dev)?$/ );
+
+    my $pgbr_version = pgbackrest_version();
+    if (defined $args{'target-version'} and $pgbr_version ne $args{'target-version'}){
+        push @crit_msg, sprintf("pgBackRest version should be %s", $args{'target-version'});
+        push @longmsg, sprintf("pgBackRest version %s, Perl %vd", $pgbr_version, $^V);
+    }
+
+    return critical($me, \@crit_msg, \@longmsg) if @crit_msg;
+    return warning($me, \@warn_msg, \@longmsg) if @warn_msg;
+
+    push @msg, sprintf("pgBackRest version %s, Perl %vd", $pgbr_version, $^V);
     return ok( $me, \@msg, \@longmsg );
 }
 
@@ -1336,11 +1375,11 @@ foreach( @specific_args ){
     ) if ( $args{$_} and ( $args{'service'} ne 'archives' or ! $args{'debug'} ));
 }
 
-# Check "check_pgb_version" specific arg --target-version
+# Check "check_pgb_version" and "pgbackrest_version" specific arg --target-version
 pod2usage(
-    -message => 'FATAL: "target-version" is only allowed with "check_pgb_version" service.',
+    -message => 'FATAL: "target-version" is only allowed with "check_pgb_version" and "pgbackrest_version" service.',
     -exitval => 127
-) if $args{'target-version'} and $args{'service'} ne 'check_pgb_version';
+) if ( $args{'target-version'} and ( $args{'service'} ne 'check_pgb_version' and $args{'service'} ne 'pgbackrest_version'));
 
 # Output format
 for ( $args{'output'} ) {
@@ -1380,6 +1419,6 @@ Author: Stefan Fercot.
 
 Logo: Damien Cazeils (www.damiencazeils.com).
 
-Copyright: (c) 2018-2020, Dalibo / 2020-2022, Stefan Fercot.
+Copyright: (c) 2018-2020, Dalibo / 2020-2024, Stefan Fercot.
 
 =cut
