@@ -11,7 +11,7 @@ repo1-s3-uri-style=path
 repo1-storage-verify-tls=n
 repo1-retention-full={{ pgbackrest_repo_retention_full }}
 repo1-cipher-type=aes-256-cbc
-repo1-cipher-pass={{ pgbackrest_repo_cipher_pass }}
+repo1-cipher-pass={{ pgbackrest_repo1_cipher_pass }}
 {% elif pgbackrest_repo_type == "azure" %}
 repo1-type=azure
 repo1-path=/repo1
@@ -22,7 +22,7 @@ repo1-azure-container=container
 repo1-storage-verify-tls=n
 repo1-retention-full={{ pgbackrest_repo_retention_full }}
 repo1-cipher-type=aes-256-cbc
-repo1-cipher-pass={{ pgbackrest_repo_cipher_pass }}
+repo1-cipher-pass={{ pgbackrest_repo1_cipher_pass }}
 {% elif pgbackrest_repo_type == "multi" %}
 repo1-type=s3
 repo1-path=/repo1
@@ -35,7 +35,7 @@ repo1-s3-uri-style=path
 repo1-storage-verify-tls=n
 repo1-retention-full={{ pgbackrest_repo_retention_full }}
 repo1-cipher-type=aes-256-cbc
-repo1-cipher-pass={{ pgbackrest_repo_cipher_pass }}
+repo1-cipher-pass={{ pgbackrest_repo1_cipher_pass }}
 repo2-type=azure
 repo2-path=/repo2
 repo2-storage-host={{ pgbackrest_repo_azure_host }}
@@ -45,22 +45,20 @@ repo2-azure-container=container
 repo2-storage-verify-tls=n
 repo2-retention-full={{ pgbackrest_repo_retention_full }}
 repo2-cipher-type=aes-256-cbc
-repo2-cipher-pass={{ pgbackrest_repo_cipher_pass }}
+repo2-cipher-pass={{ pgbackrest_repo2_cipher_pass }}
 {% else %}
 repo1-type=posix
 repo1-path={{ pgbackrest_repo_path }}
 repo1-retention-full={{ pgbackrest_repo_retention_full }}
 repo1-cipher-type=aes-256-cbc
-repo1-cipher-pass={{ pgbackrest_repo_cipher_pass }}
+repo1-cipher-pass={{ pgbackrest_repo1_cipher_pass }}
 {% endif %}
 log-level-console=info
 log-level-file=debug
 start-fast=y
 delta=y
 process-max=2
-{% if pg_type == 'EPAS' and edb_enable_tde is defined and edb_enable_tde|bool %}
-checksum-page=n
-{% endif %}
+compress-type=zst
 
 [{{ cluster_name }}]
 {% for server in pgbackrest_servers %}
@@ -70,6 +68,3 @@ pg{{ loop.index }}-host-user={{ v.pg_owner }}
 pg{{ loop.index }}-path={{ v.pg_data }}
 pg{{ loop.index }}-socket-path={{ v.pg_unix_socket_directories[0] }}
 {% endfor %}
-{% if pg_type == 'EPAS' and pg_version|int >= 15 %}
-pg-version-force={{ pg_version }}
-{% endif %}

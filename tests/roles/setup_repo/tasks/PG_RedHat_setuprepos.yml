@@ -1,0 +1,103 @@
+---
+- name: Update the ca-certificates package
+  ansible.builtin.package:
+    name: ca-certificates
+    state: latest
+  become: true
+
+- name: Download PGDG GPG key for EL8 and EL9
+  ansible.builtin.rpm_key:
+    key: "{{ pg_gpg_key_x86_64 }}"
+    state: present
+  when:
+    - ansible_distribution_major_version in ['8', '9']
+  become: true
+
+- name: Download EPEL GPG key for EL8
+  ansible.builtin.rpm_key:
+    key: "{{ epel_gpg_key_8 }}"
+    state: present
+  when:
+    - ansible_distribution_major_version == '8'
+  become: true
+
+- name: Download EPEL GPG key for EL9
+  ansible.builtin.rpm_key:
+    key: "{{ epel_gpg_key_9 }}"
+    state: present
+  when:
+    - ansible_distribution_major_version == '9'
+  become: true
+
+- name: Install dnf-plugins-core for EL8 and EL9
+  ansible.builtin.package:
+    name: dnf-plugins-core
+    state: present
+  become: true
+  when:
+    - ansible_distribution_major_version in ['8', '9']
+
+- name: Enable powertools for EL8
+  ansible.builtin.command: >
+    dnf config-manager --set-enabled powertools
+  become: true
+  changed_when: true
+  when:
+    - ansible_distribution_major_version == '8'
+
+- name: Enable CodeReady Builder for EL9
+  ansible.builtin.command: >
+    dnf config-manager --set-enabled crb
+  become: true
+  changed_when: true
+  when:
+    - ansible_distribution_major_version == '9'
+
+- name: Install EPEL repo for EL8
+  ansible.builtin.package:
+    name: "{{ epel_repo_8 }}"
+    state: present
+  when:
+    - ansible_distribution_major_version == '8'
+  become: true
+
+- name: Install EPEL repo for EL9
+  ansible.builtin.package:
+    name: "{{ epel_repo_9 }}"
+    state: present
+  when:
+    - ansible_distribution_major_version == '9'
+  become: true
+
+- name: Install PG repo for EL8
+  ansible.builtin.package:
+    name: "{{ pg_rpm_repo_8_x86_64 }}"
+    state: present
+  become: true
+  when:
+    - ansible_distribution_major_version == '8'
+
+- name: Install PG repo for EL9
+  ansible.builtin.package:
+    name: "{{ pg_rpm_repo_9_x86_64 }}"
+    state: present
+  become: true
+  when:
+    - ansible_distribution_major_version == '9'
+
+- name: Enable testing repository for PG beta releases
+  ansible.builtin.command: >
+    dnf config-manager --set-enabled pgdg{{ pg_version }}-updates-testing
+  become: true
+  changed_when: true
+  when:
+    - pg_version|int >= pg_next_major_release|int
+
+- name: Execute yum updateinfo
+  ansible.builtin.shell: >
+    set -o pipefail;
+    yum updateinfo -y --refresh
+  register: updateinfo_output
+  become: true
+  failed_when: false
+  changed_when: updateinfo_output.rc != 0

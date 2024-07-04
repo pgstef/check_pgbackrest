@@ -1,0 +1,7 @@
+{% if pg_version|int >= pg_next_major_release|int %}
+Package: *
+{% else %}
+Package: pgbackrest
+{% endif %}
+Pin: release o=apt.postgresql.org,a={{ ansible_distribution_release }}-pgdg-testing,a={{ ansible_distribution_release }}-pgdg-snapshot
+Pin-Priority: 500

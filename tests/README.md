@@ -10,30 +10,34 @@
 
 ## Introduction
 
-This _Test Suite_ is based on the [edb-ansible](https://github.com/EnterpriseDB/edb-ansible) Ansible Collection. It deploys docker containers and typical architectures.
+This _Test Suite_ uses Ansible to deploy docker containers and typical architectures.
 
-It tends to support the following situations:
-* Directly-attached storage - [Use Case 1](https://www.enterprisedb.com/docs/supported-open-source/pgbackrest/06-use_case_1/)
-* Dedicated repository host - [Use Case 2](https://www.enterprisedb.com/docs/supported-open-source/pgbackrest/07-use_case_2)
+It tends to support the 2 following use-cases.
+
+### Use Case 1 - Directly-attached shared storage
+
+![Shared storage](../docs/img/shared-storage.png)
+
+### Use Case 2 - Dedicated repository host
+
+![Repository host](../docs/img/with-repo-host.png)
 
 ---
 
 ## GitHub Actions
 
 [GitHub Actions](../.github/workflows/main.yml) are testing:
-  * Use-Case 1: PG 15, Rocky Linux 8, using pgBackRest PGDG packages
-  * Use-Case 2: PG 15, Ubuntu 20.04, using pgBackRest PGDG packages
+  * **Shared storage**: PG 16, Rocky Linux 9, using pgBackRest PGDG packages
+  * **Repository host**: PG 16, Ubuntu 22.04, using pgBackRest PGDG packages
 
 ---
 
 ## Vagrant
 
-To be able to run the tests manually, define your EDB repositories personal credential `vagrant.yml`. Example in [vagrant.yml-dist](vagrant.yml-dist).
+To be able to run the tests manually, first initialize the virtual machine with `make init`.
 
-First of all, initialize the virtual machine with `make init`.
-
-* Deploy Use-Case 1 and run the activity script: `make ACTIVITY=true uc1`
-* Deploy Use-Case 2 and run the activity script: `make ACTIVITY=true uc2`
+* Deploy Use-Case 1 (shared-storage) and run the activity script: `make ACTIVITY=true uc1`
+* Deploy Use-Case 2 (with-repo-host) and run the activity script: `make ACTIVITY=true uc2`
 
 To build pgBackRest from sources, use `uc1_full` or `uc2_full` make targets.
 
@@ -43,7 +47,7 @@ To install pgBackRest and **check_pgbackrest** using PGDG packages, without depl
 
 Add `PROFILE=xxx` to the make command.
 
-Available profiles: `c7epas`, `c7pg`, `d11epas`, `d11pg`, `u20epas`, `u20pg`, `ro8epas`, `ro8pg`.
+Available profiles: `d11pg`, `u20pg`, `ro8pg`, `ro9pg`.
 
 ### Change the pgBackRest repository type
 

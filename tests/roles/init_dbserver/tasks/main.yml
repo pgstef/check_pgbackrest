@@ -1,0 +1,31 @@
+---
+- name: Reference PG variables
+  ansible.builtin.include_vars: "PG_{{ ansible_os_family }}.yml"
+
+- name: Gather service facts
+  ansible.builtin.service_facts:
+
+- name: Firewall open Postgres TCP port {{ pg_port }}
+  ansible.posix.firewalld:
+    port: "{{ pg_port }}/tcp"
+    permanent: true
+    state: enabled
+    immediate: true
+  when:
+    - ansible_facts.services['firewalld.service'] is defined
+    - ansible_facts.services['firewalld.service'].state == 'running'
+    - ansible_facts.services['firewalld.service'].status == 'enabled'
+  become: true
+
+- name: Check and configure the node as primary
+  become: true
+  block:
+    - name: Create required directories
+      ansible.builtin.import_tasks: create_directories.yml
+    - name: Setup systemd for PG
+      ansible.builtin.import_tasks: pg_setup_systemd.yml
+    - name: Call initdb command
+      ansible.builtin.import_tasks: pg_initdb.yml
+
+- name: Validate initdb
+  ansible.builtin.import_tasks: validate_init_dbserver.yml

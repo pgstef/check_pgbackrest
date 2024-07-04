@@ -65,8 +65,11 @@ if $INIT_ONLY; then
     echo '--------------------'
     echo 'Install ansible dependencies'
     pipx inject ansible-core docker-py
+    ansible-galaxy collection install ansible.posix
+    ansible-galaxy collection install community.crypto
     ansible-galaxy collection install community.docker
-    ansible-galaxy collection install "edb_devops.edb_postgres:<=3.21.0"
+    ansible-galaxy collection install community.general
+    ansible-galaxy collection install community.postgresql
     ansible-galaxy collection install telekom_mms.icinga_director
     echo '--------------------'
     echo 'Install MinIO Python SDK'
@@ -97,6 +100,7 @@ if $PROVISION; then
     echo '-------------------- Provision --------------------' && date
     #-----------------------------------------------------------------------------------------------------------------------
     export ANSIBLE_ROLES_PATH=${ANSIBLE_ROLES_PATH:+$ANSIBLE_ROLES_PATH:}$(pwd)/roles
+    export ANSIBLE_LOOKUP_PLUGINS=${ANSIBLE_LOOKUP_PLUGINS:+$ANSIBLE_LOOKUP_PLUGINS:}$(pwd)/plugins/lookup
     : "${CLUSTER_DIR:?Variable not set or empty}"
     echo "CLUSTER_DIR=$CLUSTER_DIR"
     ansible-playbook platforms/provision.yml -e cluster_dir=$CLUSTER_DIR
@@ -107,8 +111,6 @@ if $DEPLOY; then
     #-----------------------------------------------------------------------------------------------------------------------
     echo '-------------------- Deploy --------------------' && date
     #-----------------------------------------------------------------------------------------------------------------------
-    : "${EDB_REPO_USERNAME:?Variable not set or empty}"
-    : "${EDB_REPO_PASSWORD:?Variable not set or empty}"
     export ANSIBLE_HOST_KEY_CHECKING=False
     export ANSIBLE_REMOTE_USER="root"
     ansible-playbook playbooks/deploy.yml -i "$CLUSTER_DIR/inventory" -e cluster_dir=$CLUSTER_DIR

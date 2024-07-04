@@ -10,13 +10,15 @@ pgbackrest_repo_retention_full: 1
 pgbackrest_repo_type: "posix"
 pgbackrest_repo_s3_endpoint: "{{ cluster_name }}-minio"
 pgbackrest_repo_azure_host: "{{ cluster_name }}-azurite"
-pgbackrest_repo_cipher_pass: "it3BF2WqbFCNbY4KkSbvUsRybHyJkvcmQYAOB46x3qXfrc0EKqGGClsh42Q1g91O"
+pgbackrest_repo1_cipher_pass: "it3BF2WqbFCNbY4KkSbvUsRybHyJkvcmQYAOB46x3qXfrc0EKqGGClsh42Q1g91O"
+pgbackrest_repo2_cipher_pass: "TTSSHTZOY40hfvfBAZh8ytg3Qm06cJ2kIaeemrzZZSmDUvpBW0RQfH0Ut+utqjkN"
 pgbackrest_user: "pgbackrest"
 
 build_packages:
   common:
     - git
     - make
+    - meson
     - gcc
   Debian:
     - libpq-dev
@@ -29,6 +31,7 @@ build_packages:
     - libz-dev
     - libyaml-dev
     - libssh2-1-dev
+    - python3-setuptools
   RedHat:
     - openssl-devel
     - libxml2-devel

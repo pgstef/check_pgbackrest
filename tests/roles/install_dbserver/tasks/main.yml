@@ -1,0 +1,3 @@
+---
+- name: Install and Configure PostgreSQL
+  ansible.builtin.include_tasks: "PG_{{ ansible_os_family }}_install.yml"

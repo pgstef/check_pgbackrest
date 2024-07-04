@@ -1,8 +1,6 @@
 require 'yaml'
 
 if File.file?('vagrant.yml') and ( custom = YAML.load_file('vagrant.yml') )
-    edb_repository_username = custom['edb_repository_username'] if custom.has_key?('edb_repository_username')
-    edb_repository_password = custom['edb_repository_password'] if custom.has_key?('edb_repository_password')
     pgbackrest_git_url      = custom['pgbackrest_git_url']      if custom.has_key?('pgbackrest_git_url')
     pgbackrest_git_branch   = custom['pgbackrest_git_branch']   if custom.has_key?('pgbackrest_git_branch')
 end
@@ -14,14 +12,10 @@ Vagrant.configure(2) do |config|
         vb.name = "check_pgbackrest-docker-host"
     end
 
-    config.vm.box = "bento/ubuntu-20.04"
+    config.vm.box = "bento/ubuntu-22.04"
     config.ssh.insert_key = false
     # mount check_pgbackrest path for development testing
     config.vm.synced_folder "..", "/check_pgbackrest"
-    # mount edb-ansible local git clone
-    if File.directory?(File.expand_path("../../edb-ansible"))
-        config.vm.synced_folder "../../edb-ansible", "/edb-ansible"
-    end
 
     config.vm.provision "shell", inline: <<-SHELL
         #-----------------------------------------------------------------------------------------------------------------------
@@ -29,7 +23,7 @@ Vagrant.configure(2) do |config|
         lvextend -l +100%FREE /dev/ubuntu-vg/ubuntu-lv
         resize2fs /dev/mapper/ubuntu--vg-ubuntu--lv
         #-----------------------------------------------------------------------------------------------------------------------
-        echo 'Use be ubuntu mirrors' && date
+        echo 'Use BE ubuntu mirrors' && date
         sed -E -i 's#http://[^\s]*archive\.ubuntu\.com/ubuntu#http://be.archive.ubuntu.com/ubuntu#g' /etc/apt/sources.list
         #-----------------------------------------------------------------------------------------------------------------------
         echo 'Install Docker' && date
@@ -37,16 +31,18 @@ Vagrant.configure(2) do |config|
         usermod -aG docker vagrant
         #-----------------------------------------------------------------------------------------------------------------------
         echo 'Install Perl modules' && date
+        export DEBIAN_FRONTEND=noninteractive
         apt-get install -y libyaml-libyaml-perl jq
     SHELL
 
     config.vm.provision "shell", privileged: false, inline: <<-SHELL
         #-----------------------------------------------------------------------------------------------------------------------
         echo 'Install Ansible' && date
-        sudo apt-get install -y python3-pip python3-venv
+        export DEBIAN_FRONTEND=noninteractive
+        sudo -E apt-get install -y python3-pip python3-venv
         python3 -m pip install --user pipx
         python3 -m pipx ensurepath
-        python3 -m pipx install ansible-core
+        python3 -m pipx install 'ansible-core<2.17' #ansible-core 2.16 is needed for RHEL8 compatibility
     SHELL
 
     # Execute CI script in Vagrant environment
@@ -59,8 +55,6 @@ Vagrant.configure(2) do |config|
             "PGBR_BUILD" => ENV['PGBR_BUILD'],
             "PGBR_REPO_TYPE" => ENV['PGBR_REPO_TYPE'],
             "PROFILE" => ENV['PROFILE'],
-            "edb_repository_username" => edb_repository_username,
-            "edb_repository_password" => edb_repository_password,
             "pgbackrest_git_url" => pgbackrest_git_url,
             "pgbackrest_git_branch" => pgbackrest_git_branch
         },

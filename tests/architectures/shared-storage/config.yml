@@ -1,0 +1,27 @@
+---
+cluster_name: shared-storage
+platform: docker
+docker:
+  image_name: rockylinux:9
+  exposed_ports:
+    - '22'
+    - '5432'
+
+cluster_vars:
+  pg_version: 16
+  pgbackrest_repo_type: s3
+
+instances:
+- name: node1
+  ansible_group: primary
+  pgbackrest: true
+
+- name: node2
+  ansible_group: standby
+  upstream: node1
+  pgbackrest: true
+
+- name: node3
+  ansible_group: standby
+  upstream: node1
+  pgbackrest: true

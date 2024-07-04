@@ -4,12 +4,10 @@
     that: docker.image_name in _available_images
   vars:
     _available_images:
-      - 'debian:10'
       - 'debian:11'
-      - 'ubuntu:20.04'
       - 'ubuntu:22.04'
-      - 'centos:7'
       - 'rockylinux:8'
+      - 'rockylinux:9'
 
 - name: Build systemd image {{ docker.image_name }}
   docker_image:
