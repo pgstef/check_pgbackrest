@@ -25,6 +25,8 @@ repo1-storage-verify-tls=n
 repo1-retention-full={{ pgbackrest_repo_retention_full }}
 repo1-cipher-type=aes-256-cbc
 repo1-cipher-pass={{ pgbackrest_repo1_cipher_pass }}
+repo1-bundle=y
+repo1-block=y
 start-fast=y
 {% elif pgbackrest_repo_type == "azure" %}
 repo1-type=azure
@@ -37,6 +39,8 @@ repo1-storage-verify-tls=n
 repo1-retention-full={{ pgbackrest_repo_retention_full }}
 repo1-cipher-type=aes-256-cbc
 repo1-cipher-pass={{ pgbackrest_repo1_cipher_pass }}
+repo1-bundle=y
+repo1-block=y
 start-fast=y
 {% elif pgbackrest_repo_type == "multi" %}
 repo1-type=s3
@@ -51,6 +55,8 @@ repo1-storage-verify-tls=n
 repo1-retention-full={{ pgbackrest_repo_retention_full }}
 repo1-cipher-type=aes-256-cbc
 repo1-cipher-pass={{ pgbackrest_repo1_cipher_pass }}
+repo1-bundle=y
+repo1-block=y
 repo2-type=azure
 repo2-path=/repo2
 repo2-storage-host={{ pgbackrest_repo_azure_host }}
@@ -61,6 +67,8 @@ repo2-storage-verify-tls=n
 repo2-retention-full={{ pgbackrest_repo_retention_full }}
 repo2-cipher-type=aes-256-cbc
 repo2-cipher-pass={{ pgbackrest_repo2_cipher_pass }}
+repo2-bundle=y
+repo2-block=y
 start-fast=y
 {% else %}
 repo1-type=posix
@@ -68,6 +76,8 @@ repo1-path={{ pgbackrest_repo_path }}
 repo1-retention-full={{ pgbackrest_repo_retention_full }}
 repo1-cipher-type=aes-256-cbc
 repo1-cipher-pass={{ pgbackrest_repo1_cipher_pass }}
+repo1-bundle=y
+repo1-block=y
 start-fast=y
 {% endif %}
 log-level-console=info

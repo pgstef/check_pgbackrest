@@ -10,6 +10,7 @@ build_packages:
   Debian:
     - libjson-perl
     - libdata-dump-perl
+    - perl-doc
   RedHat:
     - nagios-plugins
     - perl-JSON

@@ -230,7 +230,7 @@
   loop: "{{ pgbackrest_servers }}"
   when: "'icinga2' in group_names"
 
-- name: Create Icinga2 check retention services for repo host
+- name: Create Icinga2 check archives services for repo host
   telekom_mms.icinga_director.icinga_service:
     state: present
     url: "{{ icinga_url }}"
