@@ -2,6 +2,9 @@
 import argparse, os, urllib3
 from minio import Minio
 from minio.error import S3Error
+from minio.commonconfig import ENABLED
+from minio.sseconfig import SseConfig
+from minio.versioningconfig import VersioningConfig
 
 def main():
     print("MinIO Python Client API")
@@ -21,13 +24,15 @@ def main():
         http_client=urllib3.PoolManager(cert_reqs='CERT_NONE')
     )
 
-    # Create the container
+    # Create the bucket
     if args.bucket:
         if client.bucket_exists(args.bucket):
             print("Bucket %s already exists..." % args.bucket)
         else:
             print("Bucket name to create: %s" % args.bucket)
             client.make_bucket(args.bucket)
+            # Enable versioning for the bucket
+            client.set_bucket_versioning(args.bucket, VersioningConfig(ENABLED))
 
 if __name__ == "__main__":
     try:
