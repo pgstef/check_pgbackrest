@@ -3,7 +3,6 @@ import argparse, os, urllib3
 from minio import Minio
 from minio.error import S3Error
 from minio.commonconfig import ENABLED
-from minio.sseconfig import SseConfig
 from minio.versioningconfig import VersioningConfig
 
 def main():
