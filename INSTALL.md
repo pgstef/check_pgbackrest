@@ -14,7 +14,7 @@ The Data::Dump perl module is also needed:
 On RedHat-like systems the following additional Perl modules are needed:
 
 - `perl-File-Find`
-- `perl-FinbBin`
+- `perl-FindBin`
 - `perl-Math-BigInt`
 - `perl-Math-Complex` 
 
