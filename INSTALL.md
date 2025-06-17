@@ -11,6 +11,13 @@ The Data::Dump perl module is also needed:
 - On RedHat-like: `perl-Data-Dumper`
 - On Debian-like: `libdata-dump-perl`
 
+On RedHat-like systems the following additional Perl modules are needed:
+
+- `perl-File-Find`
+- `perl-FinbBin`
+- `perl-Math-BigInt`
+- `perl-Math-Complex` 
+
 -----
 
 ## PGDG packages
