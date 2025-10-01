@@ -731,17 +731,17 @@ sub check_retention {
 
         # Check retention-full
         if(defined $args{'retention-full'} and scalar(@full_bck) < $args{'retention-full'}) {
-            push @crit_msg, "not enough full backups: ".$args{'retention-full'}." required";
+            push @crit_msg, "not enough full backups: ".$args{'retention-full'}." required (--retention-full)";
         }
 
         # Check retention-diff
         if(defined $args{'retention-diff'} and scalar(@diff_bck) < $args{'retention-diff'}) {
-            push @crit_msg, "not enough differential backups: ".$args{'retention-diff'}." required";
+            push @crit_msg, "not enough differential backups: ".$args{'retention-diff'}." required (--retention-diff)";
         }
 
         # Check retention-incr
         if(defined $args{'retention-incr'} and scalar(@incr_bck) < $args{'retention-incr'}) {
-            push @crit_msg, "not enough incremental backups: ".$args{'retention-incr'}." required";
+            push @crit_msg, "not enough incremental backups: ".$args{'retention-incr'}." required (--retention-incr)";
         }
 
         # Check latest age
@@ -754,7 +754,7 @@ sub check_retention {
 
         if(defined $args{'retention-age'}){
             my $bck_age_limit = get_time($args{'retention-age'} );
-            push @crit_msg, "backups are too old" if $latest_bck_age >= $bck_age_limit;
+            push @crit_msg, "backups are too old (--retention-age)" if $latest_bck_age >= $bck_age_limit;
         }
 
         # Check latest full backup age
@@ -765,7 +765,7 @@ sub check_retention {
             push @longmsg, "latest_full_age=".to_interval_output_dependent($latest_full_bck_age);
 
             my $bck_age_limit = get_time($args{'retention-age-to-full'} );
-            push @crit_msg, "full backups are too old" if $latest_full_bck_age >= $bck_age_limit;
+            push @crit_msg, "full backups are too old (--retention-age-to-full)" if $latest_full_bck_age >= $bck_age_limit;
         }
 
         # Check oldest age
@@ -776,7 +776,7 @@ sub check_retention {
 
         if(defined $args{'retention-age-to-oldest'}){
             my $bck_age_limit = get_time($args{'retention-age-to-oldest'} );
-            push @crit_msg, "backups are too young" if $oldest_bck_age < $bck_age_limit;
+            push @crit_msg, "backups are too young (--retention-age-to-oldest)" if $oldest_bck_age < $bck_age_limit;
         }
 
     }else{
